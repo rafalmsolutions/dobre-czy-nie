@@ -71,7 +71,8 @@
     const groups = [['allergens', 'Alergeny'], ['diet', 'Dieta'], ['avoid', 'Unikam w jedzeniu'], ['cosmetic', 'Unikam w kosmetykach']];
     A.$('scr-profile').innerHTML = `<div class="wrap"><form class="stack" id="profileForm" novalidate style="gap:16px">
       <div class="topbar"><h1>Twój profil</h1>${A.hudPill()}</div>
-      <div class="row">${A.mascot('smile', 60)}<p class="bubble small">Sprawdzam to przy każdym produkcie. Profil zostaje tylko w tym telefonie.</p></div>
+      <div class="row">${A.mascot('smile', 60)}<p class="bubble small">Sprawdzam to przy każdym produkcie. Zmiany zapisuję od razu, a profil zostaje tylko w tym telefonie.</p></div>
+      <p class="save-state small" id="saveState" role="status" aria-live="polite"></p>
       <div class="card stack"><label for="profName"><b style="font-family:var(--f-display)">Imię</b> <span class="small muted">(nieobowiązkowe)</span></label><input class="field" id="profName" maxlength="30" autocomplete="given-name" value="${esc(A.userName())}"></div>
       <fieldset class="card"><legend>Twoje cele <span class="small muted" style="font-family:var(--f-body)">(do ${GOALS_MAX})</span></legend>
         <div class="goal-grid">${GOALS.map(g => { const t = GOAL_TILES[g.key]; return `<button class="goal-tile" type="button" data-act="prof-goal" data-k="${g.key}" aria-pressed="${p.goals.includes(g.key)}" style="background:radial-gradient(circle at 30% 25%,#fff 0%,${t.bg} 65%)"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span>${art(t.icon, 38)}<b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; }).join('')}</div>
@@ -85,7 +86,7 @@
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label></fieldset>
       <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
-      <button class="btn btn-green btn-block" type="submit">Zapisz profil</button>
+      <button class="btn btn-green btn-block" type="submit">Gotowe</button>
     </form>
     <div class="card stack"><h2 style="font-size:1.1rem">Informacje</h2>
       <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="privacy.html">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
@@ -105,11 +106,13 @@
       if (el.getAttribute('aria-pressed') === 'true') { el.setAttribute('aria-pressed', 'false'); A.$('goalMsg').textContent = ''; }
       else if (on.length >= GOALS_MAX) A.$('goalMsg').textContent = `Wybierz najwyżej ${GOALS_MAX} cele. Odznacz któryś, żeby dodać nowy.`;
       else { el.setAttribute('aria-pressed', 'true'); A.$('goalMsg').textContent = ''; }
+      A.profAutoSave();
     } else if (act === 'add-custom') {
       const inp = A.$('customInput'), problem = customProblem(inp.value, draftCustom);
       if (problem) { A.$('customMsg').textContent = problem; inp.focus(); return; }
       draftCustom.push(cleanCustom(inp.value)); inp.value = ''; A.$('customMsg').textContent = ''; renderCustomChips(); inp.focus();
-    } else if (act === 'rm-custom') { draftCustom.splice(Number(el.dataset.i), 1); renderCustomChips(); A.$('customInput').focus(); }
+      A.profAutoSave();
+    } else if (act === 'rm-custom') { draftCustom.splice(Number(el.dataset.i), 1); renderCustomChips(); A.$('customInput').focus(); A.profAutoSave(); }
     else if (act === 'wipe') { confirmWipe = true; saveDraftToDom(); renderProfile(); const b = A.$('scr-profile').querySelector('[data-act=wipe-no]'); if (b) b.focus(); }
     else if (act === 'wipe-no') { confirmWipe = false; renderProfile(); }
     else if (act === 'wipe-yes') {
@@ -118,21 +121,33 @@
       location.hash = '#/start'; location.reload();
     }
   };
-  function saveDraftToDom() { /* przy przerysowaniu zachowujemy tylko listę własnych składników */ }
-  A.saveProfileForm = e => {
-    e.preventDefault();
+  function saveDraftToDom() { /* zmiany zapisują się od razu, więc nie ma czego przenosić */ }
+  // Zapis przy każdej zmianie: nie trzeba pamiętać o przycisku na dole strony.
+  function collect(includePending) {
     const f = A.$('profileForm'), next = { noScores: A.$('profNoScores').checked };
     ['allergens', 'diet', 'avoid', 'cosmetic'].forEach(g => { next[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map(i => i.value); });
     next.goals = [...f.querySelectorAll('[data-act=prof-goal][aria-pressed=true]')].map(b => b.dataset.k);
     next.custom = draftCustom.slice();
     const pending = A.$('customInput').value.trim();
-    if (pending && !customProblem(pending, next.custom)) next.custom.push(cleanCustom(pending));
+    if (includePending && pending && !customProblem(pending, next.custom)) { next.custom.push(cleanCustom(pending)); draftCustom = next.custom.slice(); }
     A.profile = cleanProfile(next); A.saveProfile();
     A.settings.guess = A.$('setGuess').checked; A.saveSettings();
     A.store.set('name', A.$('profName').value.replace(/[<>]/g, '').trim().slice(0, 30));
     document.body.classList.toggle('no-scores', A.profile.noScores);
-    A.toast('Zapisano profil. Sprawdzamy go przy każdym produkcie.');
     if (A.rerenderProduct) A.rerenderProduct();
+  }
+  let stateTimer;
+  A.profAutoSave = () => {
+    if (!A.$('profileForm')) return;
+    collect(false);
+    const el = A.$('saveState'); if (!el) return;
+    el.textContent = '✓ Zapisano'; el.classList.add('on');
+    clearTimeout(stateTimer); stateTimer = setTimeout(() => el.classList.remove('on'), 1800);
+  };
+  A.saveProfileForm = e => {
+    e.preventDefault();
+    collect(true);
+    A.toast('Profil zapisany. Sprawdzamy go przy każdym produkcie.');
     A.go('#/');
   };
 })();

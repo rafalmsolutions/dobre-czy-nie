@@ -381,6 +381,17 @@ await section('Postępy i profil', async () => {
   ok(prof.allergens.includes('nuts') && prof.goals.length === 3, 'zapis profilu');
   ok(await page.evaluate(() => App.current.screen) === 'home', 'po zapisie ekran główny');
   ok((await txt(page, '#scr-home h1')).includes('Ola'), 'nowe imię');
+  // zapis bez przycisku: zmiana i wyjście z ekranu
+  await go(page, '#/profil');
+  await page.click('label.pchip:has(input[name=allergens][value=eggs])');
+  await page.click('[data-act=prof-goal][data-k=muscle]');
+  ok(await page.locator('#saveState.on').count() === 1, 'informacja „Zapisano”');
+  await page.fill('#profName', 'Ewa'); await page.waitForTimeout(700);
+  await page.click('.tab[data-tab=home]'); await page.waitForTimeout(300);
+  const p2 = await page.evaluate(() => [App.profile, App.userName()]);
+  ok(p2[0].allergens.includes('eggs') && !p2[0].goals.includes('muscle') && p2[1] === 'Ewa', 'zmiany zapisane bez przycisku (' + JSON.stringify([p2[0].allergens, p2[0].goals, p2[1]]) + ')');
+  await page.reload(); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => App.profile.allergens.includes('eggs')), 'zapis przetrwał odświeżenie');
   // usuwanie danych
   await go(page, '#/profil');
   await page.click('[data-act=wipe]'); await page.click('[data-act=wipe-no]');

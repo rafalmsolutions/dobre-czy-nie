@@ -3,6 +3,7 @@
 (() => {
   const A = App;
   let depth = 0; // ile razy nawigowaliśmy w tej sesji (dla przycisku „Wróć”)
+  let nameTimer;
 
   /* ---------- Kliknięcia ---------- */
   const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share'];
@@ -92,6 +93,7 @@
     if (t.id === 'ingPhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.runOcr(f); return; }
     if (t.id === 'codePhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.decodeImageFile(f); return; }
     if (t.dataset.act === 'item-toggle') { A.shelfAction('item-toggle', t); return; }
+    if (t.closest('#profileForm') && t.id !== 'customInput') { A.profAutoSave(); return; }
     if (t.dataset.act === 'no-guess') {
       A.settings.guess = !t.checked; A.saveSettings();
       A.toast(t.checked ? 'Nie będziemy pytać. Zmienisz to w profilu.' : 'Wróciło pytanie „Zgadnij”.');
@@ -99,6 +101,7 @@
   });
   document.addEventListener('input', e => {
     if (e.target.id === 'catSearch') { A.filterCats(e.target.value); return; }
+    if (e.target.id === 'profName') { clearTimeout(nameTimer); nameTimer = setTimeout(A.profAutoSave, 500); return; }
     if (e.target.id === 'repComment') A.$('repCount').textContent = e.target.value.length + '/1000';
   });
   // Rozwinięcie wyjaśnienia lub dodatku (punkty za naukę, odznaki „Czytelnik etykiet” i „Cukrowy detektyw”).

@@ -1,5 +1,5 @@
 /* Dobre czy nie? 1.0 – service worker: aplikacja działa i otwiera się szybko także przy słabym zasięgu w sklepie. */
-const VERSION = 'dcn-1.0.4';
+const VERSION = 'dcn-1.0.5';
 const SHELL = ['./', 'index.html', 'styles.css', 'config.js', 'data.js', 'core.js', 'game.js', 'shelf.js', 'art.js',
   'ui-base.js', 'ui-home.js', 'ui-product.js', 'ui-shelves.js', 'ui-progress.js', 'ui-main.js',
   'config/points-rules.json', 'config/levels.json', 'config/achievements.json', 'config/weekly-challenges.json',
