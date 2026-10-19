@@ -206,7 +206,7 @@
       s.push(`<div class="card stack"><div class="sec-head"><h3>Składniki z uwagami</h3><span class="small muted">${an.count} ${plural(an.count, 'składnik', 'składniki', 'składników')}</span></div>${an.flags.length ? addList(an.flags, 'cosmetic') + sourcesHtml(an.flags) : `<p class="muted small">${an.count ? 'Nie znaleźliśmy składników, które budzą zastrzeżenia według naszej bazy.' : 'Baza nie ma jeszcze składu tego kosmetyku.'}</p>`}</div>`);
     }
     if (prod.ingredients) s.push(`<details class="card more"><summary class="details-h">Pełny skład</summary><p class="small" style="margin-top:8px">${esc(prod.ingredients)}</p></details>`);
-    if (isFood && prod.source !== 'local' && prod.category) s.push(`<div class="card stack" id="catCard" aria-live="polite"><h3>Na tle podobnych produktów</h3><div id="catBody"><p class="small muted">Porównuję z kategorią „${esc(categoryLabel(prod))}”…</p><div class="sk" style="height:56px"></div></div></div>`);
+    if (isFood && prod.source !== 'local' && prod.category) s.push(`<div class="card stack" id="catCard" aria-live="polite"><h3>Na tle podobnych produktów</h3><div id="catBody"><p class="small muted">Porównuję z podobnymi produktami…</p><div class="sk" style="height:56px"></div></div></div>`);
     const offUrl = `${prod.source === 'obf' ? OBF : OFF}/product/${encodeURIComponent(prod.code)}`;
     s.push(`<div class="card stack"><div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="share"><svg><use href="#i-share"/></svg>Udostępnij</button><button class="btn btn-white btn-sm" type="button" data-act="report">Zgłoś błąd</button>${prod.source !== 'local' ? '<button class="btn btn-white btn-sm" type="button" data-act="manual-ing">Wpisz skład ręcznie</button>' : ''}</div>
       <div id="ingSlot"></div>
@@ -222,7 +222,7 @@
     catLoading = mine;
     try {
       // Najpierw najwęższa kategoria; gdy ma za mało produktów, kategoria nadrzędna (np. „jogurty owocowe” → „jogurty”).
-      const cats = (mine.prod.categories || []).slice().reverse().filter(c => /^en:[a-z0-9-]{2,60}$/.test(c)).slice(0, 3);
+      const cats = (mine.prod.categories || []).slice().reverse().filter(c => /^en:[a-z0-9-]{2,60}$/.test(c)).slice(0, 2);
       if (!cats.length && mine.prod.category) cats.push(mine.prod.category);
       const onWait = sec => { const b = body(); if (b && cur === mine) b.innerHTML = `<p class="small muted">Wyszukiwarka produktów ma limit zapytań. Porównam za ${sec} s…</p><div class="sk" style="height:56px"></div>`; };
       let list = [], levels = 0;
@@ -231,16 +231,19 @@
         const got = await A.fetchCategory(c, onWait);
         const seen = new Set(list.map(x => x.code));
         list = list.concat(got.filter(x => !seen.has(x.code)));
-        if (list.filter(x => x.code !== mine.prod.code).length >= 12) break;
+        if (list.filter(x => x.code !== mine.prod.code).length >= 8) break;
       }
       if (cur !== mine || !body()) return;
       const cmp = compareInCategory(mine.prod, mine.an, list, A.profile);
-      const label = esc(categoryLabel(mine.prod)), kat = `„${label}”${levels > 1 ? ' i pokrewnych' : ''}`, out = [];
+      // Nazwy kategorii w bazie bywają po angielsku albo francusku, więc podajemy polską nazwę z naszej listy, jeśli pasuje.
+      const shop = (mine.prod.categories || []).slice().reverse().map(c => SHOP_CATEGORIES.find(x => x.key === c)).find(Boolean);
+      const out = [];
       if (A.profile.noScores) out.push(`<p class="small muted">${cmp.sampleSize ? `Sprawdziliśmy ${cmp.sampleSize} podobnych produktów.` : 'Nie mamy jeszcze podobnych produktów do porównania.'}</p>`);
       else if (!cmp.enough) out.push(`<p class="small muted">Za mało podobnych produktów w bazie, żeby rzetelnie porównać (${cmp.sampleSize} z ${MIN_SAMPLE} potrzebnych).</p>`);
       else if (mine.an.score != null) {
-        const p = cmp.betterThan, n = `${cmp.sampleSize} ${plural(cmp.sampleSize, 'produktu', 'produktów', 'produktów')}`;
-        const sentence = p === 0 ? `Żaden z ${n} w kategorii ${kat} nie ma niższej oceny.` : p === 100 ? `Ma wyższą ocenę niż wszystkie ${cmp.sampleSize} porównane produkty w kategorii ${kat}.` : `Ma lepszą ocenę niż ${p}% z ${n} w kategorii ${kat}.`;
+        const p = cmp.betterThan, kind = shop ? ` (${esc(shop.label.toLowerCase())})` : '';
+        const n = `${cmp.sampleSize} ${plural(cmp.sampleSize, 'podobnego produktu', 'podobnych produktów', 'podobnych produktów')}${kind}`;
+        const sentence = p === 0 ? `Żaden z ${n} nie ma niższej oceny.` : p === 100 ? `Ma wyższą ocenę niż wszystkie ${cmp.sampleSize} porównane podobne produkty${kind}.` : `Ma lepszą ocenę niż ${p}% z ${n}.`;
         out.push(`<div class="pctl alt-score"><b class="pctl-n">${p}%</b><span class="small">${sentence}</span></div><div class="pctl-bar alt-score" aria-hidden="true"><i style="left:${p}%"></i></div>`);
       }
       // Zamiennik musi być naprawdę lepszy dla tej osoby: co najmniej „Dobre dopasowanie” i wyżej niż obecny produkt.
