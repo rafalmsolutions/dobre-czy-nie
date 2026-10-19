@@ -1,0 +1,91 @@
+# Buduje aplikację z aktualną kopią polskich produktów z Open Food Facts i publikuje ją na GitHub Pages.
+# Uruchamia się po każdej zmianie w gałęzi main, w każdy poniedziałek rano i ręcznie (Actions → Run workflow).
+name: Zbuduj i opublikuj
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Testy
+        run: |
+          python3 scripts/test_build_data.py
+          node tests/bundle.js
+          node tests/unit-core.cjs
+          node tests/unit-v1.cjs
+          node tests/worker-test.mjs
+
+      - name: Ostatnia udana kopia danych (zapas, gdy Open Food Facts nie odpowiada)
+        uses: actions/cache/restore@v4
+        with:
+          path: datacache
+          key: offdata-${{ github.run_id }}
+          restore-keys: offdata-
+
+      - name: Kopia polskich produktów z Open Food Facts
+        run: |
+          if python3 scripts/build_data.py --out newdata; then
+            rm -rf datacache && mv newdata datacache
+            echo "FRESH=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Nie udało się pobrać świeżych danych. Publikuję ostatnią udaną kopię."
+          fi
+          test -f datacache/meta.json || { echo "::error::Brak danych do opublikowania."; exit 1; }
+          cat datacache/meta.json
+
+      - name: Zapamiętaj kopię danych
+        if: env.FRESH == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: datacache
+          key: offdata-${{ github.run_id }}
+
+      - name: Złóż stronę
+        run: |
+          mkdir site
+          rsync -a --exclude '.git*' --exclude tests --exclude scripts --exclude worker --exclude datacache --exclude site --exclude README.md ./ site/
+          cp -r datacache site/data
+          du -sh site site/data
+          find site -type f | wc -l
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

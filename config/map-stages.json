@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "note": "Krainy i etapy mapy. Gwiazdki są za jakość wykonania, nigdy za szybkość.",
+  "lands": [
+    {
+      "id": "kraina-1",
+      "name": "Pierwsze zakupy",
+      "stages": [
+        {
+          "stage": 1,
+          "type": "mission",
+          "title": "Pierwszy skan",
+          "description": "Sprawdź swój pierwszy produkt.",
+          "stars": [
+            "Sprawdź 1 produkt",
+            "Otwórz „Dlaczego taka ocena?”",
+            "Sprawdź 3 produkty"
+          ],
+          "reward": "+20 pkt"
+        },
+        {
+          "stage": 2,
+          "type": "mission",
+          "title": "Twoje cele",
+          "description": "Wybierz do 3 celów, w których pomoże Ci aplikacja.",
+          "stars": [
+            "Wybierz cel",
+            "Dodaj składnik, którego unikasz",
+            "Wybierz dietę"
+          ],
+          "reward": "+20 pkt"
+        },
+        {
+          "stage": 3,
+          "type": "mission",
+          "title": "Zgadnij!",
+          "description": "Zgadnij 3 razy: dobre czy nie dla Ciebie?",
+          "stars": [
+            "Zgadnij 3 razy",
+            "Traf 2 z 3",
+            "Traf 3 z 3"
+          ],
+          "reward": "+30 pkt"
+        },
+        {
+          "stage": 4,
+          "type": "chest",
+          "title": "Skrzynia",
+          "description": "Nagroda za pierwsze kroki.",
+          "stars": [
+            "Nasiona truskawki",
+            "Nowa grządka"
+          ],
+          "reward": "otwarta"
+        },
+        {
+          "stage": 5,
+          "type": "mission",
+          "title": "Bez cukru",
+          "description": "Znajdź jogurt bez dodatku cukru.",
+          "stars": [
+            "Znajdź 1 jogurt",
+            "Dodaj go na półkę",
+            "Znajdź 3 różne"
+          ],
+          "reward": "+30 pkt"
+        },
+        {
+          "stage": 6,
+          "type": "mission",
+          "title": "Zamień na lepsze",
+          "description": "Wybierz 2 produkty, które lepiej pasują do Twojego profilu.",
+          "stars": [
+            "Zamień 2 produkty",
+            "Dodaj je na półkę",
+            "Odhacz je w sklepie"
+          ],
+          "reward": "+40 pkt"
+        },
+        {
+          "stage": 7,
+          "type": "mission",
+          "title": "Quiz o dodatkach",
+          "description": "3 pytania o E-numery. Np. co to jest E330?",
+          "stars": [
+            "Odpowiedz na 3 pytania",
+            "2 dobre odpowiedzi",
+            "3 dobre odpowiedzi"
+          ],
+          "reward": "+30 pkt"
+        },
+        {
+          "stage": 8,
+          "type": "chest",
+          "title": "Skrzynia",
+          "description": "Nagroda za dobre wybory.",
+          "stars": [
+            "Grządka nr 8",
+            "Nasiona brokułu"
+          ],
+          "reward": "zamknięta"
+        },
+        {
+          "stage": 9,
+          "type": "mission",
+          "title": "Półka na tydzień",
+          "description": "Zrób półkę zakupów na cały tydzień.",
+          "stars": [
+            "Dodaj 8 produktów",
+            "Ułóż je wg działów",
+            "Udostępnij bliskiej osobie"
+          ],
+          "reward": "+40 pkt"
+        },
+        {
+          "stage": 10,
+          "type": "mission",
+          "title": "W sklepie",
+          "description": "Odhacz całą listę podczas zakupów.",
+          "stars": [
+            "Odhacz listę",
+            "Bez zapomnianych produktów",
+            "Zrób to 2 razy"
+          ],
+          "reward": "+40 pkt"
+        },
+        {
+          "stage": 11,
+          "type": "mission",
+          "title": "Pomocnik bazy",
+          "description": "Wskaż, w którym sklepie kupiłeś 3 produkty.",
+          "stars": [
+            "Wskaż 1 sklep",
+            "Wskaż 3 sklepy",
+            "Dodaj zdjęcie składu"
+          ],
+          "reward": "+30 pkt"
+        },
+        {
+          "stage": 12,
+          "type": "chest",
+          "title": "Wielka skrzynia",
+          "description": "Koniec Krainy 1: Pierwsze zakupy.",
+          "stars": [
+            "Grządka nr 9 i nasiona dyni",
+            "Słomkowy kapelusz Ziarenka",
+            "Odznaka Absolwent Krainy 1"
+          ],
+          "reward": "zamknięta"
+        }
+      ]
+    },
+    {
+      "id": "kraina-2",
+      "name": "Śniadania",
+      "stages": []
+    }
+  ]
+}

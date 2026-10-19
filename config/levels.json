@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "note": "Nowy poziom dopisuje się na końcu listy.",
+  "levels": [
+    {
+      "level": 1,
+      "name": "Nowicjusz",
+      "minPoints": 0,
+      "reward": null
+    },
+    {
+      "level": 2,
+      "name": "Uważny kupujący",
+      "minPoints": 100,
+      "reward": "+30 kropli"
+    },
+    {
+      "level": 3,
+      "name": "Detektyw składów",
+      "minPoints": 250,
+      "reward": "nasiona marchewki"
+    },
+    {
+      "level": 4,
+      "name": "Ekspert etykiet",
+      "minPoints": 500,
+      "reward": "nasiona dyni i nowa grządka"
+    },
+    {
+      "level": 5,
+      "name": "Mistrz zakupów",
+      "minPoints": 900,
+      "reward": "słomkowy kapelusz Ziarenka"
+    },
+    {
+      "level": 6,
+      "name": "Legenda półek",
+      "minPoints": 1500,
+      "reward": "złota konewka"
+    }
+  ]
+}

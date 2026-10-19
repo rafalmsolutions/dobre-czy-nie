@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "note": "Nowa odznaka = jeden wpis. Medal rysuje się sam z kategorii (kolor) i ikony. 'metric' to licznik zdarzeń, 'target' próg.",
+  "categories": {
+    "odkrywanie": {
+      "label": "Odkrywanie",
+      "color": "#1F6FB8"
+    },
+    "wybory": {
+      "label": "Wybory",
+      "color": "#1F8A3E"
+    },
+    "baza": {
+      "label": "Pomoc bazie",
+      "color": "#E0670F"
+    },
+    "ogrod": {
+      "label": "Ogródek",
+      "color": "#D9412B"
+    },
+    "rodzina": {
+      "label": "Rodzina",
+      "color": "#7A55E0"
+    }
+  },
+  "achievements": [
+    {
+      "id": "detektyw",
+      "name": "Detektyw składów",
+      "category": "odkrywanie",
+      "icon": "magnifier",
+      "description": "Sprawdź 25 produktów.",
+      "metric": "products_checked",
+      "target": 25,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "typ",
+      "name": "Trafny typ",
+      "category": "odkrywanie",
+      "icon": "target",
+      "description": "Zgadnij trafnie 10 razy.",
+      "metric": "guesses_right",
+      "target": 10,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "tydzien",
+      "name": "Pierwszy tydzień",
+      "category": "odkrywanie",
+      "icon": "calendar",
+      "description": "Zajrzyj w 3 różne dni jednego tygodnia. Przerwa nie kasuje postępu.",
+      "metric": "active_days_week",
+      "target": 3,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "czytelnik",
+      "name": "Czytelnik etykiet",
+      "category": "odkrywanie",
+      "icon": "label",
+      "description": "Otwórz 10 wyjaśnień „Dlaczego taka ocena?”.",
+      "metric": "explanations_opened",
+      "target": 10,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "enumery",
+      "name": "Znawca E-numerów",
+      "category": "odkrywanie",
+      "icon": "e",
+      "description": "Poznaj opisy 20 różnych dodatków.",
+      "metric": "additives_read",
+      "target": 20,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "swap",
+      "name": "Mistrz zamian",
+      "category": "wybory",
+      "icon": "swap",
+      "description": "Zamień 3 produkty na lepsze dla Ciebie w jednym tygodniu.",
+      "metric": "swaps_week",
+      "target": 3,
+      "reward": {
+        "points": 50,
+        "items": [
+          "seed_strawberry"
+        ]
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "sniadanie",
+      "name": "Śniadaniowy as",
+      "category": "wybory",
+      "icon": "bowl",
+      "description": "Miej na półce 5 śniadaniowych produktów z dopasowaniem powyżej 75%.",
+      "metric": "breakfast_on_shelf",
+      "target": 5,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "cukier",
+      "name": "Cukrowy detektyw",
+      "category": "odkrywanie",
+      "icon": "sugar",
+      "description": "Przeczytaj wyjaśnienie o cukrze przy 10 różnych produktach.",
+      "metric": "sugar_explanations_read",
+      "target": 10,
+      "reward": {
+        "points": 40
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "koszyk",
+      "name": "Pełny koszyk",
+      "category": "wybory",
+      "icon": "cart",
+      "description": "Odhacz w sklepie całą listę z półki.",
+      "metric": "lists_completed",
+      "target": 1,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "odkrywca",
+      "name": "Odkrywca",
+      "category": "baza",
+      "icon": "plus",
+      "description": "Dodaj do bazy produkt, którego jeszcze nie było.",
+      "metric": "products_added",
+      "target": 1,
+      "reward": {
+        "points": 50,
+        "items": [
+          "seed_golden_carrot"
+        ]
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "straznik",
+      "name": "Strażnik danych",
+      "category": "baza",
+      "icon": "shield",
+      "description": "Zgłoś 3 błędy w danych produktów.",
+      "metric": "reports_sent",
+      "target": 3,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.0"
+    },
+    {
+      "id": "kartograf",
+      "name": "Kartograf sklepów",
+      "category": "baza",
+      "icon": "pin",
+      "description": "Wskaż, w jakim sklepie kupiłeś 10 produktów.",
+      "metric": "stores_tagged",
+      "target": 10,
+      "reward": {
+        "points": 40
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "fotograf",
+      "name": "Fotograf etykiet",
+      "category": "baza",
+      "icon": "camera",
+      "description": "Dodaj 5 zdjęć składu do bazy.",
+      "metric": "photos_added",
+      "target": 5,
+      "reward": {
+        "points": 40
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "plon",
+      "name": "Pierwszy plon",
+      "category": "ogrod",
+      "icon": "sprout",
+      "description": "Wyhoduj i zbierz pierwsze warzywo.",
+      "metric": "harvests",
+      "target": 1,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "tecza",
+      "name": "Tęczowa grządka",
+      "category": "ogrod",
+      "icon": "rainbow",
+      "description": "Wyhoduj 5 różnych warzyw.",
+      "metric": "distinct_crops",
+      "target": 5,
+      "reward": {
+        "items": [
+          "deco_rainbow_fence"
+        ]
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "ogrodnik",
+      "name": "Ogrodnik roku",
+      "category": "ogrod",
+      "icon": "trophy",
+      "description": "Zbierz 20 plonów.",
+      "metric": "harvests",
+      "target": 20,
+      "reward": {
+        "items": [
+          "tool_golden_can"
+        ]
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "wspolne",
+      "name": "Wspólne zakupy",
+      "category": "rodzina",
+      "icon": "people",
+      "description": "Udostępnij półkę bliskiej osobie.",
+      "metric": "shelves_shared",
+      "target": 1,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.1"
+    },
+    {
+      "id": "polecam",
+      "name": "Polecam!",
+      "category": "rodzina",
+      "icon": "heart",
+      "description": "Zaproś znajomą osobę, która sprawdzi swój pierwszy produkt.",
+      "metric": "friends_joined",
+      "target": 1,
+      "reward": {
+        "points": 50
+      },
+      "inVersion": "1.1"
+    }
+  ]
+}

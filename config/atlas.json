@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "note": "Ciekawostki tylko ze źródłem. Nowa karta = jeden wpis.",
+  "cards": [
+    {
+      "id": "carrot",
+      "name": "Marchew",
+      "fact": "Marchew ma dużo beta-karotenu, z którego organizm robi witaminę A.",
+      "source": "https://ods.od.nih.gov/factsheets/VitaminA-Consumer/"
+    },
+    {
+      "id": "tomato",
+      "name": "Pomidor",
+      "fact": "Czerwony kolor to likopen. Organizm przyswaja go lepiej z pomidorów podgrzanych i podanych z odrobiną oliwy.",
+      "source": "https://apjcn.qdu.edu.cn/10_4_20.pdf"
+    },
+    {
+      "id": "lettuce",
+      "name": "Sałata",
+      "fact": "Sałata to w ponad 90% woda.",
+      "source": "https://fdc.nal.usda.gov/"
+    },
+    {
+      "id": "strawberry",
+      "name": "Truskawka",
+      "fact": "100 g truskawek to ok. 59 mg witaminy C, czyli ok. 3/4 wartości referencyjnej z etykiet (80 mg).",
+      "source": "https://chemlab.truman.edu/vitamin-c-table/"
+    },
+    {
+      "id": "broccoli",
+      "name": "Brokuł",
+      "fact": "Brokuł gotowany na parze traci mniej witaminy C niż gotowany w wodzie.",
+      "source": "https://www.nbcnews.com/id/wbna16382205"
+    },
+    {
+      "id": "pea",
+      "name": "Groszek",
+      "fact": "Zielony groszek ma ok. 5 g białka na 100 g, sporo jak na warzywo.",
+      "source": "https://triagemethod.com/tools/human-nutrition-explorer/food/peas-green-raw.html"
+    },
+    {
+      "id": "radish",
+      "name": "Rzodkiewka",
+      "fact": "Rzodkiewkę zbiera się już 3–4 tygodnie po siewie.",
+      "source": "https://muratordom.pl/ogrod/rosliny/kiedy-siac-rzodkiewke-ile-wschodzi-rzodkiewka-co-zrobic-zeby-rzodkiewka-rosla-w-korzen-aa-pnnJ-xzmu-EhN1.html"
+    },
+    {
+      "id": "corn",
+      "name": "Kukurydza",
+      "fact": "Kukurydza cukrowa dostarcza błonnika.",
+      "source": "https://fdc.nal.usda.gov/",
+      "toVerify": true
+    }
+  ]
+}

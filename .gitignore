@@ -1,0 +1,8 @@
+tests/bundle.cjs
+tests/shots/
+node_modules/
+site/
+datacache/
+newdata/
+__pycache__/
+.wrangler/

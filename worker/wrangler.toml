@@ -1,0 +1,16 @@
+# Ustawienia pośrednika „Dobre czy nie?” dla Cloudflare Workers (darmowy plan wystarczy).
+name = "dcn-off-proxy"
+main = "off-proxy.js"
+compatibility_date = "2026-06-01"
+
+[vars]
+# Na start serwer TESTOWY Open Food Facts. Po testach zmień na https://world.openfoodfacts.org i usuń OFF_BASIC.
+OFF_BASE = "https://world.openfoodfacts.net"
+OFF_BASIC = "off:off"
+# Adres(y) Twojej aplikacji, oddzielone przecinkami. Bez tego pośrednik odrzuci każde zapytanie.
+ALLOWED_ORIGINS = "https://rafalmsolutions.github.io"
+CONTACT_EMAIL = "rafalmsolutions@gmail.com"
+
+# OFF_USER i OFF_PASS NIE wpisuj tutaj. Dodaj je jako sekrety:
+#   npx wrangler secret put OFF_USER
+#   npx wrangler secret put OFF_PASS

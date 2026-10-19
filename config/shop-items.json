@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "note": "Za krople. Punktów ani kropli nie da się kupić za pieniądze.",
+  "items": [
+    {
+      "id": "seed_broccoli",
+      "kind": "seed",
+      "name": "Brokuł",
+      "price": {
+        "drops": 120
+      }
+    },
+    {
+      "id": "seed_pumpkin",
+      "kind": "seed",
+      "name": "Dynia",
+      "unlock": {
+        "level": 4
+      }
+    },
+    {
+      "id": "seed_strawberry",
+      "kind": "seed",
+      "name": "Truskawka",
+      "unlock": {
+        "weeklyChallenge": true
+      }
+    },
+    {
+      "id": "seed_golden_carrot",
+      "kind": "seed",
+      "name": "Złota marchewka",
+      "unlock": {
+        "event": "product_added"
+      },
+      "rare": true
+    },
+    {
+      "id": "deco_beehive",
+      "kind": "decoration",
+      "name": "Ul z pszczołami",
+      "price": {
+        "drops": 200
+      },
+      "effect": {
+        "growthBonusPct": 10
+      }
+    },
+    {
+      "id": "deco_scarecrow",
+      "kind": "decoration",
+      "name": "Strach na wróble",
+      "price": {
+        "drops": 80
+      }
+    },
+    {
+      "id": "outfit_straw_hat",
+      "kind": "outfit",
+      "name": "Słomkowy kapelusz",
+      "price": {
+        "drops": 150
+      }
+    },
+    {
+      "id": "theme_summer",
+      "kind": "theme",
+      "name": "Kolory „Lato”",
+      "price": {
+        "drops": 250
+      }
+    },
+    {
+      "id": "plus_7_days",
+      "kind": "plus_trial",
+      "name": "7 dni Plus",
+      "price": {
+        "drops": 600
+      },
+      "limit": {
+        "perMonth": 1
+      }
+    }
+  ]
+}

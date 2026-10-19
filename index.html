@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#2E9A3E">
+<meta name="description" content="Dobre czy nie? Sprawdź skład w 2 sekundy. Osobiste dopasowanie produktów do Twoich celów, półki zakupowe i Ziarenko, które cieszy się z Twoich mądrych wyborów.">
+<title>Dobre czy nie? – sprawdź skład w 2 sekundy</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="no-nav">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-torch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-2 6v12a2 2 0 0 1-2 2 2 2 0 0 1-2-2V8z"/><path d="M12 12v2"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M14 8v8M17 8v8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-shelf" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5" fill="none"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14l-1.5 7 5-3 5 3-1.5-7" fill="none"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 15.6 6.6 18.5l1.2-6L3.3 8.3l6.1-.7z" fill="#FFC93C" stroke="#C27700" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 16 20"><path d="M8 1C5 6 2 9.5 2 13a6 6 0 0 0 12 0c0-3.5-3-7-6-12z" fill="#4D9BFF" stroke="#1F5FC4" stroke-width="1.4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+</svg>
+
+<main id="app">
+  <section class="screen" id="scr-start" aria-labelledby="startTitle"></section>
+  <section class="screen" id="scr-home" aria-label="Dla Ciebie"></section>
+  <section class="screen" id="scr-product" aria-label="Produkt"></section>
+  <section class="screen" id="scr-shelves" aria-label="Moje półki"></section>
+  <section class="screen" id="scr-progress" aria-label="Twoje postępy"></section>
+  <section class="screen" id="scr-cats" aria-label="Wszystkie kategorie"></section>
+  <section class="screen" id="scr-list" aria-label="Najlepsze dla Ciebie"></section>
+  <section class="screen" id="scr-profile" aria-label="Profil"></section>
+</main>
+
+<nav class="tabbar" aria-label="Główne menu">
+  <a class="tab" href="#/" data-tab="home"><svg><use href="#i-home"/></svg>Dla Ciebie</a>
+  <a class="tab" href="#/polki" data-tab="shelves"><svg><use href="#i-shelf"/></svg>Półki</a>
+  <button class="tab-scan" type="button" data-act="scan" aria-label="Skanuj produkt"><svg><use href="#i-scan"/></svg></button>
+  <a class="tab" href="#/postepy" data-tab="progress"><svg><use href="#i-medal"/></svg>Postępy</a>
+  <a class="tab" href="#/profil" data-tab="profile"><svg><use href="#i-user"/></svg>Profil</a>
+</nav>
+
+<div class="scanner" id="scanner" hidden role="dialog" aria-modal="true" aria-label="Skaner kodów">
+  <video id="video" playsinline muted></video>
+  <div class="scan-top">
+    <button class="roundbtn" type="button" data-act="close-scan" aria-label="Zamknij skaner"><svg><use href="#i-x"/></svg></button>
+    <strong>Skanowanie</strong>
+    <button class="roundbtn" type="button" id="torchBtn" aria-label="Latarka" aria-pressed="false" hidden><svg><use href="#i-torch"/></svg></button>
+    <span id="torchSpacer" style="width:46px"></span>
+  </div>
+  <div class="reticle" id="reticle"><i></i></div>
+  <div class="scan-err" id="scanErr" hidden>
+    <strong id="scanErrTitle">Nie mamy dostępu do aparatu</strong>
+    <p class="small" id="scanErrText"></p>
+  </div>
+  <div class="scan-bottom">
+    <p id="scanHint">Skieruj aparat na kod kreskowy. Odczyt nastąpi sam.</p>
+    <form id="scanForm" novalidate><input class="field" id="scanCode" inputmode="numeric" autocomplete="off" maxlength="40" placeholder="albo wpisz cyfry spod kodu" aria-label="Kod kreskowy"><button class="btn btn-green btn-sm" type="submit">Sprawdź</button></form>
+    <p class="msg" id="scanMsg" role="status" style="color:#FFB4A6"></p>
+    <span class="btn btn-white btn-sm filebtn"><svg><use href="#i-photo"/></svg>Zdjęcie kodu<input type="file" id="codePhoto" accept="image/*" aria-label="Wybierz zdjęcie kodu kreskowego"></span>
+  </div>
+</div>
+
+<div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true" aria-labelledby="celHead"></div>
+
+<dialog id="howDlg" aria-labelledby="howTitle">
+  <div class="dlg">
+    <div class="sec-head"><h2 id="howTitle">Jak oceniamy produkty</h2><button class="btn btn-white iconbtn" type="button" data-act="close-dlg" aria-label="Zamknij"><svg><use href="#i-x"/></svg></button></div>
+    <p>Każdy produkt dostaje werdykt i ocenę od 0 do 100. Metoda jest jawna i taka sama dla wszystkich marek. Nie bierzemy pieniędzy od producentów.</p>
+    <h3>Osobiste dopasowanie</h3>
+    <ul><li>Bez celów i ograniczeń widzisz ogólną ocenę składu, taką samą dla wszystkich. Procent „dla Ciebie” pojawia się, gdy ustawisz cele albo to, czego unikasz.</li><li>Procent „dla Ciebie” to ocena produktu poprawiona o Twoje cele: +8 za każdy cel, który produkt wspiera, −12 za każdy, który wspiera słabiej.</li><li>Cele „mniej soli”, „mniej cukru” i „cholesterol” ustalają też granicę: gdy produkt ma dużo soli, cukru albo tłuszczów nasyconych (powyżej progów z etykiet: 1,5 g soli, 22,5 g cukru, 5 g tłuszczów nasyconych na 100 g), dopasowanie wynosi najwyżej 45%. Przy średniej ilości najwyżej 74%. Gdy baza nie podaje tej wartości, najwyżej 70%.</li><li>Jeśli produkt zawiera coś, czego unikasz (alergen, dieta, własny składnik), dopasowanie spada do 0–10%. Przy śladowych ilościach najwyżej do 35%.</li><li>Gdy baza nie ma danych, mówimy „Za mało danych” zamiast zgadywać.</li></ul>
+    <h3>Werdykty</h3>
+    <ul><li><b>Dobre na co dzień</b> (75–100), <b>Dobre</b> (50–74), <b>Od czasu do czasu</b> (25–49), <b>Raczej rzadko</b> (0–24). Żaden produkt nie jest „zakazany”, a liczy się cała dieta.</li></ul>
+    <h3>Jedzenie</h3>
+    <ul>
+      <li><b>Wartość odżywcza, 60%:</b> Nutri-Score z bazy Open Food Facts. A = 100, B = 75, C = 50, D = 25, E = 0.</li>
+      <li><b>Dodatki, 30%:</b> liczy się ryzyko, a nie sama obecność. Za dodatek z umiarkowanymi zastrzeżeniami odejmujemy 15 pkt, z dużymi 40 pkt.</li>
+      <li><b>Przetworzenie, 10%:</b> grupa NOVA. 1 = 100, 2 = 75, 3 = 50, 4 = 0.</li>
+      <li><b>Limit 49</b> dla E171 i azotynów oraz azotanów (E249–E252). <b>Produkty proste</b> nigdy nie dostają werdyktu „Raczej rzadko” za same kalorie.</li>
+    </ul>
+    <h3>Kosmetyki</h3>
+    <ul><li>Zaczynamy od 100. Za składnik z umiarkowanymi zastrzeżeniami odejmujemy 15 pkt, z dużymi 40 pkt i wtedy ocena nie przekroczy 49.</li></ul>
+    <h3>Źródła i alergie</h3>
+    <p>Opisy dodatków opieramy na stanowiskach EFSA, IARC, WHO i przepisach UE. Lista alergenów pochodzi z bazy tworzonej przez społeczność i może być niepełna. Zawsze sprawdź etykietę. Ocena ma charakter informacyjny i nie jest poradą medyczną.</p>
+  </div>
+</dialog>
+
+<dialog id="photoDlg" class="photo-dlg" aria-labelledby="photoName">
+  <div class="dlg stack">
+    <div class="sec-head"><h2 id="photoName" style="font-size:1.1rem">Zdjęcie produktu</h2><button class="btn btn-white iconbtn" type="button" data-act="close-dlg" aria-label="Zamknij"><svg><use href="#i-x"/></svg></button></div>
+    <div id="photoBox" class="photo-box"></div>
+    <p class="small muted">Zdjęcie pochodzi z bazy Open Food Facts (licencja CC BY-SA). Inny produkt albo stare opakowanie? Daj znać.</p>
+    <button class="btn btn-white" type="button" data-act="photo-report">Zgłoś złe zdjęcie</button>
+  </div>
+</dialog>
+
+<dialog id="reportDlg" aria-labelledby="repTitle">
+  <form class="dlg" id="reportForm" novalidate>
+    <div class="sec-head"><h2 id="repTitle">Zgłoś błąd</h2><button class="btn btn-white iconbtn" type="button" data-act="close-dlg" aria-label="Zamknij"><svg><use href="#i-x"/></svg></button></div>
+    <p class="small" id="repProduct"></p>
+    <fieldset class="rep-reasons"><legend class="small">Czego dotyczy problem?</legend>
+      <label><input type="radio" name="repReason" value="ingredients" data-label="Zły skład lub dodatki"> Zły skład lub dodatki</label>
+      <label><input type="radio" name="repReason" value="nutrition" data-label="Złe wartości odżywcze"> Złe wartości odżywcze</label>
+      <label><input type="radio" name="repReason" value="allergens" data-label="Brak lub zły alergen"> Brak lub zły alergen</label>
+      <label><input type="radio" name="repReason" value="name" data-label="Zła nazwa"> Zła nazwa</label>
+      <label><input type="radio" name="repReason" value="photo" data-label="Złe lub nieaktualne zdjęcie"> Złe lub nieaktualne zdjęcie</label>
+      <label><input type="radio" name="repReason" value="verdict" data-label="Werdykt wydaje się niesprawiedliwy"> Werdykt wydaje się niesprawiedliwy</label>
+      <label><input type="radio" name="repReason" value="missing" data-label="Brak produktu w bazie"> Brak produktu w bazie</label>
+      <label><input type="radio" name="repReason" value="other" data-label="Inny problem"> Inny problem</label>
+    </fieldset>
+    <label class="small" for="repComment">Opis (opcjonalnie) <span id="repCount" class="mono">0/1000</span></label>
+    <textarea class="field" id="repComment" maxlength="1000" placeholder="np. na opakowaniu nie ma oleju palmowego"></textarea>
+    <label class="small" for="repEmail">E-mail, jeśli chcesz odpowiedź (opcjonalnie)</label>
+    <input id="repEmail" type="email" autocomplete="email" class="field" placeholder="ty@przyklad.pl">
+    <p class="msg" id="repMsg" role="status"></p>
+    <button class="btn btn-green" type="submit" id="repSend">Wyślij zgłoszenie</button>
+    <p class="small muted" id="repFix">Błąd w danych możesz też poprawić sam w bazie: <a id="repFixLink" href="https://world.openfoodfacts.org" target="_blank" rel="noopener">otwórz produkt w Open Food Facts</a>.</p>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script src="game.js"></script>
+<script src="shelf.js"></script>
+<script src="art.js"></script>
+<script src="ui-base.js"></script>
+<script src="ui-home.js"></script>
+<script src="ui-product.js"></script>
+<script src="ui-shelves.js"></script>
+<script src="ui-progress.js"></script>
+<script src="ui-main.js"></script>
+</body>
+</html>

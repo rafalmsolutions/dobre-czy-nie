@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2E9A3E">
+<title>Polityka prywatności – Dobre czy nie?</title>
+<style>
+  :root{--ink:#2B2416;--muted:#6E6250;--green:#2E9A3E;--bg:#FFF6E5;--card:#FFFFFF;--line:#EADBC0}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+  h1{font-size:1.6rem;line-height:1.2;margin:8px 0 4px}
+  h2{font-size:1.15rem;margin:22px 0 6px}
+  section{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:4px 16px 12px;margin-top:12px}
+  a{color:#1E6B2A;font-weight:600}
+  .muted{color:var(--muted);font-size:.92rem}
+  .todo{background:#FFE9A8;border-radius:6px;padding:0 4px}
+  ul{padding-left:20px}
+  .back{display:inline-block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← Wróć do aplikacji</a>
+  <h1>Polityka prywatności aplikacji „Dobre czy nie?”</h1>
+  <p class="muted">Wersja z dnia <span class="todo">[data]</span>.</p>
+
+  <section>
+    <h2>1. Kto odpowiada za Twoje dane</h2>
+    <p>Administratorem danych jest <span class="todo">[imię i nazwisko]</span>, <span class="todo">[adres do korespondencji]</span>, e-mail: <a href="mailto:rafalmsolutions@gmail.com">rafalmsolutions@gmail.com</a>.</p>
+  </section>
+
+  <section>
+    <h2>2. Jakie dane przetwarzamy</h2>
+    <p>Aplikacja nie ma kont. Większość danych zostaje <b>wyłącznie w Twoim telefonie</b>:</p>
+    <ul>
+      <li>Twoje imię (jeśli je podasz), cele, diety, alergie i składniki, których unikasz;</li>
+      <li>historia sprawdzonych produktów, półki zakupowe, punkty i odznaki.</li>
+    </ul>
+    <p>Nie wysyłamy tych danych do nas ani nikomu innemu. Informacje o alergiach i dietach mogą dotyczyć zdrowia, dlatego zostają tylko w telefonie.</p>
+    <p>Wszystkie te dane usuniesz w aplikacji: <b>Profil → Usuń wszystkie moje dane</b>. Znikną też po wyczyszczeniu danych aplikacji albo jej odinstalowaniu.</p>
+  </section>
+
+  <section>
+    <h2>3. Co wysyłamy do Open Food Facts</h2>
+    <ul>
+      <li><b>Sprawdzanie produktu:</b> wysyłamy do bazy Open Food Facts (lub Open Beauty Facts) tylko kod kreskowy produktu. Nie wysyłamy Twoich danych osobowych.</li>
+      <li><b>Dodawanie produktu (tylko gdy sam to zrobisz):</b> wysyłamy zdjęcia opakowania, nazwę produktu oraz losowy identyfikator aplikacji, który nie zawiera Twojego imienia ani adresu e-mail. Zdjęcia stają się publiczne na licencji CC BY-SA, a dane na licencji ODbL. Nie fotografuj osób.</li>
+      <li>Dodany produkt trafia do Open Food Facts przez nasz serwer pośredniczący w usłudze Cloudflare Workers. Serwer tylko przekazuje dane, nie zapisuje zdjęć i nie łączy ich z Tobą.</li>
+      <li><b>Listy najlepszych produktów i porównania:</b> pobieramy je przez ten sam serwer pośredniczący. Wysyłamy tylko nazwę kategorii, np. „jogurty”. Twoje cele i ograniczenia zostają w telefonie.</li>
+      <li>Open Food Facts jest niezależną fundacją i ma własną <a href="https://world.openfoodfacts.org/privacy" target="_blank" rel="noopener">politykę prywatności</a>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Hosting</h2>
+    <p>Aplikacja i kopia bazy produktów są publikowane w serwisie GitHub Pages (GitHub, Inc.). Przy otwarciu aplikacji GitHub widzi Twój adres IP, jak przy każdej stronie internetowej. Nie wysyłamy tam Twojego profilu ani historii.</p>
+  </section>
+
+  <section>
+    <h2>4. Aparat</h2>
+    <p>Aplikacja używa aparatu tylko do odczytu kodu kreskowego i do zdjęć opakowań, gdy sam je robisz. Obraz z podglądu nie jest zapisywany ani wysyłany. Odczyt tekstu ze zdjęcia składu odbywa się w Twoim telefonie.</p>
+  </section>
+
+  <section>
+    <h2>5. Statystyki i ciasteczka</h2>
+    <p>Aplikacja nie używa ciasteczek, reklam ani narzędzi śledzących. Czcionki pobieramy z Google Fonts, a moduły skanera i odczytu tekstu z publicznych serwerów CDN (jsDelivr, unpkg). Te serwery widzą Twój adres IP jak przy otwarciu zwykłej strony.</p>
+  </section>
+
+  <section>
+    <h2>6. Zgłoszenia błędów</h2>
+    <p>Jeśli wyślesz zgłoszenie błędu, otwiera się Twoja poczta z gotową wiadomością. Otrzymamy jej treść i Twój adres e-mail. Używamy go tylko do odpowiedzi i usuwamy wiadomość po 12 miesiącach.</p>
+  </section>
+
+  <section>
+    <h2>7. Twoje prawa</h2>
+    <p>Masz prawo do dostępu do danych, ich poprawiania, usunięcia, ograniczenia przetwarzania i sprzeciwu. Możesz też złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych (<a href="https://uodo.gov.pl" target="_blank" rel="noopener">uodo.gov.pl</a>). Napisz do nas: <a href="mailto:rafalmsolutions@gmail.com">rafalmsolutions@gmail.com</a>.</p>
+  </section>
+
+  <section>
+    <h2>8. Zmiany</h2>
+    <p>O zmianach tej polityki poinformujemy w aplikacji.</p>
+  </section>
+  <p class="muted">Ocena produktów ma charakter informacyjny i nie jest poradą medyczną.</p>
+</main>
+</body>
+</html>

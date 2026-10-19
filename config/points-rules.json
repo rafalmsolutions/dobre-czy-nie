@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "note": "Punkty budują poziom i nigdy nie znikają. Każdy punkt dodaje też 1 kroplę do wydania w ogródku i sklepiku. Limity chronią przed nabijaniem punktów.",
+  "dropsPerPoint": 1,
+  "events": {
+    "product_checked": {
+      "points": 2,
+      "dailyCap": 20,
+      "oncePerProductPerDay": true
+    },
+    "guess_right": {
+      "points": 10,
+      "oncePerProductPerDay": true,
+      "group": "guess"
+    },
+    "guess_wrong": {
+      "points": 3,
+      "oncePerProductPerDay": true,
+      "group": "guess"
+    },
+    "question_of_day": {
+      "points": 5,
+      "dailyCount": 1
+    },
+    "swap_to_better": {
+      "points": 15,
+      "dailyCap": 45,
+      "oncePerProductPerDay": true
+    },
+    "list_completed": {
+      "points": 10,
+      "oncePerShelfPerDay": true
+    },
+    "store_tagged": {
+      "points": 5,
+      "dailyCap": 25
+    },
+    "photo_added": {
+      "points": 10,
+      "dailyCap": 30
+    },
+    "product_added": {
+      "points": 50,
+      "dailyCap": 150,
+      "grantWhen": "Open Food Facts przyjął produkt z nazwą i 3 zdjęciami (przód, skład, wartości)",
+      "oncePerBarcode": true
+    },
+    "report_sent": {
+      "points": 10,
+      "dailyCap": 30
+    },
+    "weekly_challenge_done": {
+      "points": 50
+    },
+    "friend_joined": {
+      "points": 50,
+      "monthlyCap": 250
+    },
+    "harvest": {
+      "points": 20
+    },
+    "added_product_viewed_by_other": {
+      "points": 0,
+      "drops": 1,
+      "dailyCap": 20
+    },
+    "shelf_add": {
+      "points": 5,
+      "dailyCap": 25,
+      "oncePerProductPerDay": true
+    },
+    "explanation_opened": {
+      "points": 0,
+      "oncePerProductPerDay": true
+    },
+    "additive_read": {
+      "points": 0
+    },
+    "app_opened": {
+      "points": 0
+    },
+    "shelf_shared": {
+      "points": 0
+    }
+  }
+}

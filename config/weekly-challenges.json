@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "note": "Jedno wyzwanie na tydzień, od poniedziałku. Nagroda zawsze ta sama skala.",
+  "challenges": [
+    {
+      "id": "swap3",
+      "title": "Zamień 3 produkty na lepsze dla Ciebie",
+      "metric": "swap_to_better",
+      "target": 3,
+      "reward": {
+        "points": 50,
+        "items": [
+          "seed_strawberry"
+        ]
+      }
+    },
+    {
+      "id": "guess5",
+      "title": "Zgadnij 5 razy: dobre czy nie?",
+      "metric": "guess_any",
+      "target": 5,
+      "reward": {
+        "points": 50
+      }
+    },
+    {
+      "id": "store5",
+      "title": "Wskaż sklep dla 5 produktów",
+      "metric": "store_tagged",
+      "target": 5,
+      "reward": {
+        "points": 50
+      }
+    },
+    {
+      "id": "newcat",
+      "title": "Sprawdź produkty z 3 różnych kategorii",
+      "metric": "distinct_categories",
+      "target": 3,
+      "reward": {
+        "points": 50
+      }
+    }
+  ]
+}
