@@ -1,5 +1,5 @@
 /* Dobre czy nie? 1.0 – service worker: aplikacja działa i otwiera się szybko także przy słabym zasięgu w sklepie. */
-const VERSION = 'dcn-1.0.3';
+const VERSION = 'dcn-1.0.4';
 const SHELL = ['./', 'index.html', 'styles.css', 'config.js', 'data.js', 'core.js', 'game.js', 'shelf.js', 'art.js',
   'ui-base.js', 'ui-home.js', 'ui-product.js', 'ui-shelves.js', 'ui-progress.js', 'ui-main.js',
   'config/points-rules.json', 'config/levels.json', 'config/achievements.json', 'config/weekly-challenges.json',
@@ -25,7 +25,8 @@ self.addEventListener('fetch', e => {
   }
   // Pliki aplikacji: najpierw sieć (poprawki docierają od razu), bez sieci kopia.
   if (url.origin === self.location.origin) {
-    e.respondWith(fetch(e.request).then(r => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); } return r; })
+    // no-cache: pytamy serwer o nowszą wersję, zamiast brać plik z pamięci przeglądarki (GitHub Pages trzyma ją 10 minut).
+    e.respondWith((e.request.mode === 'navigate' ? fetch(e.request) : fetch(e.request, { cache: 'no-cache' })).then(r => { if (r.ok) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); } return r; })
       .catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || (e.request.mode === 'navigate' ? caches.match('index.html') : Response.error()))));
     return;
   }

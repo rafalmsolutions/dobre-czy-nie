@@ -247,7 +247,11 @@
         out.push(`<div class="pctl alt-score"><b class="pctl-n">${p}%</b><span class="small">${sentence}</span></div><div class="pctl-bar alt-score" aria-hidden="true"><i style="left:${p}%"></i></div>`);
       }
       // Zamiennik musi być naprawdę lepszy dla tej osoby: co najmniej „Dobre dopasowanie” i wyżej niż obecny produkt.
-      const alts = cmp.alternatives.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct));
+      // Zamiennik musi należeć do tej samej, najwęższej kategorii co skanowany produkt (krem orzechowy → krem orzechowy, a nie dżem),
+      // a dopasowanie musi być co najmniej dobre i wyższe niż obecnego produktu.
+      const narrow = cats[0];
+      const altSrc = narrow ? compareInCategory(mine.prod, mine.an, list.filter(x => (x.categories || []).includes(narrow)), A.profile).alternatives : cmp.alternatives;
+      const alts = altSrc.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct));
       mine.alts = alts;
       if (alts.length) {
         const best = alts[0];
