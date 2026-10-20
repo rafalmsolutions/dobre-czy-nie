@@ -96,7 +96,9 @@ export default {
       const r = await fetch(`${base}/cgi/product_jqm2.pl`, { method: 'POST', body: fields, headers });
       upstream = r.status;
       const txt = await r.text();
-      try { saved = JSON.parse(txt); } catch (e) { saved = null; verbose = txt.replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300); }
+      try { saved = JSON.parse(txt); } catch (e) { saved = null; const plain = txt.replace(/<(script|style|head|nav|header|footer)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        const hit = plain.match(/[^.!?]{0,160}(hasł|password|nieprawidł|incorrect|invalid|zablokow|blocked|uprawnie|permission|forbidden|not allowed|nie masz)[^.!?]{0,160}/i);
+        verbose = (hit ? hit[0] : plain.slice(-300)).trim(); }
     } catch (e) { saved = null; verbose = String(e).slice(0, 160); }
     // Do diagnozy zwracamy kod i opis odpowiedzi Open Food Facts (bez haseł i danych logowania).
     if (!saved || saved.status !== 1) return reply(502, { ok: false, error: 'off_save', upstream, verbose: (saved && saved.status_verbose ? String(saved.status_verbose) : verbose).slice(0, 300) });
