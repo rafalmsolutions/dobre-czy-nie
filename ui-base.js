@@ -227,21 +227,32 @@ const App = {};
     return j.product;
   }
   const hasData = p => p && (p.product_name || p.product_name_pl || p.ingredients_text || p.ingredients_text_pl || p.nutriscore_grade);
+  // Jedna baza z jedną cichą ponowną próbą: serwery Open Food Facts czasem odpowiadają chwilowym błędem
+  // („Strona tymczasowo niedostępna”), a druga próba po chwili zwykle się udaje.
+  async function fetchWithRetry(base, code) {
+    let last;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), attempt ? 10000 : 7000);
+      try { return { p: await fetchProduct(base, code, ctrl.signal) }; }
+      catch (e) { last = e; if (e && e.kind === 'offline') break; }
+      finally { clearTimeout(timer); }
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return { error: last && last.kind ? last : A.fetchError('network') };
+  }
   A.lookup = async code => {
     if (navigator.onLine === false) throw A.fetchError('offline');
-    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
-    try {
-      // Najpierw jedzenie; baza kosmetyków tylko wtedy, gdy w jedzeniu nic nie ma (limit 15 odczytów na minutę).
-      let f = null, b = null, failed = null;
-      try { f = await fetchProduct(OFF, code, ctrl.signal); } catch (e) { failed = e; }
-      if (hasData(f)) return normalizeProduct(f, 'off');
-      try { b = await fetchProduct(OBF, code, ctrl.signal); } catch (e) { failed = failed || e; }
-      if (hasData(b)) return normalizeProduct(b, 'obf');
-      if (failed) throw failed.kind ? failed : A.fetchError('network');
-      if (f) return normalizeProduct(f, 'off');
-      if (b) return normalizeProduct(b, 'obf');
-      return null;
-    } finally { clearTimeout(timer); }
+    // Najpierw jedzenie; baza kosmetyków tylko wtedy, gdy w jedzeniu nic nie ma (limit 15 odczytów na minutę).
+    const f = await fetchWithRetry(OFF, code);
+    if (hasData(f.p)) return normalizeProduct(f.p, 'off');
+    const b = await fetchWithRetry(OBF, code);
+    if (hasData(b.p)) return normalizeProduct(b.p, 'obf');
+    // Baza jedzenia odpowiedziała „nie ma”, a kosmetyków ma problem: produkt najpewniej jest nieznany,
+    // więc pokazujemy „Tego produktu jeszcze nie znamy” zamiast błędu.
+    if (f.error) throw f.error;
+    if (f.p) return normalizeProduct(f.p, 'off');
+    if (b.p) return normalizeProduct(b.p, 'obf');
+    return null;
   };
   const TTL = 24 * 3600e3;
   /* Produkty z kategorii (listy „Najlepsze” i porównanie po skanie).

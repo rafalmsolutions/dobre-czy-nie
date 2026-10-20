@@ -82,6 +82,7 @@ export async function setup(ctx, opts = {}) {
   await ctx.route(/openfoodfacts\.org\/api\/v2\/product\/(\d+)/, async r => {
     const c = r.request().url().match(/product\/(\d+)/)[1];
     if (opts.offDown) return r.fulfill({ status: 503, body: '<html>Page temporarily unavailable</html>' });
+    if (opts.offFailOnce && !opts._failed) { opts._failed = true; return r.fulfill({ status: 503, body: '<html>Strona tymczasowo niedostępna</html>' }); }
     if (opts.offSlow) await new Promise(res => setTimeout(res, opts.offSlow));
     if (c === C.err500) return r.fulfill({ status: 500, body: 'Internal error' });
     if (c === C.err429) return r.fulfill({ status: 429, body: 'Too many' });

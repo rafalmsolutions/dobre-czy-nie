@@ -14,14 +14,14 @@ const browser = await chromium.launch();
 async function fresh(opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: opts.width || 390, height: 844 }, serviceWorkers: 'block', permissions: ['clipboard-read', 'clipboard-write'] });
   await setup(ctx, opts);
-  if (opts.proxy || opts.stats) {
-    await ctx.route(/\/config\.js$/, async r => {
-      let body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
-      if (opts.proxy) body = body.replace("offProxyUrl: ''", "offProxyUrl: 'https://proxy.test/'");
-      if (opts.stats) body = body.replace("goatcounter: ''", "goatcounter: 'testdcn'");
-      r.fulfill({ body, contentType: 'text/javascript' });
-    });
-  }
+  // Testy nigdy nie łączą się z prawdziwym pośrednikiem ani statystykami: podmieniamy config.js.
+  await ctx.route(/\/config\.js$/, async r => {
+    let body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
+    body = body.replace(/offProxyUrl: '[^']*'/, `offProxyUrl: '${opts.proxy ? 'https://proxy.test/' : ''}'`);
+    body = body.replace(/goatcounter: '[^']*'/, `goatcounter: '${opts.stats ? 'testdcn' : ''}'`);
+    r.fulfill({ body, contentType: 'text/javascript' });
+  });
+  await ctx.route(/workers\.dev|goatcounter\.com\/count/, r => opts.stats && /goatcounter/.test(r.request().url()) ? r.fallback() : r.abort());
   if (opts.stats) {
     opts.hits = [];
     await ctx.route(/goatcounter\.com\/count/, r => { const u = new URL(r.request().url()); opts.hits.push({ p: u.searchParams.get('p'), e: u.searchParams.get('e') === 'true', url: u.href }); r.fulfill({ status: 200, body: '' }); });
@@ -203,11 +203,11 @@ await section('Alergie, brak danych, XSS', async () => {
 await section('Błędy sieci i brak produktu', async () => {
   const { ctx, page } = await fresh();
   for (const [code, frag] of [[C.err500, 'chwilowy problem'], [C.err429, 'Za dużo'], [C.badjson, 'chwilowy problem'], [C.half, 'chwilowy problem']]) {
-    await go(page, '#/p/' + code); await page.waitForTimeout(700);
+    await go(page, '#/p/' + code); await page.waitForSelector('#notFound', { timeout: 8000 }).catch(() => {});
     ok((await txt(page, '#notFound h1')).includes(frag), 'błąd ' + code.slice(-2) + ': ' + frag);
     ok(await page.locator('[data-act=retry]').count() === 1, 'przycisk „Spróbuj ponownie”');
   }
-  await page.click('[data-act=retry]'); await page.waitForTimeout(600);
+  await page.click('[data-act=retry]'); await page.waitForTimeout(2500);
   ok(await page.locator('#notFound').count() === 1, 'ponowienie nadal pokazuje błąd zamiast się wysypać');
   // offline: zapisany wynik
   await page.evaluate(() => { App.settings.guess = false; App.saveSettings(); });
@@ -219,6 +219,13 @@ await section('Błędy sieci i brak produktu', async () => {
   await go(page, '#/p/' + C.ham); await page.waitForTimeout(500);
   ok((await txt(page, '#notFound h1')).includes('offline'), 'offline bez zapisu: komunikat');
   await ctx.setOffline(false);
+  await ctx.setOffline(false);
+  // chwilowy błąd bazy przy pierwszym zapytaniu: cicha ponowna próba, bez okna błędu
+  const fo = { offFailOnce: true };
+  const f1 = await fresh(fo);
+  await go(f1.page, '#/p/' + C.missing); await f1.page.waitForSelector('#notFound', { timeout: 8000 });
+  ok((await txt(f1.page, '#notFound h1')).includes('jeszcze nie znamy'), 'chwilowy błąd bazy: od razu „nie znamy”, bez okna błędu');
+  await f1.ctx.close();
   // brak produktu bez pośrednika: instrukcja
   await go(page, '#/p/' + C.missing); await page.waitForTimeout(600);
   ok((await txt(page, '#notFound h1')).includes('jeszcze nie znamy'), 'brak produktu: zachęta');
