@@ -41,7 +41,7 @@ Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
 ## Album odkryć (tylko w wersji D)
 
 - Każdy sprawdzony produkt to karta (`album.js`, stan w `d-album`). Nowa karta → nakładka „Nowa karta” (stuknij, żeby odsłonić), potem punkty.
-- Rzadkość z liczby skanów w Open Food Facts (`unique_scans_n`, progi `scanTiers` w `data/meta.json`: epicka = 10% najrzadziej skanowanych, rzadka do 40%, reszta zwykła). Legendarna = produkt dodany przez Ciebie. Błysk ✦ ok. 1 na 20 kart, losowany raz na zawsze (identyfikator telefonu + kod).
+- Rzadkość losowana raz na zawsze (telefon + produkt); rzadko skanowane produkty (`unique_scans_n` z Open Food Facts) mają większe szanse: 0–1 skanów → 9% epickich i 26% rzadkich, 2–9 → 6% / 22%, 10+ → 3% / 17%. Same progi z rozkładu nie działały, bo połowa polskich produktów ma 0 skanów. Legendarna = produkt dodany przez Ciebie. Błysk ✦ ok. 1 na 20 kart, losowany raz na zawsze (identyfikator telefonu + kod).
 - Szkic = w bazie brakuje składu albo wartości; po uzupełnieniu karta ożywa.
 - Strony = 50 kategorii ze zdjęciami talerzy (w tym Piwo, Śmietana, Jajka, Mięso, Owoce, Warzywa – tylko w D), po 10 miejsc; pełna strona: gratulacje, +100 pkt, odznaka „Kolekcjoner”. Dodatkowe strony bez limitu: Różne, Kosmetyki.
 - Karta tygodnia: jedna kategoria na tydzień, złota ramka i +30 pkt.

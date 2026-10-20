@@ -1,6 +1,6 @@
 /* Dobre czy nie? – wersja D: „Album odkryć”.
-   Każdy sprawdzony produkt to karta. Rzadkość wynika z tego, ile osób skanowało produkt w Open Food Facts
-   (progi w data/meta.json → scanTiers), legendarna = produkt dodany przez Ciebie, błysk ✦ wypada raz na ok. 20 kart
+   Każdy sprawdzony produkt to karta. Rzadkość jest losowana raz na zawsze, a rzadko skanowane produkty (unique_scans_n
+   z Open Food Facts) mają większe szanse na kartę rzadką i epicką; legendarna = produkt dodany przez Ciebie, błysk ✦ wypada raz na ok. 20 kart
    (losowany raz na zawsze dla danego produktu). Karta produktu z brakami w bazie jest szkicem, a po uzupełnieniu ożywa.
    Strona albumu = kategoria ze zdjęciem talerza, 10 miejsc. Stan w pamięci telefonu (klucz d-album). */
 'use strict';
@@ -31,15 +31,25 @@
 
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   A.cardHolo = code => hash(A.appUuid() + '|' + code) % 20 === 0;
+  /* Rzadkość to losowanie (raz na zawsze dla pary telefon + produkt), w którym rzadko skanowane produkty mają większe szanse.
+     Same liczby skanów nie wystarczą: w polskiej bazie połowa produktów ma 0 skanów, a 80% najwyżej 1,
+     więc progi z rozkładu robiły z większości kart „epickie”. Szanse na 1000 kart: [epicka, rzadka]. */
+  const ODDS = { low: [90, 260], mid: [60, 220], high: [30, 170] };
+  A.RARITY_ODDS = ODDS;
+  A.scanBand = s => s == null ? 'mid' : s <= 1 ? 'low' : s < 10 ? 'mid' : 'high';
   A.cardRarity = prod => {
     const local = A.store.get('local', {})[prod.code] || {};
     if (prod.added || local.added) return 'legendarna';
     let s = prod.scans;
     if (s == null && tiers) s = 0; // nowa kopia bazy nie zapisuje zera: brak liczby = nikt nie skanował
-    if (s == null) return 'zwykla';
-    const t = tiers || { epic: 2, rare: 10 };
-    return s <= t.epic ? 'epicka' : s <= t.rare ? 'rzadka' : 'zwykla';
+    const [epic, rare] = ODDS[A.scanBand(s)], roll = hash(A.appUuid() + '|r|' + prod.code) % 1000;
+    return roll < epic ? 'epicka' : roll < epic + rare ? 'rzadka' : 'zwykla';
   };
+  // Karty z pierwszej wersji albumu (progi z rozkładu skanów, przez które większość wychodziła „epicka”) losujemy jeszcze raz.
+  if (A.store.get('d-album-v', 1) < 2) {
+    for (const c of Object.values(A.album.cards)) if (c.r !== 'legendarna') c.r = A.cardRarity({ code: c.c, scans: c.sc == null ? null : c.sc });
+    save(); A.store.set('d-album-v', 2);
+  }
   // Szkic: w bazie brakuje składu albo wartości odżywczych (tak samo jak przycisk „Uzupełnij”).
   A.cardSketch = (prod, snapshot) => prod.kind !== 'cosmetic' && ((!prod.ingredients && !(snapshot && prod.additiveTags != null)) || !Object.values(prod.nutriments || {}).some(v => v != null));
   A.pageKeyOf = prod => prod.kind === 'cosmetic' ? 'cosmetics' : (A.prodCatKey(prod) || 'other');

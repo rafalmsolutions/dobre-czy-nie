@@ -14,7 +14,7 @@
   const scansText = c => {
     if (c.r === 'legendarna') return 'dodane przez Ciebie';
     if (c.sc == null) return 'zeskanowana przez Ciebie';
-    return c.sc <= 1 ? 'pierwszy skan w Polsce' : `skanowało ${c.sc.toLocaleString('pl-PL')} ${plural(c.sc, 'osoba', 'osoby', 'osób')}`;
+    return { low: 'rzadko skanowany', mid: 'czasem skanowany', high: 'często skanowany' }[A.scanBand(c.sc)];
   };
   /* Karta produktu. size = szerokość w px (wysokość 1,4×). */
   A.cardHtml = (c, size, idx) => {
@@ -44,9 +44,9 @@
     const have = Math.min(A.ALBUM_SLOTS, A.cardsOf(c.k).length), isCat = SHOP_CATEGORIES.some(x => x.key === c.k);
     const R = A.RARITY[c.r], h1 = c.h ? ['Błyszcząca', 'karta ✦'] : c.s && c.r === 'zwykla' ? ['Nowy', 'szkic'] : R.h1;
     const text = c.r === 'legendarna' ? 'Tego produktu nie było w bazie. Jesteś pierwszą osobą w Polsce, która go dodała.'
-      : c.r === 'epicka' ? (c.sc != null && c.sc <= 1 ? 'Nikt przed Tobą nie skanował go w Polsce. Prawdziwe odkrycie.' : `Przed Tobą sprawdziło go tylko ${c.sc} ${plural(c.sc || 0, 'osoba', 'osoby', 'osób')}. Prawdziwe odkrycie.`)
-      : c.r === 'rzadka' ? `Skanowało go tylko ${c.sc} ${plural(c.sc || 0, 'osoba', 'osoby', 'osób')} w Polsce.`
-      : 'Ten produkt zna już wiele osób. Każda karta przybliża Cię do pełnej strony.';
+      : c.r === 'epicka' ? 'Trafia się mniej więcej raz na 15 kart. Prawdziwe odkrycie.' + (A.scanBand(c.sc) === 'low' ? ' Ten produkt rzadko ktoś skanuje, więc szansa była większa.' : '')
+      : c.r === 'rzadka' ? 'Trafia się mniej więcej raz na 4 karty.' + (A.scanBand(c.sc) === 'low' ? ' Rzadko skanowane produkty częściej dają rzadkie karty.' : '')
+      : 'Każda karta przybliża Cię do pełnej strony. Rzadko skanowane produkty częściej dają rzadkie karty.';
     const extra = [c.h ? 'Błysk trafia się mniej więcej raz na 20 kart.' : '', c.w ? 'To karta tygodnia: złota ramka i +30 pkt.' : '', c.s ? 'W bazie brakuje danych tego produktu. Uzupełnij je, a karta nabierze kolorów.' : ''].filter(Boolean).join(' ');
     box.innerHTML = `<div class="rv-wrap">
       <div class="rv-top"><button class="rv-x" type="button" data-act="reveal-close" aria-label="Zamknij"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span>Album · ${esc(page.label)}</span><span style="width:44px"></span></div>

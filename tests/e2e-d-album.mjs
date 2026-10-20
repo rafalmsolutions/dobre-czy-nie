@@ -20,6 +20,9 @@ await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'r
 const pts1 = await page.evaluate(() => App.game.points);
 ok(pts1 > pts0, `odsłonięcie daje punkty (${pts0} → ${pts1})`);
 ok(await page.evaluate(c => !!App.album.cards[c], C.nutella), 'karta w albumie');
+const dist = await page.evaluate(() => { const n = { zwykla: 0, rzadka: 0, epicka: 0 }; for (let i = 0; i < 4000; i++) n[App.cardRarity({ code: String(5900000100000 + i), scans: [0, 1, 3, 40][i % 4] })]++; return n; });
+ok(dist.epicka > 160 && dist.epicka < 400 && dist.rzadka > 700 && dist.rzadka < 1100, `rzadkość: ok. 6% epickich i 23% rzadkich (${JSON.stringify(dist)})`);
+ok(await page.evaluate(() => { let lo = 0, hi = 0; for (let i = 0; i < 3000; i++) { if (App.cardRarity({ code: String(5900000200000 + i), scans: 0 }) !== 'zwykla') lo++; if (App.cardRarity({ code: String(5900000200000 + i), scans: 500 }) !== 'zwykla') hi++; } return lo > hi; }), 'rzadko skanowane częściej dają rzadkie karty');
 await page.click('.rv-btns [data-act=reveal-close]'); await page.waitForTimeout(300);
 ok(!(await page.locator('#reveal').isVisible()), 'zamknięcie nakładki');
 // ten sam produkt drugi raz: bez nakładki
