@@ -194,9 +194,12 @@ const App = {};
     if (A.routes[screen]) A.routes[screen](arg);
     if (changed) {
       // Przy pierwszym ekranie strona jest już na górze – pomijamy przewijanie (wymusza dodatkowe przeliczenie układu).
-      if (!first) window.scrollTo({ top: 0 });
-      const h1 = document.querySelector('#scr-' + screen + ' h1');
-      if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
+      if (!first) {
+        window.scrollTo({ top: 0 });
+        // Po zmianie ekranu czytnik ekranu zaczyna od nagłówka. Przy starcie aplikacji nie trzeba (strona i tak czyta się od góry).
+        const h1 = document.querySelector('#scr-' + screen + ' h1');
+        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
+      }
     }
   };
 
