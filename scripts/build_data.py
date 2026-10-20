@@ -187,7 +187,21 @@ def write_json(path, obj):
         json.dump(obj, f, ensure_ascii=False, separators=(',', ':'))
 
 
+def scan_tiers(pop):
+    """Progi rzadkości: epicka = 10% najrzadziej skanowanych produktów, rzadka = do 40%, reszta zwykła."""
+    vals = sorted(int(v or 0) for v in pop.values())
+    if not vals:
+        return {'epic': 2, 'rare': 10}
+    q = lambda f: vals[min(len(vals) - 1, int(f * (len(vals) - 1)))]
+    epic = max(1, q(0.10))
+    return {'epic': epic, 'rare': max(epic + 1, q(0.40))}
+
+
 def build(products, pop, out, built=None, log=print):
+    # Liczba skanów w Open Food Facts: z niej wersja D liczy rzadkość karty w albumie.
+    for code, p in products.items():
+        if pop.get(code):
+            p['unique_scans_n'] = int(pop[code])
     shards = defaultdict(dict)
     for code, p in products.items():
         shards[code[-3:]][code] = p
@@ -206,7 +220,8 @@ def build(products, pop, out, built=None, log=print):
                    {'tag': t, 'count': len(codes), 'products': [products[c] for c in codes[:CAT_MAX]]})
         written += 1
     meta = {'built': built or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'country': COUNTRY,
-            'products': len(products), 'categories': written, 'source': 'Open Food Facts (ODbL)'}
+            'products': len(products), 'categories': written, 'source': 'Open Food Facts (ODbL)',
+            'scanTiers': scan_tiers(pop)}
     write_json(os.path.join(out, 'meta.json'), meta)
     log(f'Zapisano: {len(products)} produktów w {len(shards)} plikach, {written} kategorii.')
     return meta

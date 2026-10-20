@@ -3,7 +3,7 @@
 
 const OFF = 'https://world.openfoodfacts.org';
 const OBF = 'https://world.openbeautyfacts.org';
-const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,image_ingredients_url,image_nutrition_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy';
+const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,image_ingredients_url,image_nutrition_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy,unique_scans_n';
 const ZXING_URLS = ['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js', 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js', 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js'];
 const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 
@@ -206,6 +206,7 @@ function normalizeProduct(p, source) {
     imageLarge: p.image_front_url || p.image_url || p.image_front_small_url || '',
     imageIngredients: p.image_ingredients_url || '', imageNutrition: p.image_nutrition_url || '',
     stores: (Array.isArray(p.stores) ? p.stores : typeof p.stores === 'string' ? p.stores.split(',') : Array.isArray(p.stores_tags) ? p.stores_tags : []).map(x => String(x).trim()).filter(Boolean).slice(0, 20),
+    scans: p.unique_scans_n != null && isFinite(Number(p.unique_scans_n)) ? Math.max(0, Math.round(Number(p.unique_scans_n))) : null,
     nutriscore: (p.nutriscore_grade || '').toLowerCase(), nova: p.nova_group || null,
     additiveTags: Array.isArray(p.additives_tags) ? p.additives_tags : (typeof p.additives_tags === 'string' ? [p.additives_tags] : (Array.isArray(p.ingredients_tags) && p.ingredients_tags.length ? p.ingredients_tags.filter(t => /^en:e\d{3}/.test(t)) : null)),
     allergens: Array.isArray(p.allergens_tags) ? p.allergens_tags : [], traces: Array.isArray(p.traces_tags) ? p.traces_tags : [],

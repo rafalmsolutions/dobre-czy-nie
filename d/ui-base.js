@@ -40,6 +40,11 @@ const App = {};
   };
 
   /* ---------- Konfiguracja grywalizacji (pliki config/*.json) ---------- */
+  A.ALBUM_RULES = {
+    card_common: { points: 2, oncePerBarcode: true }, card_rare: { points: 5, oncePerBarcode: true }, card_epic: { points: 15, oncePerBarcode: true },
+    card_legend: { points: 50, oncePerBarcode: true }, card_holo: { points: 20, oncePerBarcode: true }, card_weekly: { points: 30, oncePerBarcode: true },
+    album_page: { points: 100, oncePerBarcode: true }
+  };
   A.cfg = A.store.get('cfg', { rules: {}, levels: {}, achievements: {}, challenges: {} });
   A.loadConfig = async () => {
     const names = { rules: 'points-rules', levels: 'levels', achievements: 'achievements', challenges: 'weekly-challenges' };
@@ -53,6 +58,8 @@ const App = {};
       // Wersja 1.0 pokazuje odznaki oznaczone "1.0"; reszta przyjdzie z kolejnymi wersjami.
       const v = A.CFG.appVersion || '1.0';
       c.achievements = Object.assign({}, c.achievements, { achievements: (c.achievements.achievements || []).filter(a => !a.inVersion || parseFloat(a.inVersion) <= parseFloat(v)) });
+      // Wersja D: punkty za karty albumu (raz na produkt) i pełne strony.
+      c.rules = Object.assign({}, c.rules, { events: Object.assign({}, (c.rules || {}).events, A.ALBUM_RULES) });
       A.cfg = c; A.store.set('cfg', c);
     } catch (e) { /* bez sieci: zostaje ostatnia zapisana konfiguracja */ }
   };
@@ -72,7 +79,8 @@ const App = {};
     return {
       breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
       data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0),
-      profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0)
+      profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0),
+      ...(A.albumMetrics ? A.albumMetrics() : {})
     };
   };
 
@@ -171,8 +179,7 @@ const App = {};
     if (!reward) return '';
     if (typeof reward === 'string') return `<span class="reward-chip green">${A.esc(reward)}</span>`;
     const out = [];
-    if (reward.points) out.push(`<span class="reward-chip gold">+${reward.points} pkt</span>`, `<span class="reward-chip blue">+${reward.points} kropli</span>`);
-    (reward.items || []).forEach(i => out.push(`<span class="reward-chip red">${A.esc(ITEM_NAMES[i] || 'Nagroda')}</span>`));
+    if (reward.points) out.push(`<span class="reward-chip gold">+${reward.points} pkt</span>`); // wersja D: bez kropli i nasion
     return out.join('');
   };
   const ITEM_NAMES = { seed_strawberry: 'Nasiona truskawki', seed_golden_carrot: 'Złota marchewka', seed_pumpkin: 'Nasiona dyni', deco_rainbow_fence: 'Tęczowy płotek', tool_golden_can: 'Złota konewka' };
@@ -317,11 +324,13 @@ const App = {};
     else if (h === '#/profil') screen = 'profile';
     else if (h === '#/start') screen = 'start';
     else if (h === '#/najlepsze') screen = 'cats';
+    else if (h === '#/album') screen = 'album';
+    else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
-    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen));
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
-    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === screen) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };

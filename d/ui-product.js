@@ -78,6 +78,7 @@
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
     mergeLocal(prod);
+    A.albumAdd(prod); // pełne dane z bazy: szkic z kopii może od razu ożyć (bez komunikatu)
     const guess = cur.guess, alts = cur.alts;
     const an = analyze(prod), pm = personalMatch(prod, an, A.profile);
     A.remember(prod, an, pm);
@@ -104,6 +105,12 @@
     const ask = A.settings.guess !== false && pm.pct != null && !guessedToday(prod.code) && !opts.local;
     if (!ask) cur.guess = 'skip-silent';
     render();
+    // Wersja D: karta do albumu. Nowa karta → nakładka z odsłonięciem; uzupełniony szkic → karta ożywa.
+    if (!opts.local || prod.added) {
+      const res = A.albumAdd(prod, { snapshot: !!opts.snapshot });
+      if (res && res.isNew) setTimeout(() => { if (cur && cur.prod && cur.prod.code === prod.code) A.showReveal(res); else A.albumReward(res); }, 350);
+      else if (res && res.revived) { A.toast('Karta ożyła! Dane produktu są już pełne.'); A.sound('badge'); }
+    }
   }
 
   /* ---------- Widok produktu ---------- */
@@ -159,7 +166,7 @@
       screen(parts.join(''));
       return;
     }
-    if (cur.guess === 'right') parts.push(`<div class="banner right" role="status">${A.mascot('cheer', 48)}<div><b>Trafione! +10 pkt</b><span class="small">Plus 10 kropli do ogródka.</span></div></div>`);
+    if (cur.guess === 'right') parts.push(`<div class="banner right" role="status">${A.mascot('cheer', 48)}<div><b>Trafione! +10 pkt</b><span class="small">Twoja intuicja rośnie.</span></div></div>`);
     else if (cur.guess === 'wrong') parts.push(`<div class="banner wrong" role="status">${A.mascot('wink', 48)}<div><b>Tym razem pudło. +3 pkt</b><span class="small">${esc(wrongHint())}</span></div></div>`);
     const lvl = pm.level;
     const ringColor = { great: '#2E9A3E', good: '#7CBF3A', poor: '#F0B021', bad: '#D9412B' }[lvl] || '#C9CFD6';
@@ -443,7 +450,8 @@
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
       cur.an = analyze(p); cur.pm = personalMatch(p, cur.an, A.profile); A.remember(p, cur.an, cur.pm);
       render();
-      A.toast(saved.length ? 'Dziękujemy! Ocena uwzględnia już Twoje dane.' : 'Możesz wrócić do uzupełniania w każdej chwili.');
+      const res = A.albumAdd(p); if (res && res.revived) { A.toast('Karta ożyła! Dziękujemy za uzupełnienie danych.'); A.sound('badge'); }
+      else A.toast(saved.length ? 'Dziękujemy! Ocena uwzględnia już Twoje dane.' : 'Możesz wrócić do uzupełniania w każdej chwili.');
     } });
   };
 

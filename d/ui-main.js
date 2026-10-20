@@ -53,6 +53,8 @@
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
       case 'cel-ok': A.nextCelebration(); break;
+      case 'reveal-flip': case 'reveal-close': case 'reveal-page': case 'reveal-album': A.revealAction(act, el); break;
+      case 'share-page': A.sharePage(el.dataset.k); break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;
@@ -82,8 +84,14 @@
     if (e.key === 'Escape') {
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
       if (!A.$('scanner').hidden) { e.preventDefault(); A.closeScanner(); return; }
+      if (!A.$('reveal').hidden) { e.preventDefault(); A.closeReveal(); return; }
     }
     // Pułapka fokusu w pełnoekranowych gratulacjach.
+    // Pułapka fokusu w nakładce nowej karty.
+    if (e.key === 'Tab' && !A.$('reveal').hidden && A.$('celebrate').hidden) {
+      const f = [...A.$('reveal').querySelectorAll('button, a[href]')]; if (!f.length) return;
+      const i = f.indexOf(document.activeElement); e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); return;
+    }
     if (e.key === 'Tab' && !A.$('celebrate').hidden) { e.preventDefault(); const b = A.$('celebrate').querySelector('[data-act=cel-ok]'); if (b) b.focus(); }
   });
 

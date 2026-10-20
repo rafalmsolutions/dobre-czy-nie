@@ -2,6 +2,10 @@
  "version": 2,
  "note": "Wersja D: każda odznaka ma 3 stopnie (brąz, srebro, złoto). Nowy stopień = jeden wpis.",
  "categories": {
+  "album": {
+   "label": "Album",
+   "color": "#FFF1C7"
+  },
   "odkrywanie": {
    "label": "Odkrywanie",
    "color": "#C9DAEC"
@@ -20,6 +24,186 @@
   }
  },
  "achievements": [
+  {
+   "id": "kolekcjoner-1",
+   "base": "kolekcjoner",
+   "tier": 1,
+   "name": "Kolekcjoner",
+   "category": "album",
+   "icon": "album",
+   "description": "Zapełnij 1 stronę albumu.",
+   "metric": "album_pages",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "kolekcjoner-2",
+   "base": "kolekcjoner",
+   "tier": 2,
+   "name": "Kolekcjoner",
+   "category": "album",
+   "icon": "album",
+   "description": "Zapełnij 5 stron albumu.",
+   "metric": "album_pages",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "kolekcjoner-3",
+   "base": "kolekcjoner",
+   "tier": 3,
+   "name": "Kolekcjoner",
+   "category": "album",
+   "icon": "album",
+   "description": "Zapełnij 15 stron albumu.",
+   "metric": "album_pages",
+   "target": 15,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "rzadkosci-1",
+   "base": "rzadkosci",
+   "tier": 1,
+   "name": "Łowca rzadkości",
+   "category": "album",
+   "icon": "gem",
+   "description": "Zdobądź 1 epicką kartę.",
+   "metric": "epic_cards",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "rzadkosci-2",
+   "base": "rzadkosci",
+   "tier": 2,
+   "name": "Łowca rzadkości",
+   "category": "album",
+   "icon": "gem",
+   "description": "Zdobądź 10 epickich kart.",
+   "metric": "epic_cards",
+   "target": 10,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "rzadkosci-3",
+   "base": "rzadkosci",
+   "tier": 3,
+   "name": "Łowca rzadkości",
+   "category": "album",
+   "icon": "gem",
+   "description": "Zdobądź 30 epickich kart.",
+   "metric": "epic_cards",
+   "target": 30,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "blysk-1",
+   "base": "blysk",
+   "tier": 1,
+   "name": "Błysk",
+   "category": "album",
+   "icon": "sparkle",
+   "description": "Zdobądź 1 błyszczącą kartę.",
+   "metric": "holo_cards",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "blysk-2",
+   "base": "blysk",
+   "tier": 2,
+   "name": "Błysk",
+   "category": "album",
+   "icon": "sparkle",
+   "description": "Zdobądź 3 błyszczące karty.",
+   "metric": "holo_cards",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "blysk-3",
+   "base": "blysk",
+   "tier": 3,
+   "name": "Błysk",
+   "category": "album",
+   "icon": "sparkle",
+   "description": "Zdobądź 10 błyszczących kart.",
+   "metric": "holo_cards",
+   "target": 10,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "legenda-1",
+   "base": "legenda",
+   "tier": 1,
+   "name": "Legenda",
+   "category": "album",
+   "icon": "crown",
+   "description": "Dodaj do bazy 1 produkt, których nikt jeszcze nie dodał (karta legendarna).",
+   "metric": "legend_cards",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "legenda-2",
+   "base": "legenda",
+   "tier": 2,
+   "name": "Legenda",
+   "category": "album",
+   "icon": "crown",
+   "description": "Dodaj do bazy 3 produkty, których nikt jeszcze nie dodał (karta legendarna).",
+   "metric": "legend_cards",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "legenda-3",
+   "base": "legenda",
+   "tier": 3,
+   "name": "Legenda",
+   "category": "album",
+   "icon": "crown",
+   "description": "Dodaj do bazy 10 produktów, których nikt jeszcze nie dodał (karta legendarna).",
+   "metric": "legend_cards",
+   "target": 10,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
   {
    "id": "detektyw-1",
    "base": "detektyw",
@@ -555,51 +739,6 @@
    "description": "Miej na półce 5 produktów na śniadanie z dobrym dopasowaniem.",
    "metric": "breakfast_on_shelf",
    "target": 5,
-   "reward": {
-    "points": 50
-   },
-   "inVersion": "1.0"
-  },
-  {
-   "id": "odkrywca-1",
-   "base": "odkrywca",
-   "tier": 1,
-   "name": "Odkrywca",
-   "category": "baza",
-   "icon": "plus",
-   "description": "Dodaj do bazy 1 produkt, których jeszcze nie było.",
-   "metric": "products_added",
-   "target": 1,
-   "reward": {
-    "points": 10
-   },
-   "inVersion": "1.0"
-  },
-  {
-   "id": "odkrywca-2",
-   "base": "odkrywca",
-   "tier": 2,
-   "name": "Odkrywca",
-   "category": "baza",
-   "icon": "plus",
-   "description": "Dodaj do bazy 3 produkty, których jeszcze nie było.",
-   "metric": "products_added",
-   "target": 3,
-   "reward": {
-    "points": 25
-   },
-   "inVersion": "1.0"
-  },
-  {
-   "id": "odkrywca-3",
-   "base": "odkrywca",
-   "tier": 3,
-   "name": "Odkrywca",
-   "category": "baza",
-   "icon": "plus",
-   "description": "Dodaj do bazy 10 produktów, których jeszcze nie było.",
-   "metric": "products_added",
-   "target": 10,
    "reward": {
     "points": 50
    },

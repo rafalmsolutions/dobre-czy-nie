@@ -1,8 +1,8 @@
 /* Dobre czy nie? – wersja D (do porównania z główną aplikacją). Service worker działa tylko w folderze d/.
    Pamięć podręczna ma własny przedrostek „dcn-d-”, więc nie usuwa pamięci głównej aplikacji. */
-const VERSION = 'dcn-d-1.3.1';
+const VERSION = 'dcn-d-1.4.0';
 const SHELL = ['./', 'index.html', 'styles.css', 'd.css', 'config.js', 'data.js', 'core.js', 'game.js', 'shelf.js', 'art.js',
-  'ui-base.js', 'ui-home.js', 'ui-product.js', 'ui-shelves.js', 'ui-progress.js', 'ui-complete.js', 'ui-main.js',
+  'ui-base.js', 'album.js', 'ui-album.js', 'ui-home.js', 'ui-product.js', 'ui-shelves.js', 'ui-progress.js', 'ui-complete.js', 'ui-main.js',
   '../config/points-rules.json', '../config/levels.json', '../config/achievements.json', '../config/weekly-challenges.json',
   '../privacy.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'achievements.json'];
 

@@ -66,3 +66,12 @@ function medalSvg(glyphKey, cat, earned, size, tier, extraClass) {
 function shieldSvg(n, size) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#2B2C30"/><text x="50" y="50" dy=".36em" text-anchor="middle" font-family="Montserrat, system-ui, sans-serif" font-weight="800" font-size="44" fill="#FFFFFF">${Number(n) || 1}</text></svg>`;
 }
+
+/* Wersja D: ikony odznak albumu. */
+Object.assign(GLYPH, {
+  album: 'M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h11M9 8h5M9 11h5',
+  gem: 'M6 4h12l3 5-9 11L3 9zM3 9h18M9 4l3 16 3-16',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+  crown: 'M3 8l4 4 5-7 5 7 4-4-2 11H5zM5 19h14'
+});
+D_MEDAL.album = '#FFF1C7';

@@ -37,3 +37,14 @@ Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
 - Generowane w przeglądarce (Web Audio, `A.sound` w `ui-base.js`), bez plików i licencji.
 - Skan, trafiony/nietrafiony typ, odłożenie na półkę, nowa odznaka (złoto ma dłuższą melodię), nowy poziom, wyzwanie. Na Androidzie także wibracje.
 - Przełącznik „Dźwięki i wibracje” w profilu (`settings.sound`). Na iPhonie przełącznik wyciszenia w telefonie też wycisza aplikację.
+
+## Album odkryć (tylko w wersji D)
+
+- Każdy sprawdzony produkt to karta (`album.js`, stan w `d-album`). Nowa karta → nakładka „Nowa karta” (stuknij, żeby odsłonić), potem punkty.
+- Rzadkość z liczby skanów w Open Food Facts (`unique_scans_n`, progi `scanTiers` w `data/meta.json`: epicka = 10% najrzadziej skanowanych, rzadka do 40%, reszta zwykła). Legendarna = produkt dodany przez Ciebie. Błysk ✦ ok. 1 na 20 kart, losowany raz na zawsze (identyfikator telefonu + kod).
+- Szkic = w bazie brakuje składu albo wartości; po uzupełnieniu karta ożywa.
+- Strony = 44 kategorie ze zdjęciami talerzy, po 10 miejsc; pełna strona: gratulacje, +100 pkt, odznaka „Kolekcjoner”. Dodatkowe strony bez limitu: Różne, Kosmetyki.
+- Karta tygodnia: jedna kategoria na tydzień, złota ramka i +30 pkt.
+- Punkty za karty (raz na produkt): zwykła 2, rzadka 5, epicka 15, legendarna 50, błysk +20; reguły w `A.ALBUM_RULES` (`ui-base.js`). Krople ukryte.
+- Zakładka „Album” zastąpiła „Postępy” (odznaki i poziom: link w albumie i gwiazdka z punktami).
+- Test w przeglądarce: `tests/e2e-d-album.mjs`.
