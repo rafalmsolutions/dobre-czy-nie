@@ -175,7 +175,7 @@ const App = {};
   const NAME_RULES = [
     [/\b(parowk|kielbas|kabanos|frankfurter)/, 'en:sausages'],
     [/\b(sardyn|tunczyk|szprot|makrel)/, 'en:canned-fishes'],
-    [/\b(losos|dorsz|pstrag|mintaj|filet rybn|ryba|ryby)/, 'en:fishes'],
+    [/\b(losos|dorsz|pstrag|mintaj|filet rybn|ryba|ryby|sledz|fish)/, 'en:fishes'],
     [/\b(szynk|poledwic|salami|boczek|wedlin|baleron|mortadel)/, 'en:prepared-meats'],
     [/\b(krem (orzech|kakao|czekol)|nutell|maslo orzech|pasta orzech)/, 'en:sweet-spreads'],
     [/\b(napoj (owsian|sojow|migdal|ryzow|kokos|roslin))/, 'en:plant-based-milk-alternatives'],
@@ -199,7 +199,7 @@ const App = {};
     [/\bketchup/, 'en:ketchup'],
     [/\b(sos|sosy|pesto|majonez)\b/, 'en:sauces'],
     [/\b(olej|oliwa)/, 'en:vegetable-oils'],
-    [/\b(ogork|kiszon|marynowan)/, 'en:pickles'],
+    [/\b(ogork|kiszon|marynowan|korniszon|gherkin|pickle)/, 'en:pickles'],
     [/\b(kukurydz|groszek)/, 'en:canned-vegetables'],
     [/\b(zupa|bulion|rosol|barszcz|zurek|krem z)/, 'en:soups'],
     [/\b(pierog|uszka|kopytk|pyzy)/, 'en:pierogi'],
