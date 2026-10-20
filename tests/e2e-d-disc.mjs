@@ -84,10 +84,21 @@ await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(600); a
 ok(await pts() >= p2 + 53, 'potwierdzone odkrycie: +50 i +1 za każdą z 3 osób (' + (await pts() - p2) + ')');
 await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(300);
 ok(await pts() >= p2 + 53 && await pts() <= p2 + 53 + 60, 'ponowna synchronizacja nie płaci drugi raz');
+// 5b. Awans na zaufanego odkrywcę
+S.mine = Object.assign({}, S.mine, { trusted: true, level: 'trusted', streak: 5, need: 10, confirmed: 5 });
+const p3 = await pts();
+await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(600);
+ok(await page.locator('#celebrate').isVisible() && (await txt('#celebrate')).includes('Zaufany odkrywca'), 'awans: odznaka „Zaufany odkrywca” na pełny ekran');
+await page.screenshot({ path: shots + 'disc-trusted.png' });
+await closeCel();
+ok(await pts() >= p3 + 100, 'awans: +100 pkt (' + (await pts() - p3) + ')');
+await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(300);
+ok(await pts() < p3 + 200, 'awans nagradzany tylko raz');
 // 6. Ekran „Twoje odkrycia”
 await page.goto('http://localhost:8790/d/index.html#/odkrycia'); await page.waitForTimeout(900); await closeCel();
 const d = await txt('#scr-discoveries');
 ok(d.includes('Jogurt testowy 2%') && d.includes('potwierdzone') && d.includes('5900000000999'), 'odkrycia: moje produkty i lista „Poszukiwane”');
+ok(d.includes('Zaufany odkrywca') && d.includes('5 z 15'), 'odkrycia: stopień i postęp do strażnika bazy');
 await page.screenshot({ path: shots + 'disc-page.png', fullPage: true });
 await page.goto('http://localhost:8790/d/index.html#/album'); await page.waitForTimeout(600);
 ok((await txt('#scr-album')).includes('Twoje odkrycia'), 'album: wejście do „Twoich odkryć”');

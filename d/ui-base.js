@@ -77,6 +77,7 @@ const App = {};
     if (great.size !== g0) A.store.set('d-great', [...great].slice(-1000));
     const c = (A.game && A.game.counters) || {}, p = A.profile || {};
     return {
+      disc_best: (A.disc && A.disc.best) || 0,
       breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
       data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0),
       profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0),

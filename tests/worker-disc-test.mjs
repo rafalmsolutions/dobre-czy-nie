@@ -39,14 +39,29 @@ await call('/disc/submit', { device: dev(1), code: B, name: 'Baton XXL', checks:
 await call('/disc/vote', { device: dev(7), code: B, vote: 'no' }); r = await call('/disc/vote', { device: dev(8), code: B, vote: 'no' });
 ok(r.j.status === 'rejected', 'dwa „to inny produkt”: odrzucony');
 r = await call(`/disc/mine?device=${dev(1)}`); ok(r.j.rejected === 1 && !r.j.trusted, 'odrzucenie: autor nie jest zaufany');
-// zaufany odkrywca
-for (let i = 0; i < 3; i++) {
+// zaufany odkrywca (seria 5 potwierdzonych)
+for (let i = 0; i < 5; i++) {
   const code = ean('5900000006' + String(i).padStart(2, '0'));
   await call('/disc/submit', { device: dev(20), code, name: 'Produkt ' + i, checks: JSON.stringify({ barcode: 'match' }) });
   await call('/disc/vote', { device: dev(30 + i), code, vote: 'yes' }); await call('/disc/vote', { device: dev(40 + i), code, vote: 'yes' });
 }
-r = await call('/disc/submit', { device: dev(20), code: Cc, name: 'Czwarty', checks: JSON.stringify({ barcode: 'match' }) });
-ok(r.j.status === 'confirmed' && r.j.trusted, 'zaufany (3 potwierdzone): od razu potwierdzony');
+r = await call(`/disc/mine?device=${dev(20)}`);
+ok(r.j.level === 'trusted' && r.j.streak === 5 && r.j.need === 10, 'po 5 potwierdzonych: zaufany odkrywca, 10 do strażnika');
+const origRandom = Math.random; Math.random = () => 0.5;
+r = await call('/disc/submit', { device: dev(20), code: Cc, name: 'Szósty', checks: JSON.stringify({ barcode: 'match' }) });
+ok(r.j.status === 'confirmed' && r.j.trusted, 'zaufany: od razu potwierdzony');
+Math.random = () => 0.05;
+r = await call('/disc/submit', { device: dev(20), code: ean('590000000710'), name: 'Kontrola', checks: JSON.stringify({ barcode: 'match' }) });
+ok(r.j.status === 'pending' && r.j.spot, 'wyrywkowa kontrola: zaufany też czeka na potwierdzenie');
+Math.random = origRandom;
+await call('/disc/vote', { device: dev(90), code: ean('590000000710'), vote: 'no' }); await call('/disc/vote', { device: dev(91), code: ean('590000000710'), vote: 'no' });
+r = await call(`/disc/mine?device=${dev(20)}`);
+ok(r.j.level === 'new' && r.j.streak === 0 && r.j.confirmed === 6, 'odrzucenie w kontroli: utrata statusu, seria od zera');
+// strażnik bazy: głos liczy się podwójnie
+sqlite.prepare("INSERT INTO devices (device, confirmed, streak) VALUES (?, 15, 15)").run(dev(95));
+const G = ean('590000000720');
+await call('/disc/submit', { device: dev(96), code: G, name: 'Dla strażnika', checks: '{}' });
+r = await call('/disc/vote', { device: dev(95), code: G, vote: 'yes' }); ok(r.j.weight === 2 && r.j.status === 'confirmed', 'strażnik: głos waży 2, sam wystarcza do potwierdzenia');
 r = await call('/disc/submit', { device: dev(20), code: ean('590000000700'), name: 'Bez kodu', checks: JSON.stringify({ barcode: 'none' }) });
 ok(r.j.status === 'pending', 'zaufany, ale bez kodu na zdjęciu: czeka na potwierdzenie');
 // poszukiwane

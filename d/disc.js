@@ -12,7 +12,8 @@
     product_added: { points: 10, dailyCap: 50, oncePerBarcode: true },
     discovery_confirmed: { points: 50, oncePerBarcode: true }, discovery_wanted: { points: 100, oncePerBarcode: true },
     discovery_view: { points: 1, oncePerBarcode: true, dailyCap: 100 },
-    disc_vote: { points: 5, dailyCap: 50, oncePerBarcode: true }, disc_unsure: { points: 2, dailyCap: 20, oncePerBarcode: true }
+    disc_vote: { points: 5, dailyCap: 50, oncePerBarcode: true }, disc_unsure: { points: 2, dailyCap: 20, oncePerBarcode: true },
+    disc_trusted: { points: 100, oncePerBarcode: true }, disc_guardian: { points: 100, oncePerBarcode: true }
   });
   const VIEW_MAX = 100;
   const proxy = () => (A.CFG.offProxyUrl || '').replace(/\/$/, '');
@@ -43,7 +44,7 @@
     A.disc.items[code] = Object.assign(A.disc.items[code] || {}, { name, at: Date.now(), status: 'pending', views: 0, paidViews: 0 });
     save();
     const r = await api('/disc/submit', { device: A.appUuid(), code, name, nick: A.disc.nick || '', checks: JSON.stringify(checks || {}) });
-    if (r && r.ok) { A.disc.items[code].status = r.status; A.disc.items[code].wanted = !!r.wanted; save(); payout(); }
+    if (r && r.ok) { Object.assign(A.disc.items[code], { status: r.status, wanted: !!r.wanted, spot: !!r.spot }); save(); payout(); }
     return r;
   };
   /* Nagrody za potwierdzone odkrycia i za osoby, które sprawdziły produkt. */
@@ -69,8 +70,16 @@
     synced = Date.now();
     const r = await api('/disc/mine?device=' + encodeURIComponent(A.appUuid()));
     if (!r || !r.ok) return;
-    Object.assign(A.disc, { trusted: !!r.trusted, confirmed: r.confirmed || 0, rejected: r.rejected || 0 });
+    const before = A.disc.level || 'new';
+    Object.assign(A.disc, { trusted: !!r.trusted, confirmed: r.confirmed || 0, rejected: r.rejected || 0, level: r.level || (r.trusted ? 'trusted' : 'new'), streak: r.streak || 0, need: r.need || 0 });
+    A.disc.best = Math.max(A.disc.best || 0, A.disc.streak);
+    const rank = { new: 0, trusted: 1, guardian: 2 };
+    if (rank[A.disc.level] > rank[before]) {
+      if (A.disc.level === 'guardian') { A.award('disc_guardian', { code: 'guardian' }); A.toast('Zostałeś strażnikiem bazy! Twoje potwierdzenia liczą się teraz podwójnie.', '<a href="#/odkrycia">Zobacz</a>'); }
+      else { A.award('disc_trusted', { code: 'trusted' }); A.toast('Zostałeś zaufanym odkrywcą! Twoje produkty trafiają do albumu od razu, bez czekania.', '<a href="#/odkrycia">Zobacz</a>'); }
+    } else if (rank[A.disc.level] < rank[before]) A.toast('Jeden z Twoich produktów został odrzucony w kontroli, więc znów czekają na potwierdzenie. Seria liczy się od nowa.');
     (r.items || []).forEach(x => { const it = A.disc.items[x.code] = Object.assign(A.disc.items[x.code] || { paidViews: 0 }, { name: x.name, status: x.status, views: x.views, wanted: !!x.wanted, at: x.at }); if (!it.name) it.name = x.code; });
+    save();
     payout();
   };
 
@@ -96,7 +105,7 @@
       <div class="disc-prod">${img ? `<img src="${esc(img)}" alt="Zdjęcie przodu z bazy">` : ''}<b>${esc(r.name || prod.name || '')}</b></div>
       <button class="btn btn-green btn-block" type="button" data-act="disc-vote" data-v="yes">Tak, to ten sam</button>
       <div class="disc-row"><button class="btn btn-white" type="button" data-act="disc-vote" data-v="no">Nie, to inny</button><button class="btn btn-white" type="button" data-act="disc-vote" data-v="unsure">Nie mam pewności</button></div>
-      <p class="small muted center">+5 pkt za „tak” lub „nie”, +2 za „nie mam pewności”. Nagroda jest za Twój czas, nie za wynik.</p></div>` };
+      <p class="small muted center">+5 pkt za „tak” lub „nie”, +2 za „nie mam pewności”. Nagroda jest za Twój czas, nie za wynik.${A.disc.level === 'guardian' ? ' Jako strażnik bazy liczysz się podwójnie.' : ''}</p></div>` };
     A.discFill(prod.code);
   };
   A.discVote = async btn => {
@@ -123,9 +132,13 @@
       el.innerHTML = `<div class="wrap">
         <div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Album · strona specjalna</span>${A.hudPill()}</div>
         <h1 class="al-h"><span class="w-light">Twoje</span> <span class="w-bold">odkrycia</span></h1>
-        <div class="disc-trust${A.disc.trusted ? ' on' : ''}"><span class="disc-shield" aria-hidden="true">${A.dIcon('healthy', 22)}</span><span class="stack" style="gap:3px"><b>${A.disc.trusted ? 'Zaufany odkrywca' : 'Nowy odkrywca'}</b><span class="small">${A.disc.trusted ? 'Twoje nowe produkty trafiają do albumu od razu, bez czekania na potwierdzenie.' : `Każdy nowy produkt potwierdzają 2 kolejne osoby. Po 3 potwierdzonych bez zastrzeżeń zostaniesz zaufanym odkrywcą (masz ${Math.min(3, A.disc.confirmed || conf)}/3).`}</span></span></div>
+        ${(() => { const lv = A.disc.level || (A.disc.trusted ? 'trusted' : 'new'), st = A.disc.streak || 0;
+          const L = { new: ['Nowy odkrywca', `Każdy Twój produkt potwierdzają 2 kolejne osoby. Po 5 potwierdzonych z rzędu zostaniesz zaufanym odkrywcą.`, st, 5],
+            trusted: ['Zaufany odkrywca', 'Twoje produkty trafiają do albumu od razu, bez czekania. Mniej więcej co 10. przechodzi wyrywkową kontrolę: odrzucenie zeruje serię. Po 15 z rzędu zostaniesz strażnikiem bazy.', st, 15],
+            guardian: ['Strażnik bazy', 'Twoje produkty trafiają do albumu od razu, a Twoje odpowiedzi „czy to ten produkt?” liczą się podwójnie. Wyrywkowa kontrola obowiązuje nadal.', st, 0] }[lv];
+          return `<div class="disc-trust${lv !== 'new' ? ' on' : ''}"><span class="disc-shield" aria-hidden="true">${A.dIcon('healthy', 22)}</span><span class="stack" style="gap:4px;flex:1"><b>${L[0]}</b><span class="small">${L[1]}</span>${L[3] ? `<span class="disc-steps"><span class="xp"><i style="width:${Math.min(100, L[2] / L[3] * 100)}%"></i></span><span class="small">${L[2]} z ${L[3]} potwierdzonych z rzędu</span></span>` : ''}</span></div>`; })()}
         <div class="al-stats three"><div><b>${items.length}</b><span>dodanych</span></div><div><b>${conf}</b><span>potwierdzonych</span></div><div><b>${views}</b><span>${plural(views, 'osoba sprawdziła', 'osoby sprawdziły', 'osób sprawdziło')}</span></div></div>
-        ${items.length ? `<div class="stack" style="gap:10px">${items.map(([code, it]) => `<a class="disc-item ${STATUS[it.status] ? STATUS[it.status][1] : 'pending'}" href="#/p/${esc(code)}"><span class="disc-ic" aria-hidden="true">${it.status === 'confirmed' ? '★' : it.status === 'rejected' ? '!' : '…'}</span><span class="grow stack" style="gap:2px"><b>${esc(it.name || code)}</b><span class="small">${esc((STATUS[it.status] || STATUS.pending)[0])}${it.wanted ? ' · poszukiwany (+100)' : ''}${it.views ? ` · sprawdziło ${it.views} ${plural(it.views, 'osoba', 'osoby', 'osób')}` : ''}</span></span></a>`).join('')}</div>`
+        ${items.length ? `<div class="stack" style="gap:10px">${items.map(([code, it]) => `<a class="disc-item ${STATUS[it.status] ? STATUS[it.status][1] : 'pending'}" href="#/p/${esc(code)}"><span class="disc-ic" aria-hidden="true">${it.status === 'confirmed' ? '★' : it.status === 'rejected' ? '!' : '…'}</span><span class="grow stack" style="gap:2px"><b>${esc(it.name || code)}</b><span class="small">${esc((STATUS[it.status] || STATUS.pending)[0])}${it.spot && it.status === 'pending' ? ' (wyrywkowa kontrola)' : ''}${it.wanted ? ' · poszukiwany (+100)' : ''}${it.views ? ` · sprawdziło ${it.views} ${plural(it.views, 'osoba', 'osoby', 'osób')}` : ''}</span></span></a>`).join('')}</div>`
           : '<div class="empty stack"><b>Nie dodałeś jeszcze żadnego produktu</b><span>Gdy zeskanujesz coś, czego nie ma w bazie, zrób 3 zdjęcia i dodaj to. Za potwierdzony produkt dostaniesz złotą kartę i +50 pkt.</span></div>'}
         <div class="card stack"><b style="font-family:var(--f-display)">Poszukiwane</b><span class="small muted">Te kody ktoś skanował, a bazy brak. Masz taki produkt w domu? Dodanie daje podwójną nagrodę (+100).</span>
           ${wanted == null ? '<div class="sk" style="height:60px"></div>' : wanted.length ? wanted.slice(0, 10).map(w => `<a class="disc-want" href="#/p/${esc(w.code)}"><span class="mono">${esc(w.code)}</span><b>szukało ${w.n} ${plural(w.n, 'osoba', 'osoby', 'osób')}</b></a>`).join('') : '<span class="small">Na razie nic. Wróć za kilka dni.</span>'}</div>

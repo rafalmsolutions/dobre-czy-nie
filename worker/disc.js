@@ -7,13 +7,17 @@
    POST /disc/miss    device, code                        → ktoś zeskanował kod, którego nie ma w bazie
    GET  /disc/wanted                                      → „Poszukiwane”: kody, których szukało najwięcej osób
 
-   Zasady: 2 potwierdzenia „tak” → produkt potwierdzony; 2 × „nie” → odrzucony. Zaufany odkrywca (3 potwierdzone, 0 odrzuconych)
-   ma produkty potwierdzone od razu, chyba że na zdjęciach nie było widać kodu. Głos z tego samego adresu IP co autor się nie liczy.
+   Zasady: 2 potwierdzenia „tak” → produkt potwierdzony; 2 × „nie” → odrzucony. Głos z tego samego adresu IP co autor się nie liczy.
+   Stopnie (seria = potwierdzone od ostatniego odrzucenia; odrzucenie zeruje serię):
+   - zaufany odkrywca (seria ≥ 5): produkty potwierdzone od razu, jeśli kod był widoczny na zdjęciu; mniej więcej co 10. trafia
+     do wyrywkowej kontroli (zwykłe potwierdzenie przez innych);
+   - strażnik bazy (seria ≥ 15): jak wyżej, a jego „tak”/„nie” przy cudzych produktach liczy się podwójnie.
    Urządzenie = losowy identyfikator aplikacji (bez konta). Adres IP przechowujemy tylko jako skrót. */
 
 const UUID_RE = /^[a-z0-9-]{16,64}$/;
 const LIMITS = { submit: 10, vote: 10, miss: 40 };
 const NEED = 2;
+const TRUSTED = 5, GUARDIAN = 15, SPOT = 0.1;
 
 const clean = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 const day = () => new Date().toISOString().slice(0, 10);
@@ -28,13 +32,16 @@ async function bump(db, device, kind) {
   return (row && row.n) || 1;
 }
 async function trustOf(db, device) {
-  const d = await db.prepare('SELECT confirmed, rejected, disagree FROM devices WHERE device = ?').bind(device).first();
-  const c = (d && d.confirmed) || 0, r = (d && d.rejected) || 0, x = (d && d.disagree) || 0;
-  return { confirmed: c, rejected: r, disagree: x, trusted: c >= 3 && r === 0 };
+  const d = await db.prepare('SELECT confirmed, rejected, disagree, streak FROM devices WHERE device = ?').bind(device).first();
+  const c = (d && d.confirmed) || 0, r = (d && d.rejected) || 0, x = (d && d.disagree) || 0, st = (d && d.streak) || 0;
+  const level = st >= GUARDIAN ? 'guardian' : st >= TRUSTED ? 'trusted' : 'new';
+  return { confirmed: c, rejected: r, disagree: x, streak: st, level, trusted: level !== 'new', need: level === 'new' ? TRUSTED - st : level === 'trusted' ? GUARDIAN - st : 0 };
 }
+const confirmDevice = (db, device) => db.prepare('INSERT INTO devices (device, confirmed, streak) VALUES (?, 1, 1) ON CONFLICT(device) DO UPDATE SET confirmed = confirmed + 1, streak = streak + 1').bind(device).run();
 async function settle(db, code, status, author) {
   await db.prepare('UPDATE subs SET status = ? WHERE code = ?').bind(status, code).run();
-  await db.prepare(`INSERT INTO devices (device, ${status}) VALUES (?, 1) ON CONFLICT(device) DO UPDATE SET ${status} = ${status} + 1`).bind(author).run();
+  if (status === 'confirmed') await confirmDevice(db, author);
+  else await db.prepare('INSERT INTO devices (device, rejected, streak) VALUES (?, 1, 0) ON CONFLICT(device) DO UPDATE SET rejected = rejected + 1, streak = 0').bind(author).run();
   const wrong = status === 'confirmed' ? 'no' : 'yes';
   await db.prepare('INSERT INTO devices (device, disagree) SELECT device, 1 FROM votes WHERE code = ? AND vote = ? AND counted = 1 ON CONFLICT(device) DO UPDATE SET disagree = disagree + 1').bind(code, wrong).run();
 }
@@ -92,11 +99,12 @@ export async function disc(request, env, url, reply) {
     const miss = await db.prepare('SELECT n FROM misses WHERE code = ?').bind(code).first();
     const wanted = miss && miss.n >= 2 ? 1 : 0;
     const t = await trustOf(db, device);
-    const status = t.trusted && barcode === 'match' ? 'confirmed' : 'pending';
+    const spot = t.trusted && barcode === 'match' && Math.random() < SPOT; // wyrywkowa kontrola także u zaufanych
+    const status = t.trusted && barcode === 'match' && !spot ? 'confirmed' : 'pending';
     await db.prepare('INSERT INTO subs (code, device, nick, name, at, status, checks, iph, wanted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(code, device, clean(get('nick'), 24), name, Date.now(), status, JSON.stringify({ barcode }), await ipHash(ip, env.DISC_SALT), wanted).run();
-    if (status === 'confirmed') await db.prepare('INSERT INTO devices (device, confirmed) VALUES (?, 1) ON CONFLICT(device) DO UPDATE SET confirmed = confirmed + 1').bind(device).run();
-    return reply(200, { ok: true, status, trusted: t.trusted, wanted: !!wanted });
+    if (status === 'confirmed') await confirmDevice(db, device);
+    return reply(200, { ok: true, status, trusted: t.trusted, level: t.level, spot, wanted: !!wanted });
   }
   if (path === '/vote' && request.method === 'POST') {
     const vote = String(get('vote') || '');
@@ -113,12 +121,12 @@ export async function disc(request, env, url, reply) {
     await db.prepare('INSERT INTO votes (code, device, vote, at, iph, counted) VALUES (?, ?, ?, ?, ?, ?)').bind(code, device, vote, Date.now(), iph, counted).run();
     let status = s.status;
     if (counted) {
-      const col = vote === 'yes' ? 'yes' : 'no';
-      await db.prepare(`UPDATE subs SET ${col} = ${col} + 1 WHERE code = ?`).bind(code).run();
-      const n = (vote === 'yes' ? s.yes : s.no) + 1;
+      const col = vote === 'yes' ? 'yes' : 'no', w = me.level === 'guardian' ? 2 : 1; // głos strażnika bazy liczy się podwójnie
+      await db.prepare(`UPDATE subs SET ${col} = ${col} + ? WHERE code = ?`).bind(w, code).run();
+      const n = (vote === 'yes' ? s.yes : s.no) + w;
       if (n >= NEED) { status = vote === 'yes' ? 'confirmed' : 'rejected'; await settle(db, code, status, s.device); }
     }
-    return reply(200, { ok: true, counted: !!counted, status, reward: vote === 'unsure' ? 2 : 5 });
+    return reply(200, { ok: true, counted: !!counted, weight: counted ? (me.level === 'guardian' ? 2 : 1) : 0, status, reward: vote === 'unsure' ? 2 : 5 });
   }
   return reply(404, { ok: false, error: 'not_found' });
 }

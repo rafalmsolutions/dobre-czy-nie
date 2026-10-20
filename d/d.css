@@ -509,3 +509,4 @@ body.no-scores .bill-pts,body.no-scores .bill-sum{display:none}
 .disc-want{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #ECEDEF;text-decoration:none;color:var(--ink);font-size:13px}
 .d-arc-disc{--arc:#FFF0C2;left:38%;top:-180px;width:440px;height:440px;border-width:60px}
 #scr-discoveries .wrap{position:relative;display:flex;flex-direction:column;gap:14px}
+.disc-steps{display:flex;flex-direction:column;gap:4px;margin-top:4px}.disc-steps .xp{height:6px}.disc-trust.on .disc-steps .small{color:#FFE897}
