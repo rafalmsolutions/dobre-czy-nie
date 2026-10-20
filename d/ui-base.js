@@ -332,12 +332,13 @@ const App = {};
     else if (h === '#/start') screen = 'start';
     else if (h === '#/najlepsze') screen = 'cats';
     else if (h === '#/album') screen = 'album';
+    else if (h === '#/odkrycia') screen = 'discoveries';
     else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
-    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
@@ -619,6 +620,7 @@ const App = {};
   function found(code) {
     if (A.settings.sound === false && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }
     A.sound('scan');
+    if (A.markCameraScan) A.markCameraScan(code);
     A.closeScanner(true);
     A.openCode(code);
   }
@@ -638,6 +640,16 @@ const App = {};
     const track = stream && stream.getVideoTracks()[0]; if (!track) return;
     const on = A.$('torchBtn').getAttribute('aria-pressed') !== 'true';
     try { await track.applyConstraints({ advanced: [{ torch: on }] }); A.$('torchBtn').setAttribute('aria-pressed', String(on)); } catch (e) { A.toast('Latarka nie jest dostępna.'); }
+  };
+  /* Kody kreskowe na zdjęciu (odkrywcy: kod ze zdjęcia musi zgadzać się ze skanem). Zwraca listę poprawnych kodów. */
+  A.findCodes = async blob => {
+    try {
+      const img = await A.downscale(blob, 1600), out = [];
+      const det = await nativeDetector();
+      if (det) { try { (await det.detect(img)).forEach(r => out.push(r.rawValue)); } catch (e) { } }
+      if (!out.length) { try { await A.loadScript(ZXING_URLS); const c = zxDecode(img); if (c) out.push(c); } catch (e) { } }
+      return [...new Set(out.map(c => c.length === 12 ? '0' + c : c).filter(c => validBarcode(c)))];
+    } catch (e) { return []; }
   };
   A.decodeImageFile = async file => {
     const msg = A.$('scanMsg');

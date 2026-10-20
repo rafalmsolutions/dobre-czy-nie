@@ -197,11 +197,71 @@ def scan_tiers(pop):
     return {'epic': epic, 'rare': max(epic + 1, q(0.40))}
 
 
-def build(products, pop, out, built=None, log=print):
+QTY_RE = re.compile(r'(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|mg|l|ml|cl|dl)(?![a-ząćęłńóśźż])', re.I)
+QTY_UNIT = {'kg': (1000, 'g'), 'g': (1, 'g'), 'mg': (0.001, 'g'), 'l': (1000, 'ml'), 'ml': (1, 'ml'), 'cl': (10, 'ml'), 'dl': (100, 'ml')}
+HIST_URL = 'https://rafalmsolutions.github.io/dobre-czy-nie/data/qhist.json'
+
+
+def qty_norm(q):
+    """Gramatura do porównań: '4 x 125 g' → '500 g', '1,5 l' → '1500 ml'. None, gdy nie da się odczytać."""
+    m = QTY_RE.search(q or '')
+    if not m:
+        return None
+    n = int(m.group(1)) if m.group(1) else 1
+    f, unit = QTY_UNIT[m.group(3).lower()]
+    v = round(n * float(m.group(2).replace(',', '.')) * f, 1)
+    if v <= 0 or v > 100000:
+        return None
+    return f'{v:g} {unit}'
+
+
+def update_history(products, prev, day):
+    """Historia gramatur (skurczflacja): [data, tekst z etykiety, gramatura]. Nowy wpis tylko przy zmianie gramatury."""
+    hist = {}
+    for code, h in (prev or {}).items():
+        if isinstance(h, list) and CODE_RE.match(str(code)):
+            ok = [x for x in h if isinstance(x, list) and len(x) == 3 and all(isinstance(y, str) for y in x)]
+            if ok:
+                hist[code] = ok[-6:]
+    changed = 0
+    for code, p in products.items():
+        qn = qty_norm(p.get('quantity'))
+        if not qn:
+            continue
+        h = hist.get(code, [])
+        if not h:
+            hist[code] = [[day, p.get('quantity', '')[:40], qn]]
+        elif h[-1][2] != qn:
+            hist[code] = (h + [[day, p.get('quantity', '')[:40], qn]])[-6:]
+            changed += 1
+        if len(hist[code]) > 1:
+            p['qchg'] = hist[code][-3:]
+    return hist, changed
+
+
+def load_prev_hist(path=None, url=HIST_URL, log=print):
+    try:
+        if path and os.path.exists(path):
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        if url:
+            req = urllib.request.Request(url, headers={'User-Agent': UA})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode('utf-8'))
+    except Exception as e:  # brak historii to nie błąd: zaczynamy od dziś
+        log(f'Historia gramatur: brak poprzedniej ({e.__class__.__name__}).')
+    return {}
+
+
+def build(products, pop, out, built=None, log=print, prev_hist=None):
     # Liczba skanów w Open Food Facts: z niej wersja D liczy rzadkość karty w albumie.
     for code, p in products.items():
         if pop.get(code):
             p['unique_scans_n'] = int(pop[code])
+    built = built or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    hist, changed = update_history(products, prev_hist or {}, built[:10])
+    write_json(os.path.join(out, 'qhist.json'), hist)
+    log(f'Historia gramatur: {len(hist)} produktów, {changed} zmian od poprzedniej kopii.')
     shards = defaultdict(dict)
     for code, p in products.items():
         shards[code[-3:]][code] = p
@@ -219,7 +279,7 @@ def build(products, pop, out, built=None, log=print):
         write_json(os.path.join(out, 'c', t.replace(':', '_') + '.json'),
                    {'tag': t, 'count': len(codes), 'products': [products[c] for c in codes[:CAT_MAX]]})
         written += 1
-    meta = {'built': built or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'country': COUNTRY,
+    meta = {'built': built, 'country': COUNTRY,
             'products': len(products), 'categories': written, 'source': 'Open Food Facts (ODbL)',
             'scanTiers': scan_tiers(pop)}
     write_json(os.path.join(out, 'meta.json'), meta)
@@ -235,13 +295,15 @@ def main(argv=None):
     ap.add_argument('--page-max', type=int, default=1000)
     ap.add_argument('--limit', type=int, default=None, help='tylko do testów: zatrzymaj po N produktach')
     ap.add_argument('--min-products', type=int, default=1000, help='przerwij, jeśli pobrano mniej (chroni przed opublikowaniem pustej kopii)')
+    ap.add_argument('--prev-hist', default='datacache/qhist.json', help='historia gramatur z poprzedniej kopii')
+    ap.add_argument('--hist-url', default=HIST_URL, help='zapas: historia z opublikowanej strony; pusty = bez')
     a = ap.parse_args(argv)
     src = Source(a.base, a.pause, a.page_max)
     products, pop = fetch_all(src, a.limit)
     if len(products) < a.min_products:
         print(f'Za mało produktów ({len(products)} < {a.min_products}). Nie publikuję.', file=sys.stderr)
         return 1
-    build(products, pop, a.out)
+    build(products, pop, a.out, prev_hist=load_prev_hist(a.prev_hist, a.hist_url))
     print(f'Zapytań do wyszukiwarki: {src.calls}')
     return 0
 

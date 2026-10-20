@@ -7,7 +7,7 @@
 
   /* ---------- Kliknięcia ---------- */
   const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share'];
-  const PROF_ACTS = ['prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
+  const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
     if (kindBtn) { A.ingKind(kindBtn); return; }
@@ -56,6 +56,7 @@
       case 'reveal-flip': case 'reveal-close': case 'reveal-page': case 'reveal-album': A.revealAction(act, el); break;
       case 'share-page': A.sharePage(el.dataset.k); break;
       case 'gal-demo': A.galleryDemo(el); break;
+      case 'disc-vote': A.discVote(el); break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;
@@ -138,6 +139,7 @@
     A.award('app_opened', {});
     A.trackWeek();
     A.flushReports(); A.flushAdds();
+    if (A.discSync) A.discSync();
   }
   boot();
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

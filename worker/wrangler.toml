@@ -13,3 +13,9 @@ CONTACT_EMAIL = "rafalmsolutions@gmail.com"
 # OFF_USER i OFF_PASS NIE wpisuj tutaj. Dodaj je jako sekrety:
 #   npx wrangler secret put OFF_USER
 #   npx wrangler secret put OFF_PASS
+
+# Odkrywcy: potwierdzanie nowych produktów przez kolejne osoby (schemat: worker/schema.sql).
+[[d1_databases]]
+binding = "DISC"
+database_name = "dcn-odkrywcy"
+database_id = "37990302-e163-4684-a13e-758d8193f010"

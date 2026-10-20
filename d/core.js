@@ -206,6 +206,7 @@ function normalizeProduct(p, source) {
     imageLarge: p.image_front_url || p.image_url || p.image_front_small_url || '',
     imageIngredients: p.image_ingredients_url || '', imageNutrition: p.image_nutrition_url || '',
     stores: (Array.isArray(p.stores) ? p.stores : typeof p.stores === 'string' ? p.stores.split(',') : Array.isArray(p.stores_tags) ? p.stores_tags : []).map(x => String(x).trim()).filter(Boolean).slice(0, 20),
+    qchg: Array.isArray(p.qchg) ? p.qchg.filter(x => Array.isArray(x) && x.length === 3 && x.every(y => typeof y === 'string')).slice(-3) : null,
     scans: p.unique_scans_n != null && isFinite(Number(p.unique_scans_n)) ? Math.max(0, Math.round(Number(p.unique_scans_n))) : null,
     nutriscore: (p.nutriscore_grade || '').toLowerCase(), nova: p.nova_group || null,
     additiveTags: Array.isArray(p.additives_tags) ? p.additives_tags : (typeof p.additives_tags === 'string' ? [p.additives_tags] : (Array.isArray(p.ingredients_tags) && p.ingredients_tags.length ? p.ingredients_tags.filter(t => /^en:e\d{3}/.test(t)) : null)),

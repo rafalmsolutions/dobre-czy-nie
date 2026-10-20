@@ -64,5 +64,9 @@ ok(bases.length >= 15, `odznak: ${bases.length}`);
 ok(bases.every(b => { const t = ach.filter(a => a.base === b).sort((x, y) => x.tier - y.tier); return t.length === 3 && t[0].target < t[1].target && t[1].target < t[2].target; }), 'każda odznaka: 3 stopnie z rosnącymi progami');
 ok(ach.every(a => a.description && a.icon && a.metric && a.reward && a.reward.points > 0) && new Set(ach.map(a => a.id)).size === ach.length, 'odznaki: opisy, ikony, unikalne id');
 
+// 11. Historia gramatur z kopii bazy.
+const q = D.normalizeProduct({ code: '5900000000017', product_name: 'X', qchg: [['2026-10-20', '360 g', '360 g'], ['2026-11-03', '340 g', '340 g'], 'zle', ['a']] }, 'off');
+ok(q.qchg && q.qchg.length === 2 && q.qchg[1][2] === '340 g', 'gramatura: historia odczytana, złe wpisy pominięte');
+ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg === null, 'gramatura: brak historii = null');
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

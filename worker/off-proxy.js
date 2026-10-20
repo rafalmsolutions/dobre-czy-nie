@@ -15,6 +15,8 @@
    - ALLOWED_ORIGINS     – adresy aplikacji oddzielone przecinkami, np. https://dobreczynie.pl,https://twoja-nazwa.netlify.app
    - CONTACT_EMAIL       – e-mail w nagłówku User-Agent (wymóg Open Food Facts). */
 
+import { disc } from './disc.js';
+
 const APP_NAME = 'DobreCzyNie';
 const MAX_PHOTO = 6 * 1024 * 1024;
 const PHOTOS = { front: 'front', ingredients: 'ingredients', nutrition: 'nutrition' };
@@ -136,6 +138,12 @@ export default {
         return j && j.status === 1 ? reply(200, { ok: true, saved }) : reply(502, { ok: false, error: 'off_save', upstream: r.status });
       } catch (e) { return reply(502, { ok: false, error: 'network' }); }
     }
+    // Odkrywcy: potwierdzanie nowych produktów (baza D1, plik disc.js).
+    if (url.pathname.startsWith('/disc/')) {
+      if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
+      if (!rateOk('d:' + (request.headers.get('CF-Connecting-IP') || 'unknown'), 400)) return reply(429, { ok: false, error: 'rate' });
+      try { return await disc(request, env, url, reply); } catch (e) { return reply(500, { ok: false, error: 'db' }); }
+    }
     if (url.pathname !== '/product') return reply(404, { ok: false, error: 'not_found' });
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
     if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
@@ -213,10 +221,10 @@ export default {
   }
 };
 
-function rateOk(ip) {
+function rateOk(ip, per = RATE.perHour) {
   const now = Date.now(), hourAgo = now - 3600e3;
   const list = (RATE.hits.get(ip) || []).filter(t => t > hourAgo);
-  if (list.length >= RATE.perHour) { RATE.hits.set(ip, list); return false; }
+  if (list.length >= per) { RATE.hits.set(ip, list); return false; }
   list.push(now); RATE.hits.set(ip, list);
   if (RATE.hits.size > 5000) RATE.hits.clear();
   return true;

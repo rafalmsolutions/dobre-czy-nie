@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Testy
         run: |
@@ -41,6 +41,7 @@ jobs:
           node tests/unit-v1.cjs
           node tests/unit-d.cjs
           node tests/worker-test.mjs
+          node tests/worker-disc-test.mjs
 
       - name: Ostatnia udana kopia danych (zapas, gdy Open Food Facts nie odpowiada)
         uses: actions/cache/restore@v4

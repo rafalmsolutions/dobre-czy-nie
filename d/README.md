@@ -56,3 +56,17 @@ Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
 - Odsłonięcie po skanie pokazuje miniaturę obrazu z animacją nowego fragmentu; pełna strona pokazuje cały obraz w złotej ramie.
 - Na stronie albumu przycisk „Podgląd: odsłoń cały obraz (test)” odsłania resztę bez zmiany danych.
 - Nowy obraz: plik `d/img/gal/<klucz>.webp` i wpis w `GALLERY` w `ui-album.js`.
+
+## Polowanie, profile rodziny, odkrywcy, gramatury (20.10.2026, wieczór)
+
+- **Polowanie** (`album.js`): każda strona ma 10 miejsc z warunkami (podkategorie z polską nazwą, Nutri-Score, NOVA, bez dodatków, bez oleju palmowego, wegańskie, bio, fair trade, mało cukru/soli/tłuszczu, dużo białka/błonnika). Rzadkość miejsca = udział pasujących wśród popularnych produktów kategorii zgodnych z profilem: zwykłe ≥ 1/3, rzadkie ≥ 1/12, epickie ≥ 1/50, legendarne rzadziej. Jedno tajne miejsce (rzadkie/epickie), podpowiedź po 5 skanach. Produkt trafia na najtrudniejsze wolne miejsce, do którego pasuje. Lista miejsc jest zapamiętywana (`d-album.pages`); po zmianie profilu wolne miejsca dobieramy od nowa.
+- **Zgodność z profilem:** kartę daje tylko produkt bez „Nie jem” i bez „dużo” tego, czego pilnujesz. Strony wykluczone dietą/alergią (np. nabiał przy diecie wegańskiej) są ukryte.
+- **Plakaty:** `d/img/gal/*.webp`, wpis w `GALLERY` (`ui-album.js`); miejsce nr i odsłania fragment `ORDER[i]`.
+- **Profile rodziny** (`family.js`): do 4 domowników z własnym „Nie jem” i „Pilnuję” (klucz `d-family`); przy produkcie sekcja „Dla domowników”. Album liczy się według profilu „Ja”.
+- **Odkrywcy** (`disc.js`, pośrednik `worker/disc.js`, baza Cloudflare D1 `dcn-odkrywcy`, schemat `worker/schema.sql`):
+  - przy dodawaniu: kod ze zdjęcia = kod ze skanu (inny kod blokuje wysyłkę), nazwa bez wulgaryzmów, skład zgodny z odczytem zdjęcia, kalorie zgodne z makroskładnikami;
+  - +10 pkt od razu, +50 po 2 potwierdzeniach (+100 za produkt z listy „Poszukiwane”), +1 za każdą osobę, która sprawdzi produkt (do 100);
+  - „Czy trzymasz ten produkt?” tylko po skanie aparatem: +5 za „tak” i „nie”, +2 za „nie mam pewności”, do 10 dziennie;
+  - zaufany odkrywca (3 potwierdzone, 0 odrzuconych): od razu potwierdzony, gdy kod był widoczny na zdjęciu;
+  - ekran `#/odkrycia`: status, lista „Poszukiwane”, pseudonim.
+- **Gramatury:** `scripts/build_data.py` zapisuje `data/qhist.json` i pole `qchg` w produktach, gdy gramatura zmieni się między kopiami bazy; produkt pokazuje „Mniej w opakowaniu”.

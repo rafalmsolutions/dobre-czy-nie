@@ -45,11 +45,11 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.check.outputs.ready == '1'
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Testy pośrednika
         if: steps.check.outputs.ready == '1'
-        run: node tests/worker-test.mjs
+        run: node tests/worker-test.mjs && node tests/worker-disc-test.mjs
 
       - name: Wysyłka do Cloudflare
         if: steps.check.outputs.ready == '1'

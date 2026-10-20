@@ -74,16 +74,25 @@
   };
 
   /* ---------- Profil i ustawienia ---------- */
-  let draftCustom = [], confirmWipe = false;
-  A.route('profile', () => { draftCustom = A.profile.custom.slice(); confirmWipe = false; renderProfile(); });
+  let draftCustom = [], confirmWipe = false, editing = 'me', confirmDel = false;
+  const person = () => editing === 'me' ? null : A.family.find(f => f.id === editing) || null;
+  A.route('profile', () => { if (!person()) editing = 'me'; draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile(); });
+  function familyTabs() {
+    const tabs = [{ id: 'me', name: A.userName() || 'Ja' }].concat(A.family);
+    return `<div class="card stack fam-tabs-card"><b style="font-family:var(--f-display)">Kupujesz też dla innych?</b>
+      <div class="fam-tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" class="fam-tab${t.id === editing ? ' on' : ''}" aria-selected="${t.id === editing}" data-act="fam-pick" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}
+        ${A.family.length < A.FAMILY_MAX ? '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>' : ''}</div>
+      <span class="small muted">${A.family.length ? 'Przy każdym produkcie zobaczysz osobny werdykt dla każdej osoby. Album liczy się według Twojego profilu.' : 'Dodaj domowników (np. dziecko z alergią), a przy produkcie zobaczysz werdykt dla każdego.'}</span></div>`;
+  }
   function renderProfile() {
-    const p = A.profile;
+    const fp = person(), p = fp ? fp.p : A.profile;
     const chip = (name, key, label, on, icon) => `<label class="pchip${icon ? ' d-pchip' : ''}"><input type="checkbox" name="${name}" value="${key}"${on ? ' checked' : ''}>${icon ? A.dIcon(icon, 18) : ''}${esc(label)}</label>`;
     A.$('scr-profile').innerHTML = `<div class="wrap"><form class="stack" id="profileForm" novalidate style="gap:16px">
-      <div class="topbar"><h1>Twój profil</h1>${A.hudPill()}</div>
+      <div class="topbar"><h1>${fp ? 'Profil: ' + esc(fp.name) : 'Twój profil'}</h1>${A.hudPill()}</div>
       <p class="small muted">Sprawdzamy to przy każdym produkcie. Zmiany zapisują się od razu, a profil zostaje tylko w tym telefonie.</p>
       <p class="save-state small" id="saveState" role="status" aria-live="polite"></p>
-      <div class="card stack"><label for="profName"><b style="font-family:var(--f-display)">Imię</b> <span class="small muted">(nieobowiązkowe)</span></label><input class="field" id="profName" maxlength="30" autocomplete="given-name" value="${esc(A.userName())}"></div>
+      ${familyTabs()}
+      <div class="card stack"><label for="profName"><b style="font-family:var(--f-display)">${fp ? 'Imię lub pseudonim' : 'Imię'}</b> <span class="small muted">${fp ? '' : '(nieobowiązkowe)'}</span></label><input class="field" id="profName" maxlength="30" autocomplete="${fp ? 'off' : 'given-name'}" value="${esc(fp ? fp.name : A.userName())}"></div>
       <fieldset class="card"><legend>Cele <span class="small muted" style="font-family:var(--f-body)">(do ${GOALS_MAX})</span></legend>
         <p class="small muted">Cel to skrót: zaznacza, czego pilnujemy na liście niżej.</p>
         <div class="goal-grid">${GOALS.map(g => A.goalTile(g, p.goals.includes(g.key), 'prof-goal')).join('')}</div>
@@ -104,6 +113,8 @@
         <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-green btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
         <p class="msg" id="customMsg" role="status"></p><div class="pchips" id="customChips"></div>
         <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p></fieldset>
+      ${fp ? `<div class="card stack">${confirmDel ? `<b class="small">Usunąć profil „${esc(fp.name)}”?</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="fam-del-yes">Usuń</button><button class="btn btn-white btn-sm" type="button" data-act="fam-del-no">Zostaw</button></div>` : '<button class="linkbtn small" type="button" data-act="fam-del" style="align-self:flex-start">Usuń tę osobę</button>'}</div>
+      <button class="btn btn-green btn-block" type="submit">Gotowe</button></form></div>` : ''}${fp ? '' : `
       <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
@@ -118,7 +129,7 @@
       <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="../privacy.html">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
       <p class="small muted">Dane produktów: Open Food Facts i Open Beauty Facts (licencja ODbL). Wersja aplikacji ${esc(A.CFG.appVersion || '1.0')}.</p><p class="small muted" id="dataDate"></p>
       ${confirmWipe ? `<div class="stack"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, półki, punkty, historię)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small" type="button" data-act="wipe" style="align-self:flex-start">Usuń wszystkie moje dane</button>'}
-    </div></div>`;
+    </div></div>`}`;
     renderCustomChips();
     A.$('watchSet').addEventListener('change', e => {
       if (e.target.name !== 'watch') return;
@@ -155,6 +166,15 @@
     } else if (act === 'rm-custom') { draftCustom.splice(Number(el.dataset.i), 1); renderCustomChips(); A.$('customInput').focus(); A.profAutoSave(); }
     else if (act === 'wipe') { confirmWipe = true; saveDraftToDom(); renderProfile(); const b = A.$('scr-profile').querySelector('[data-act=wipe-no]'); if (b) b.focus(); }
     else if (act === 'wipe-no') { confirmWipe = false; renderProfile(); }
+    else if (act === 'fam-pick' || act === 'fam-add') {
+      if (A.$('profileForm')) collect(false);
+      if (act === 'fam-add') { const f = A.familyAdd(); if (!f) return; editing = f.id; } else editing = el.dataset.id;
+      draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmDel = false; renderProfile();
+      const t = A.$('scr-profile').querySelector(act === 'fam-add' ? '#profName' : '.fam-tab.on'); if (t) { t.focus(); if (act === 'fam-add') t.select(); }
+    }
+    else if (act === 'fam-del') { confirmDel = true; renderProfile(); }
+    else if (act === 'fam-del-no') { confirmDel = false; renderProfile(); }
+    else if (act === 'fam-del-yes') { A.familyRemove(editing); editing = 'me'; confirmDel = false; draftCustom = A.profile.custom.slice(); renderProfile(); A.toast('Usunięto profil domownika.'); }
     else if (act === 'wipe-yes') {
       try { Object.keys(localStorage).filter(k => k.startsWith('dcn-')).forEach(k => localStorage.removeItem(k)); } catch (e) { }
       try { indexedDB.deleteDatabase('dcn'); } catch (e) { }
@@ -164,12 +184,19 @@
   function saveDraftToDom() { /* zmiany zapisują się od razu, więc nie ma czego przenosić */ }
   // Zapis przy każdej zmianie: nie trzeba pamiętać o przycisku na dole strony.
   function collect(includePending) {
-    const f = A.$('profileForm'), next = { noScores: A.$('profNoScores').checked };
+    const f = A.$('profileForm'), next = { noScores: A.$('profNoScores') ? A.$('profNoScores').checked : false };
     ['allergens', 'diet', 'avoid', 'cosmetic', 'watch'].forEach(g => { next[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map(i => i.value); });
     next.goals = [...f.querySelectorAll('[data-act=prof-goal][aria-pressed=true]')].map(b => b.dataset.k);
     next.custom = draftCustom.slice();
     const pending = A.$('customInput').value.trim();
     if (includePending && pending && !customProblem(pending, next.custom)) { next.custom.push(cleanCustom(pending)); draftCustom = next.custom.slice(); }
+    const fp = person();
+    if (fp) {
+      fp.p = cleanProfile(next); fp.name = A.$('profName').value.replace(/[<>]/g, '').trim().slice(0, 30) || fp.name;
+      A.saveFamily();
+      if (A.rerenderProduct) A.rerenderProduct();
+      return;
+    }
     A.profile = cleanProfile(next); A.saveProfile();
     A.settings.guess = A.$('setGuess').checked;
     const soundWas = A.settings.sound !== false;
@@ -192,7 +219,7 @@
   A.saveProfileForm = e => {
     e.preventDefault();
     collect(true);
-    A.toast('Profil zapisany. Sprawdzamy go przy każdym produkcie.');
+    A.toast(person() ? `Zapisano profil: ${person().name}.` : 'Profil zapisany. Sprawdzamy go przy każdym produkcie.');
     A.go('#/');
   };
 })();

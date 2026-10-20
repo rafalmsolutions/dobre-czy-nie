@@ -65,7 +65,7 @@ def t(name, cond, info=''):
         fail += 1; print('FAIL', name, str(info)[:300])
 
 
-rc = B.main(['--out', out, '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0', '--min-products', '100'])
+rc = B.main(['--out', out, '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0', '--min-products', '100', '--prev-hist', '', '--hist-url', ''])
 t('exit 0', rc == 0, rc)
 meta = json.load(open(os.path.join(out, 'meta.json')))
 named = [p for p in DB if p['product_name'] or p['product_name_pl']]
@@ -85,9 +85,21 @@ t('dodatki z listy składników', any(x.get('additives_tags') == ['en:e330'] for
 t('brak składu = dodatki nieznane', any(x.get('additives_tags') is None for x in y['products']))
 t('sklepy', any(x.get('stores') == ['Lidl'] for f in os.listdir(os.path.join(out, 'p'))[:20] for x in json.load(open(os.path.join(out, 'p', f))).values()))
 t('zapytania: rozsądna liczba', H.calls < 600, H.calls)
+# Historia gramatur (skurczflacja)
+t('historia gramatur zapisana', os.path.exists(os.path.join(out, 'qhist.json')))
+t('gramatura: wielopak i jednostki', B.qty_norm('4 x 125 g') == '500 g' and B.qty_norm('1,5 l') == '1500 ml' and B.qty_norm('75 cl') == '750 ml' and B.qty_norm('12 sztuk') is None)
+c = '5900000000017'
+h, n = B.update_history({c: {'quantity': '360 g'}}, {}, '2026-10-20')
+p2 = {c: {'quantity': '340 g'}}; h, n = B.update_history(p2, h, '2026-11-03')
+t('zmiana gramatury wykryta', n == 1 and p2[c]['qchg'][-1][2] == '340 g' and p2[c]['qchg'][0][2] == '360 g', p2)
+p3 = {c: {'quantity': '340g'}}; h, n = B.update_history(p3, h, '2026-11-10')
+t('inny zapis tej samej gramatury to nie zmiana', n == 0 and len(h[c]) == 2, h[c])
+h4, _ = B.update_history({}, h, '2026-11-17')
+t('historia produktu znikniętego z bazy zostaje', c in h4)
+t('złe dane w historii pominięte', B.update_history({}, {'abc': [['x']], c: 'zle'}, '2026-11-17')[0] == {})
 # Pusta wyszukiwarka nie może opublikować pustej kopii.
 saved = DB[:]; DB.clear()
-rc2 = B.main(['--out', tempfile.mkdtemp(), '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0'])
+rc2 = B.main(['--out', tempfile.mkdtemp(), '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0', '--prev-hist', '', '--hist-url', ''])
 t('pusta odpowiedź: błąd, nie publikujemy', rc2 == 1, rc2)
 DB.extend(saved)
 shutil.rmtree(out)
