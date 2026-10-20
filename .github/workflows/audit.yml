@@ -1,0 +1,47 @@
+# Audyt jakości (Lighthouse): szybkość na słabszym telefonie, dostępność, dobre praktyki, instalacja PWA.
+# Uruchamiany ręcznie (Actions → Audyt jakości → Run workflow). Wynik trafia do gałęzi „audit” (plik audit/summary.json).
+name: Audyt jakości
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Lighthouse (telefon, wolniejsza sieć)
+        run: |
+          mkdir -p out
+          for page in start produkt; do
+            url="https://rafalmsolutions.github.io/dobre-czy-nie/"
+            [ "$page" = produkt ] && url="https://rafalmsolutions.github.io/dobre-czy-nie/#/p/5900197012723"
+            npx --yes lighthouse@12 "$url" --quiet --output=json --output-path="out/$page.json" \
+              --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate \
+              --chrome-flags="--headless=new --no-sandbox" || true
+          done
+          node -e '
+            const fs = require("fs"); const out = {};
+            for (const f of fs.readdirSync("out")) {
+              const r = JSON.parse(fs.readFileSync("out/" + f));
+              const cats = Object.fromEntries(Object.entries(r.categories).map(([k, c]) => [k, Math.round(c.score * 100)]));
+              const failed = Object.values(r.audits).filter(a => a.score !== null && a.score < 0.9 && a.scoreDisplayMode !== "informative" && a.scoreDisplayMode !== "manual")
+                .map(a => ({ id: a.id, title: a.title, score: a.score, value: a.displayValue || "", items: ((a.details && a.details.items) || []).slice(0, 5).map(i => (i.node && (i.node.snippet || i.node.selector)) || i.url || i.label || "").filter(Boolean) }));
+              out[f.replace(".json", "")] = { categories: cats, metrics: { fcp: r.audits["first-contentful-paint"].displayValue, lcp: r.audits["largest-contentful-paint"].displayValue, tbt: r.audits["total-blocking-time"].displayValue, cls: r.audits["cumulative-layout-shift"].displayValue, si: r.audits["speed-index"].displayValue }, failed };
+            }
+            fs.mkdirSync("audit", { recursive: true });
+            fs.writeFileSync("audit/summary.json", JSON.stringify({ at: new Date().toISOString(), pages: out }, null, 1));
+          '
+      - name: Zapis wyniku w gałęzi audit
+        run: |
+          cd audit
+          git init -q -b audit
+          git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git add summary.json && git commit -q -m "Audyt Lighthouse"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" audit
