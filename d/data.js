@@ -499,3 +499,14 @@ const HOME_TILES = [
 /* Wersja D: „Nie jem” to tylko twarde wykluczenia. Reszta dawnych „unikam” i diet jest na liście „Pilnuję”. */
 PROFILE_OPTIONS.diet = PROFILE_OPTIONS.diet.filter(o => ['vegan', 'vegetarian', 'glutenfree', 'lactose'].includes(o.key));
 PROFILE_OPTIONS.avoid = PROFILE_OPTIONS.avoid.filter(o => ['pork', 'alcohol'].includes(o.key));
+
+/* Wersja D: dodatkowe kategorie ze zdjęciami (strony albumu i listy „Najlepsze”). */
+SHOP_GROUPS.splice(3, 0, { key: 'fresh', label: 'Owoce, warzywa i świeże', icon: 'dept_produce' });
+SHOP_CATEGORIES.push(
+  { key: 'en:creams', label: 'Śmietana', group: 'dairy' },
+  { key: 'en:eggs', label: 'Jajka', group: 'dairy' },
+  { key: 'en:fresh-meats', label: 'Mięso', group: 'meat' },
+  { key: 'en:fresh-fruits', label: 'Owoce', group: 'fresh' },
+  { key: 'en:fresh-vegetables', label: 'Warzywa', group: 'fresh' },
+  { key: 'en:beers', label: 'Piwo', group: 'drinks' }
+);

@@ -235,7 +235,7 @@ const App = {};
   A.mascot = () => '';
   // Zdjęcia kategorii (img/cat/*.webp): najwęższa kategoria produktu, która jest na liście kategorii aplikacji.
   const CAT_KEYS = new Set(SHOP_CATEGORIES.map(c => c.key));
-  const CAT_ALIAS = { 'en:hams': 'en:prepared-meats', 'en:cold-cuts': 'en:prepared-meats', 'en:frankfurters': 'en:sausages', 'en:hazelnut-spreads': 'en:sweet-spreads', 'en:plain-yogurts': 'en:yogurts', 'en:plant-based-milks': 'en:plant-based-milk-alternatives', 'en:mineral-waters': 'en:waters', 'en:chips': 'en:crisps', 'en:carbonated-drinks': 'en:sodas', 'en:sweetened-beverages': 'en:sodas', 'en:fruit-based-beverages': 'en:fruit-juices', 'en:nectars': 'en:fruit-juices', 'en:orange-nectars': 'en:fruit-juices', 'en:bars-covered-with-chocolate': 'en:chocolates', 'en:confectioneries': 'en:candies', 'en:instant-beverages': 'en:coffees', 'pl:kawy-ziarniste': 'en:coffees', 'en:broths': 'en:soups', 'en:poultry-broth': 'en:soups' };
+  const CAT_ALIAS = { 'en:hams': 'en:prepared-meats', 'en:cold-cuts': 'en:prepared-meats', 'en:frankfurters': 'en:sausages', 'en:hazelnut-spreads': 'en:sweet-spreads', 'en:plain-yogurts': 'en:yogurts', 'en:plant-based-milks': 'en:plant-based-milk-alternatives', 'en:mineral-waters': 'en:waters', 'en:chips': 'en:crisps', 'en:carbonated-drinks': 'en:sodas', 'en:sweetened-beverages': 'en:sodas', 'en:fruit-based-beverages': 'en:fruit-juices', 'en:nectars': 'en:fruit-juices', 'en:orange-nectars': 'en:fruit-juices', 'en:bars-covered-with-chocolate': 'en:chocolates', 'en:confectioneries': 'en:candies', 'en:instant-beverages': 'en:coffees', 'pl:kawy-ziarniste': 'en:coffees', 'en:broths': 'en:soups', 'en:poultry-broth': 'en:soups', 'en:lagers': 'en:beers', 'en:beer': 'en:beers', 'en:dairy-creams': 'en:creams', 'en:sour-creams': 'en:creams', 'en:chicken-eggs': 'en:eggs', 'en:poultries': 'en:fresh-meats', 'en:meats': 'en:fresh-meats', 'en:fruits': 'en:fresh-fruits', 'en:vegetables': 'en:fresh-vegetables' };
   A.catKeyOf = cats => { const c = Array.isArray(cats) ? cats : []; for (let i = c.length - 1; i >= 0; i--) { if (CAT_KEYS.has(c[i])) return c[i]; if (CAT_ALIAS[c[i]] && CAT_KEYS.has(CAT_ALIAS[c[i]])) return CAT_ALIAS[c[i]]; } return ''; };
   // Gdy baza nie podaje kategorii: rozpoznanie po nazwie produktu (kolejność: od najbardziej szczegółowych).
   const NAME_RULES = [
@@ -282,7 +282,14 @@ const App = {};
     [/\b(cola|lemoniad|oranzad|tonic|napoj gazow|napoj energ|energy)/, 'en:sodas'],
     [/\b(herbat)/, 'en:teas'],
     [/\b(kawa|kawy|cappuccino|espresso|latte)\b/, 'en:coffees'],
-    [/\bwoda\b/, 'en:waters']
+    [/\bwoda\b/, 'en:waters'],
+    [/\b(piwo|piwa|lager|radler)\b/, 'en:beers'],
+    [/\b(smietan|smietank)/, 'en:creams'],
+    [/\b(jaja|jajka|jajko)\b/, 'en:eggs'],
+    [/(kurczak|indyk|piers).*wedzon|wedzon.*(kurczak|indyk|piers)/, 'en:prepared-meats'],
+    [/\b(schab|filet z kurczaka|piers z kurczaka|karkowk|mielon|udka|lopatk|poledwiczk|wolowin|indyk|kurczak)/, 'en:fresh-meats'],
+    [/\b(pomidor|ogorek|marchew|papryk|salat|szpinak|ziemniak|cebul|brokul|kalafior|cukini|rzodkiew|kapust)/, 'en:fresh-vegetables'],
+    [/\b(jablk|banan|borowk|truskawk|gruszk|pomarancz|mandaryn|winogron|cytryn|malin|sliwk|kiwi)/, 'en:fresh-fruits']
   ];
   A.catKeyByName = name => { const f = fold(name).replace(/[^a-z0-9 ]+/g, ' '); for (const [re, k] of NAME_RULES) if (re.test(f)) return k; return ''; };
   A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
