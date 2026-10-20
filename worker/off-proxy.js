@@ -46,8 +46,13 @@ export default {
       if (env.OFF_BASIC) headers.Authorization = 'Basic ' + btoa(env.OFF_BASIC);
       const fd = new FormData(); fd.append('user_id', env.OFF_USER); fd.append('password', env.OFF_PASS);
       try {
-        const r = await fetch(`${base}/cgi/auth.pl`, { method: 'POST', body: fd, headers });
-        return reply(200, { ok: r.status === 200, upstream: r.status, server: base, userLooksLikeEmail: env.OFF_USER.includes('@') });
+        // Logowanie jak na stronie OFF; zła para login–hasło zwraca komunikat o błędzie.
+        fd.append('.submit', 'Sign-in');
+        const r = await fetch(`${base}/cgi/session.pl`, { method: 'POST', body: fd, headers, redirect: 'manual' });
+        const txt = await r.text().catch(() => '');
+        const bad = /niepoprawna nazwa u|incorrect user name|invalid user|nieprawidłow/i.test(txt);
+        const cookie = (r.headers.get('set-cookie') || '').includes('session');
+        return reply(200, { ok: !bad && (cookie || r.status === 200 || r.status === 302), wrong: bad, upstream: r.status, cookie, server: base, userLooksLikeEmail: env.OFF_USER.includes('@'), userLength: env.OFF_USER.length });
       } catch (e) { return reply(502, { ok: false, error: 'network', server: base }); }
     }
     if (url.pathname === '/category') {
