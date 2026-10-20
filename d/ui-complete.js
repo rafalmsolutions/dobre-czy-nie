@@ -65,7 +65,8 @@
   /* Kroki uzupełniania w podanym elemencie. opts: { code, name, needIngr, needNut, photos:{ingredients,nutrition} (Bloby), images:{ingredients,nutrition} (adresy z bazy), onDone } */
   A.openComplete = (el, opts) => {
     if (!el || !proxy()) return;
-    const st = Object.assign({ step: opts.needIngr ? 'ingr' : 'nut', saved: [] }, opts);
+    const st = Object.assign({ step: opts.needIngr ? 'ingr' : 'nut', saved: [], per: opts.drink ? 'ml' : 'g' }, opts);
+    const perText = () => st.per === 'ml' ? 'na 100 ml' : 'na 100 g';
     const urls = {};
     ['ingredients', 'nutrition'].forEach(k => { if (st.photos && st.photos[k]) urls[k] = URL.createObjectURL(st.photos[k]); else if (st.images && A.safeImg(st.images[k])) urls[k] = A.safeImg(st.images[k]); });
     const total = (opts.needIngr ? 1 : 0) + (opts.needNut ? 1 : 0);
@@ -101,18 +102,28 @@
         <p class="small muted">Skład trafi do otwartej bazy Open Food Facts, z której korzystają wszyscy.</p></div>`;
     }
     function renderNut() {
+      const per = perText();
       el.innerHTML = `<div class="panel stack" id="completeNut">${head('Wartości odżywcze')}
-        <p class="small">Przepisz liczby z tabeli z kolumny <b>na 100 g</b> (albo 100 ml). Wystarczy kilka pól.</p>
+        <div class="nut-per" role="group" aria-label="Na ile podane są wartości na opakowaniu"><button type="button" data-cmp="per-g" aria-pressed="${st.per === 'g'}">na 100 g</button><button type="button" data-cmp="per-ml" aria-pressed="${st.per === 'ml'}">na 100 ml (napoje)</button></div>
+        <p class="small">Przepisz liczby z kolumny <b class="nut-per-label">${per}</b> w tabeli na opakowaniu, a nie z kolumny „porcja”. Wystarczy kilka pól.</p>
         ${photo('nutrition')}
-        <div class="nut-grid">${NUT_FIELDS.map(([k, label, unit, req]) => `<label class="nut-row${k === 'saturated-fat' || k === 'sugars' ? ' sub' : ''}"><span>${label}${req ? '' : ' <span class="muted">(jeśli jest)</span>'}</span><span class="nut-in"><input class="field" inputmode="decimal" autocomplete="off" data-nut="${k}" aria-label="${label} w ${unit} na 100 g"><span class="muted">${unit}</span></span></label>`).join('')}</div>
+        <div class="nut-grid"><div class="nut-head" aria-hidden="true"><span>Składnik</span><span class="nut-per-label">${per}</span></div>
+        ${NUT_FIELDS.map(([k, label, unit, req]) => `<label class="nut-row${k === 'saturated-fat' || k === 'sugars' ? ' sub' : ''}"><span class="nut-name">${label}${req ? '' : ' <span class="muted">(jeśli jest)</span>'}</span><span class="nut-in"><input class="field" inputmode="decimal" autocomplete="off" data-nut="${k}" data-label="${label}" data-unit="${unit}" aria-label="${label} w ${unit} ${per}"><span class="nut-unit muted">${unit}</span></span></label>`).join('')}</div>
         <p class="msg" id="cmpNutMsg" role="status"></p>
         <div class="actions"><button class="btn btn-gold" type="button" data-cmp="save-nut">Zapisz wartości (+10 pkt)</button><button class="btn btn-white" type="button" data-cmp="skip">Pomiń</button></div></div>`;
+    }
+    function setPer(v) {
+      st.per = v; const per = perText();
+      el.querySelectorAll('.nut-per-label').forEach(t => { t.textContent = per; });
+      el.querySelectorAll('[data-cmp^="per-"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cmp === 'per-' + v)));
+      el.querySelectorAll('[data-nut]').forEach(i => i.setAttribute('aria-label', `${i.dataset.label} w ${i.dataset.unit} ${per}`));
     }
 
     el.onclick = async e => {
       const b = e.target.closest('[data-cmp]'); if (!b || b.disabled) return;
       const act = b.dataset.cmp;
       if (act === 'skip') { next(); return; }
+      if (act === 'per-g' || act === 'per-ml') { setPer(act === 'per-ml' ? 'ml' : 'g'); return; }
       if (act === 'save-ingr') {
         const text = A.$('cmpIngr').value.replace(/\s+/g, ' ').trim(), msg = A.$('cmpIngrMsg');
         if (text.length < 8) { msg.textContent = 'Wpisz skład z opakowania, przynajmniej kilka składników.'; A.$('cmpIngr').focus(); return; }
@@ -127,7 +138,7 @@
       }
       if (act === 'save-nut') {
         const n = {}; el.querySelectorAll('[data-nut]').forEach(i => { n[i.dataset.nut] = A.parseNum(i.value); });
-        const problem = A.nutProblem(n), msg = A.$('cmpNutMsg');
+        const problem = A.nutProblem(n).replace('na 100 g', perText()), msg = A.$('cmpNutMsg');
         if (problem) { msg.textContent = problem; return; }
         const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v != null));
         b.disabled = true; b.textContent = 'Zapisuję…';

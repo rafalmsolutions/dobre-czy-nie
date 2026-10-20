@@ -425,7 +425,7 @@
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;
     const miss = missingParts(p, cur.snapshot), nmKnown = !miss.nut;
-    A.openComplete(el, { code: p.code, name: p.name, needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
+    A.openComplete(el, { code: p.code, name: p.name, drink: !!p.drink, needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
       const local = A.store.get('local', {})[p.code] || {};
       if (local.ingredients && !p.ingredients) p.ingredients = local.ingredients;
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);

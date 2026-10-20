@@ -384,8 +384,14 @@ body.no-scores #matchBox.general > .row{display:none}
 @media (prefers-reduced-motion:reduce){.save-state{transition:none}}
 /* Uzupełnianie produktu */
 .complete-photo{width:100%;max-height:260px;object-fit:contain;border-radius:14px;background:#fff;border:2px solid var(--line)}
-.nut-grid{display:flex;flex-direction:column;gap:6px}
-.nut-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:700;font-size:.95rem}
-.nut-row.sub{padding-left:14px;font-weight:600}
-.nut-in{display:flex;align-items:center;gap:6px;flex:0 0 auto}
-.nut-in .field{width:96px;text-align:right;padding:8px 10px;min-height:42px}
+.nut-grid{display:flex;flex-direction:column;gap:6px;min-width:0}
+.nut-head{display:flex;justify-content:space-between;gap:10px;padding:0 34px 2px 0;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.nut-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;font-weight:700;font-size:.95rem}
+.nut-row.sub{padding-left:12px;font-weight:600}
+.nut-name{min-width:0;overflow-wrap:anywhere}
+.nut-in{display:flex;align-items:center;gap:4px}
+.nut-in .field{width:clamp(64px,22vw,100px);min-width:0;text-align:right;padding:8px 10px;min-height:44px;font-size:16px}
+.nut-unit{width:30px;font-size:.85rem}
+.nut-per{display:flex;flex-wrap:wrap;gap:6px}
+.nut-per button{min-height:40px;padding:6px 12px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--ink);font-weight:800;font-size:.9rem;cursor:pointer}
+.nut-per button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}

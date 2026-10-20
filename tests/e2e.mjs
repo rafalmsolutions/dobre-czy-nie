@@ -290,6 +290,15 @@ await section('Dodaj brakujący produkt', async () => {
   ok(await pts(page) === p1 + 10, 'skład: +10 pkt');
   // krok 3: wartości odżywcze
   await page.waitForSelector('[data-nut=energy-kcal]');
+  ok((await txt(page, '#completeNut .nut-head')).toLowerCase().includes('na 100 g'), 'wartości: widać, że to na 100 g');
+  await page.click('[data-cmp=per-ml]');
+  ok((await txt(page, '#completeNut .nut-head')).toLowerCase().includes('na 100 ml') && (await page.getAttribute('[data-nut=fat]', 'aria-label')).includes('100 ml'), 'wartości: przełącznik na 100 ml');
+  await page.fill('[data-nut=energy-kcal]', '1'); await page.click('[data-cmp=per-g]');
+  ok(await page.inputValue('[data-nut=energy-kcal]') === '1', 'przełącznik nie kasuje wpisanych liczb');
+  await page.fill('[data-nut=energy-kcal]', '');
+  await page.setViewportSize({ width: 300, height: 700 });
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'tabela wartości mieści się na 300 px bez przewijania w bok');
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.fill('[data-nut=energy-kcal]', '95'); await page.fill('[data-nut=fat]', '2,5'); await page.fill('[data-nut=saturated-fat]', '4');
   await page.click('[data-cmp=save-nut]');
   ok((await txt(page, '#cmpNutMsg')).length > 0, 'wartości: brakujące albo sprzeczne dane, komunikat');
