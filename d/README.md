@@ -1,0 +1,14 @@
+# Dobre czy nie? – wersja D (do porównania)
+
+Druga wersja aplikacji w wyglądzie D „Wystawa”: jasnoszare tło, produkt na okrągłym „talerzu”, nazwa w dwóch grubościach,
+szklane karty, kwadrat oceny w kolorze werdyktu i pastelowy łuk w tle. Bez maskotki.
+
+Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
+
+- Główna aplikacja zostaje bez zmian. Ten folder to osobna kopia plików.
+- Obie wersje korzystają z tej samej kopii bazy (`../data/`) i tych samych plików `../config/`.
+- Profil, historia, półki i punkty są wspólne (ta sama pamięć przeglądarki), więc łatwo porównać te same produkty.
+- Statystyki GoatCounter: ekrany wersji D mają ścieżki `/d/…`, a zdarzenia przedrostek `d-`.
+- Nowy wygląd: `d.css` (nakłada się na `styles.css`). Zmiany w kodzie ekranów: `ui-product.js` (nagłówek produktu, kwadrat oceny,
+  kolumna boczna na komputerze), `ui-home.js` (duży przycisk skanowania), `ui-base.js` (bez maskotki, ścieżki do danych), `art.js` (nagłówki zamiast wstęg).
+- Poprawki w głównej aplikacji nie trafiają tu same. Jeśli wybierzesz wersję D, przeniesiemy wygląd do głównej aplikacji.
