@@ -33,7 +33,12 @@ jobs:
               const cats = Object.fromEntries(Object.entries(r.categories).map(([k, c]) => [k, Math.round(c.score * 100)]));
               const failed = Object.values(r.audits).filter(a => a.score !== null && a.score < 0.9 && a.scoreDisplayMode !== "informative" && a.scoreDisplayMode !== "manual")
                 .map(a => ({ id: a.id, title: a.title, score: a.score, value: a.displayValue || "", items: ((a.details && a.details.items) || []).slice(0, 5).map(i => (i.node && (i.node.snippet || i.node.selector)) || i.url || i.label || "").filter(Boolean) }));
-              out[f.replace(".json", "")] = { categories: cats, metrics: { fcp: r.audits["first-contentful-paint"].displayValue, lcp: r.audits["largest-contentful-paint"].displayValue, tbt: r.audits["total-blocking-time"].displayValue, cls: r.audits["cumulative-layout-shift"].displayValue, si: r.audits["speed-index"].displayValue }, failed };
+              const detail = {};
+              for (const id of ["mainthread-work-breakdown", "bootup-time", "long-tasks", "network-requests"]) {
+                const a = r.audits[id]; if (!a || !a.details || !a.details.items) continue;
+                detail[id] = a.details.items.slice(0, id === "network-requests" ? 40 : 12).map(i => Object.fromEntries(Object.entries(i).filter(([k, v]) => typeof v !== "object").map(([k, v]) => [k, typeof v === "number" ? Math.round(v) : v])));
+              }
+              out[f.replace(".json", "")] = { categories: cats, metrics: { fcp: r.audits["first-contentful-paint"].displayValue, lcp: r.audits["largest-contentful-paint"].displayValue, tbt: r.audits["total-blocking-time"].displayValue, cls: r.audits["cumulative-layout-shift"].displayValue, si: r.audits["speed-index"].displayValue }, failed, detail };
             }
             fs.mkdirSync("audit", { recursive: true });
             fs.writeFileSync("audit/summary.json", JSON.stringify({ at: new Date().toISOString(), pages: out }, null, 1));
