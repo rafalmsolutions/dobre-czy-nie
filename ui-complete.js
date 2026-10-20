@@ -17,7 +17,7 @@
     let s = String(raw || '').replace(/\s+/g, ' ').trim();
     s = s.replace(/^(skład|składniki|ingredients)\s*[:.-]\s*/i, '');
     const f = fold(s);
-    const stops = ['nalezy spozyc', 'najlepiej spozyc', 'przechowywac', 'wartosc odzywcza', 'wartosci odzywcze', 'data minimalnej', 'masa netto', 'wyprodukowano', 'producent:', 'zawartosc netto', 'po otwarciu'];
+    const stops = ['nalezy ', 'nr partii', 'najlepiej spozyc', 'przechowywac', 'wartosc odzywcza', 'wartosci odzywcze', 'data minimalnej', 'masa netto', 'wyprodukowano', 'producent:', 'zawartosc netto', 'po otwarciu'];
     let cut = s.length;
     stops.forEach(w => { const i = f.indexOf(w); if (i > 15 && i < cut) cut = i; });
     return s.slice(0, cut).replace(/[\s,;.-]+$/, '').trim();
