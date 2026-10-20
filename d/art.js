@@ -41,3 +41,18 @@ function ribbonSvg(textEsc, w, colors) {
   const words = String(textEsc).split(' ');
   return `<div class="d-ribbon" role="heading" aria-level="2"><span class="w-light">${words[0]}</span> <span class="w-bold">${words.slice(1).join(' ')}</span></div>`;
 }
+
+/* Wersja D: płaskie, spokojne medale i poziom (bez złota, wstążek i połysku). */
+const D_MEDAL = { odkrywanie: '#C9DAEC', wybory: '#D3E8DA', baza: '#F6D3B6', ogrod: '#F6D0DA', rodzina: '#E4DAF0' };
+function medalSvg(glyphKey, cat, earned, size, tier) {
+  const glyph = GLYPH[glyphKey] || GLYPH.trophy;
+  const bg = earned ? (D_MEDAL[cat] || '#DADCE0') : '#F1F2F3', ink = earned ? '#2B2C30' : '#9A9DA3';
+  let o = `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true" class="medal"><circle cx="50" cy="50" r="46" fill="${bg}"/>`;
+  if (!earned) o += '<circle cx="50" cy="50" r="45" fill="none" stroke="#C4C6CB" stroke-width="2" stroke-dasharray="5 5"/>';
+  o += `<g transform="translate(26 26) scale(2)"><path d="${glyph}" fill="none" stroke="${ink}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  for (let k = 0; k < (tier || 0); k++) { const x = 50 + (k - ((tier || 0) - 1) / 2) * 12; o += `<circle cx="${x}" cy="86" r="3.5" fill="#2B2C30"/>`; }
+  return o + '</svg>';
+}
+function shieldSvg(n, size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#2B2C30"/><text x="50" y="50" dy=".36em" text-anchor="middle" font-family="Montserrat, system-ui, sans-serif" font-weight="800" font-size="44" fill="#FFFFFF">${Number(n) || 1}</text></svg>`;
+}

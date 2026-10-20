@@ -228,3 +228,11 @@ body.no-scores .d-badge{display:none !important}
   #scr-product .d-pack .prod-img{width:64px;height:64px}
 }
 .cat-link .grow{min-width:0;hyphens:auto;-webkit-hyphens:auto}
+/* Bez bajkowych ikonek: działy na półkach, cele, gratulacje */
+.dept-h .di{display:none}
+.goal-tile > svg{display:none !important}
+.goal-tile{min-height:72px;justify-content:center}
+.celebrate .crew{display:none}
+.level-card .xp{margin-top:2px}
+.medal-btn.locked b{color:var(--muted)}
+.stat .medal{flex:0 0 auto}

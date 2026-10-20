@@ -104,7 +104,7 @@
   }
   function critRow(r) {
     const ic = { good: '✓', bad: '✕', warn: '!', info: 'i' }[r.kind] || 'i';
-    const goalIcon = r.goal && GOAL_TILES[r.goal] ? art(GOAL_TILES[r.goal].icon, 30) : '';
+    const goalIcon = ''; // wersja D: bez kolorowych ikonek celów, sam znak ✓ ✕ ! i
     return `<div class="crit ${r.kind}">${goalIcon ? `<span style="width:30px;height:30px;flex:0 0 auto">${goalIcon}</span>` : `<span class="ci" aria-hidden="true">${ic}</span>`}<span class="grow"><b>${esc(r.title)}</b>${r.text ? `<small>${esc(r.text)}</small>` : ''}</span></div>`;
   }
   function render() {

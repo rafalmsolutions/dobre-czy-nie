@@ -171,8 +171,56 @@ const App = {};
   const CAT_KEYS = new Set(SHOP_CATEGORIES.map(c => c.key));
   const CAT_ALIAS = { 'en:hams': 'en:prepared-meats', 'en:cold-cuts': 'en:prepared-meats', 'en:frankfurters': 'en:sausages', 'en:hazelnut-spreads': 'en:sweet-spreads', 'en:plain-yogurts': 'en:yogurts', 'en:plant-based-milks': 'en:plant-based-milk-alternatives', 'en:mineral-waters': 'en:waters', 'en:chips': 'en:crisps', 'en:carbonated-drinks': 'en:sodas', 'en:sweetened-beverages': 'en:sodas', 'en:fruit-based-beverages': 'en:fruit-juices', 'en:nectars': 'en:fruit-juices', 'en:orange-nectars': 'en:fruit-juices', 'en:bars-covered-with-chocolate': 'en:chocolates', 'en:confectioneries': 'en:candies', 'en:instant-beverages': 'en:coffees', 'pl:kawy-ziarniste': 'en:coffees', 'en:broths': 'en:soups', 'en:poultry-broth': 'en:soups' };
   A.catKeyOf = cats => { const c = Array.isArray(cats) ? cats : []; for (let i = c.length - 1; i >= 0; i--) { if (CAT_KEYS.has(c[i])) return c[i]; if (CAT_ALIAS[c[i]] && CAT_KEYS.has(CAT_ALIAS[c[i]])) return CAT_ALIAS[c[i]]; } return ''; };
+  // Gdy baza nie podaje kategorii: rozpoznanie po nazwie produktu (kolejność: od najbardziej szczegółowych).
+  const NAME_RULES = [
+    [/\b(parowk|kielbas|kabanos|frankfurter)/, 'en:sausages'],
+    [/\b(sardyn|tunczyk|szprot|makrel)/, 'en:canned-fishes'],
+    [/\b(losos|dorsz|pstrag|mintaj|filet rybn|ryba|ryby)/, 'en:fishes'],
+    [/\b(szynk|poledwic|salami|boczek|wedlin|baleron|mortadel)/, 'en:prepared-meats'],
+    [/\b(krem (orzech|kakao|czekol)|nutell|maslo orzech|pasta orzech)/, 'en:sweet-spreads'],
+    [/\b(napoj (owsian|sojow|migdal|ryzow|kokos|roslin))/, 'en:plant-based-milk-alternatives'],
+    [/\b(budyn|kisiel|deser|pudding|panna cotta)/, 'en:dairy-desserts'],
+    [/\bjogurt/, 'en:yogurts'],
+    [/\b(twarog|twarozek|serek|homogeniz)/, 'en:quarks'],
+    [/\b(ser|sery|sera|gouda|edam|mozzarell|camembert|feta|parmezan|cheddar|brie)\b/, 'en:cheeses'],
+    [/\b(mleko|kefir|maslank)/, 'en:milks'],
+    [/\b(maslo|masla)\b/, 'en:butters'],
+    [/\b(musli|granol)/, 'en:mueslis'],
+    [/\b(platki|owsianka)/, 'en:breakfast-cereals'],
+    [/\b(dzem|konfitur|powidl|marmolad)/, 'en:jams'],
+    [/\bhummus/, 'en:hummus'],
+    [/\b(chleb|bulk|bagiet|pieczyw|tortill|grahamk|rogal)/, 'en:breads'],
+    [/\b(chips|crisps)/, 'en:crisps'],
+    [/\b(paluszk|krakers|precel|wafle ryz|popcorn|chrupk)/, 'en:salty-snacks'],
+    [/\b(makaron|spaghetti|penne|fusilli|tagliatell|lasagn|nitki)/, 'en:pastas'],
+    [/\b(kasza|kaszk|bulgur|kuskus|quinoa)/, 'en:groats'],
+    [/\b(ryz|ryzu)\b/, 'en:rices'],
+    [/\b(fasol|soczewic|ciecierzyc|cieciork|groch)/, 'en:legumes'],
+    [/\bketchup/, 'en:ketchup'],
+    [/\b(sos|sosy|pesto|majonez)\b/, 'en:sauces'],
+    [/\b(olej|oliwa)/, 'en:vegetable-oils'],
+    [/\b(ogork|kiszon|marynowan)/, 'en:pickles'],
+    [/\b(kukurydz|groszek)/, 'en:canned-vegetables'],
+    [/\b(zupa|bulion|rosol|barszcz|zurek|krem z)/, 'en:soups'],
+    [/\b(pierog|uszka|kopytk|pyzy)/, 'en:pierogi'],
+    [/\bpizz/, 'en:pizzas'],
+    [/\b(mrozon|mieszanka warzyw)/, 'en:frozen-vegetables'],
+    [/\b(danie|gulasz|bigos|golabk|risotto)/, 'en:meals'],
+    [/\b(rodzynk|suszon|daktyl|zurawin|morel|figi)/, 'en:dried-fruits'],
+    [/\b(orzech|migdal|nerkow|pistacj|arachid)/, 'en:nuts'],
+    [/\b(czekolad|baton|praliny|bombonier)/, 'en:chocolates'],
+    [/\b(ciastk|herbatnik|biszkopt|wafel|wafelek|piernik|cookies)/, 'en:biscuits'],
+    [/\b(cukierk|zelk|zelki|lizak|landrynk|gumy)/, 'en:candies'],
+    [/\b(lody|lodow)/, 'en:ice-creams'],
+    [/\b(sok|soki|nektar|smoothie)\b/, 'en:fruit-juices'],
+    [/\b(cola|lemoniad|oranzad|tonic|napoj gazow|napoj energ|energy)/, 'en:sodas'],
+    [/\b(herbat)/, 'en:teas'],
+    [/\b(kawa|kawy|cappuccino|espresso|latte)\b/, 'en:coffees'],
+    [/\bwoda\b/, 'en:waters']
+  ];
+  A.catKeyByName = name => { const f = fold(name).replace(/[^a-z0-9 ]+/g, ' '); for (const [re, k] of NAME_RULES) if (re.test(f)) return k; return ''; };
   A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
-  A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories)) : '';
+  A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
   // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };
 

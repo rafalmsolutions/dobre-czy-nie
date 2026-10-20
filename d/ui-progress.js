@@ -39,7 +39,7 @@
           <span class="xp"><i style="width:${pct}%"></i><span>${g.points}${nextPts ? ' / ' + nextPts : ''} pkt</span></span></div></div>
         ${levels.length ? `<div class="lvdots" aria-label="Poziomy">${dots}</div>` : ''}
         <p class="small muted">${lv.next ? `Następny: <b style="color:var(--ink)">${esc(lv.next.name)}</b> za ${nextPts - g.points} pkt.${lv.next.reward ? ' Nagroda: ' + esc(lv.next.reward) + '.' : ''}` : 'Masz najwyższy poziom. Brawo!'}</p>
-        <p class="small muted">Masz też <b style="color:var(--ink)">${g.drops} ${plural(g.drops, 'kroplę', 'krople', 'kropli')}</b>. Przydadzą się w ogródku Ziarenka, który pojawi się w kolejnej wersji.</p>
+        <p class="small muted">Masz też <b style="color:var(--ink)">${g.drops} ${plural(g.drops, 'kroplę', 'krople', 'kropli')}</b>. Przydadzą się w ogródku, który pojawi się w kolejnej wersji.</p>
       </div>
       <div class="stats">
         <div class="card stat">${medalSvg('magnifier', 'odkrywanie', true, 40)}<div><b>${(g.sets.product_checked || []).length}</b><span>${plural((g.sets.product_checked || []).length, 'sprawdzony produkt', 'sprawdzone produkty', 'sprawdzonych produktów')}</span></div></div>
