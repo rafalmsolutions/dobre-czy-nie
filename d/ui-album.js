@@ -17,7 +17,19 @@
   const GALLERY = {
     'en:chocolates': { img: 'img/gal/chocolates.webp', style: 'plakat art deco' },
     'en:yogurts': { img: 'img/gal/yogurts.webp', style: 'martwa natura' },
-    'en:breads': { img: 'img/gal/breads.webp', style: 'drzeworyt' }
+    'en:breads': { img: 'img/gal/breads.webp', style: 'drzeworyt' },
+    'en:cheeses': { img: 'img/gal/cheeses.webp', style: 'secesyjny plakat' },
+    'en:breakfast-cereals': { img: 'img/gal/breakfast-cereals.webp', style: 'akwarela botaniczna' },
+    'en:milks': { img: 'img/gal/milks.webp', style: 'impresjonizm' },
+    'en:prepared-meats': { img: 'img/gal/prepared-meats.webp', style: 'holenderska martwa natura' },
+    'en:pastas': { img: 'img/gal/pastas.webp', style: 'włoski plakat z lat 50.' },
+    'en:coffees': { img: 'img/gal/coffees.webp', style: 'linoryt' },
+    'en:teas': { img: 'img/gal/teas.webp', style: 'japoński drzeworyt' },
+    'en:fruit-juices': { img: 'img/gal/fruit-juices.webp', style: 'pop-art z lat 70.' },
+    'en:nuts': { img: 'img/gal/nuts.webp', style: 'mozaika' },
+    'en:biscuits': { img: 'img/gal/biscuits.webp', style: 'haft krzyżykowy' },
+    'en:pierogi': { img: 'img/gal/pierogi.webp', style: 'polska wycinanka ludowa' },
+    'en:legumes': { img: 'img/gal/legumes.webp', style: 'witraż' }
   };
   const ORDER = [1, 8, 3, 6, 0, 9, 2, 7, 5, 4];
   A.gallery = key => GALLERY[key] || null;
