@@ -130,7 +130,8 @@ dialog{background:#F7F7F8}
 .plus-fly{background:#fff;border:0;color:var(--ink);font-family:var(--f-body);font-weight:800}
 .save-state{background:var(--ink)}
 .celebrate{background:radial-gradient(circle at 50% 36%,#FFFFFF 0%,#E8E9EB 70%);color:var(--ink)}
-.celebrate .rays,.celebrate .confetti{display:none}
+.celebrate .rays{display:none}
+.celebrate .confetti i{border-radius:3px;opacity:.9}
 .celebrate .glow{background:radial-gradient(circle,rgba(246,211,182,.9),rgba(246,211,182,0) 70%)}
 .celebrate h2{text-shadow:none;font-family:var(--f-display);font-weight:900}
 .boot b{font-family:var(--f-display);font-weight:900}
@@ -267,3 +268,47 @@ body.no-scores .d-badge{display:none !important}
   #scr-product .d-verdict .mlabel{font-size:1.5rem}
   #scr-product .d-hero .d-arc{left:34%;top:-330px;width:760px;height:760px;border-width:90px}
 }
+
+/* ---------- Wersja D: profil „Nie jem” + „Pilnuję” ---------- */
+.d-goal{align-items:flex-start;gap:4px;min-height:96px;padding:10px 12px}
+.d-goal .d-goal-ic{width:40px;height:40px;border-radius:12px;background:#F1F2F3;display:flex;align-items:center;justify-content:center;color:var(--ink);margin-bottom:4px}
+.d-goal[aria-pressed="true"] .d-goal-ic{background:var(--ink);color:#fff}
+.d-watchline{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.7)}
+.d-pchip{gap:6px}
+.d-pchip .d-ic{flex:0 0 auto}
+.d-chip{gap:6px;padding:6px 12px 6px 8px}
+.d-chip .d-ic{flex:0 0 auto}
+.d-rules{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.6);color:var(--muted)}
+.d-rules > b{color:var(--ink)}
+/* Rachunek dopasowania */
+.bill{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.bill-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(43,44,48,.08)}
+.bill-row .grow{min-width:0}
+.bill-row b{font-weight:800}
+.bill-row small{display:block;color:var(--muted);font-size:12.5px}
+.bill-word{font-weight:700;color:var(--muted)}
+.bill-ic{flex:0 0 auto;width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#F1F2F3;color:var(--ink)}
+.bill-row.good .bill-ic{background:var(--v-great)}
+.bill-row.bad .bill-ic{background:var(--v-bad)}
+.bill-row.warn .bill-ic{background:var(--v-poor)}
+.bill-row.base .bill-ic{background:#fff}
+.bill-pts{flex:0 0 auto;min-width:44px;text-align:right;font-family:var(--f-display);font-weight:800;font-size:16px}
+.bill-row.good .bill-pts{color:var(--great)}
+.bill-row.bad .bill-pts{color:var(--poor)}
+.bill-sum{display:flex;align-items:center;gap:10px;padding:10px 0 2px;font-weight:800}
+.bill-sum b{font-family:var(--f-display);font-size:22px}
+.bill-note{color:var(--muted)}
+body.no-scores .bill-pts,body.no-scores .bill-sum{display:none}
+
+/* ---------- Wersja D: animowane medale ---------- */
+.medal{overflow:visible}
+.medal.on .m-shine{animation:mshine 5s ease-in-out infinite;animation-delay:var(--md,0s)}
+@keyframes mshine{0%,72%{transform:translateX(0)}100%{transform:translateX(230px)}}
+.m-pop{animation:mpop .9s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes mpop{0%{transform:scale(.3) rotateY(180deg);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+.m-pop .m-glyph{stroke-dasharray:1;stroke-dashoffset:1;animation:mdraw .8s .55s ease-out forwards}
+@keyframes mdraw{to{stroke-dashoffset:0}}
+.medal-btn:hover .medal.on,.medal-btn:focus-visible .medal.on{transform:translateY(-2px) rotate(-4deg);transition:transform .2s}
+.d-tiers{display:flex;gap:10px;flex-wrap:wrap}
+.d-tier{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted)}
+.d-tier.done{color:var(--ink)}

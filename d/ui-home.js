@@ -3,37 +3,47 @@
 (() => {
   const A = App, esc = A.esc;
 
-  /* ---------- Start: 3 kroki ---------- */
-  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'palm'], ['avoid', 'sweeteners'], ['avoid', 'sugar'], ['avoid', 'ultra']];
+  /* ---------- Start: 3 kroki (wersja D: cele to skróty do listy „Pilnuję”) ---------- */
+  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
   let step = 1, draft = null, msg = '';
   A.route('start', () => {
-    if (!draft) draft = { goals: A.profile.goals.slice(), picks: {}, name: A.userName() };
+    if (!draft) draft = { goals: A.profile.goals.slice(), watch: A.profile.watch.slice(), picks: {}, name: A.userName() };
     if (!Object.keys(draft.picks).length) ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => { draft.picks[g + ':' + k] = true; }));
     renderStart();
   });
   function opt(g, k) { return PROFILE_OPTIONS[g].find(o => o.key === k); }
+  // Włączenie celu dodaje jego pozycje do „Pilnuję”; wyłączenie zdejmuje te, których nie potrzebuje inny wybrany cel.
+  A.toggleGoalWatch = (watch, goals, key, on) => {
+    const g = GOALS.find(x => x.key === key); if (!g) return watch;
+    const keep = new Set(watchFromGoals(goals.filter(k => k !== key)));
+    let out = watch.slice();
+    if (on) g.watch.forEach(w => { if (!out.includes(w)) out.push(w); });
+    else out = out.filter(w => !g.watch.includes(w) || keep.has(w));
+    return WATCH.map(w => w.key).filter(k => out.includes(k)).slice(0, WATCH_MAX);
+  };
+  A.goalTile = (g, on, act) => { const t = GOAL_TILES[g.key]; return `<button class="goal-tile d-goal" type="button" data-act="${act}" data-k="${g.key}" aria-pressed="${on}"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span><span class="d-goal-ic">${A.dIcon(t.icon, 24)}</span><b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; };
+  A.watchLine = watch => watch.length ? `<p class="small d-watchline"><b>Będę pilnować:</b> ${watch.map(k => esc((WATCH.find(w => w.key === k) || {}).label || k).toLowerCase()).join(', ')}.</p>` : '';
   function renderStart() {
     const el = A.$('scr-start');
     const bar = `<div class="steps-bar" aria-label="Krok ${step} z 3">${[1, 2, 3].map(i => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}<span class="small muted" style="margin-left:6px;font-weight:800">Krok ${step} z 3</span></div>`;
     let body = '';
     if (step === 1) {
-      body = `<div class="row" style="align-items:flex-end">${A.mascot('hello', 64)}<div class="bubble">Pomożemy Ci wybierać produkty, które pasują właśnie do Ciebie.</div></div>
-        <div><h1 id="startTitle" style="font-size:1.8rem">Jaki masz cel?</h1><p class="small muted">Wybierz do ${GOALS_MAX}. Zmienisz je w każdej chwili.</p></div>
-        <div class="goal-grid">${GOALS.map(g => { const t = GOAL_TILES[g.key]; const on = draft.goals.includes(g.key); return `<button class="goal-tile" type="button" data-act="goal" data-k="${g.key}" aria-pressed="${on}" style="background:radial-gradient(circle at 30% 25%,#fff 0%,${t.bg} 65%)"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span>${art(t.icon, 42)}<b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; }).join('')}</div>
+      body = `<p class="small muted">Pomożemy Ci wybierać produkty, które pasują właśnie do Ciebie.</p>
+        <div><h1 id="startTitle" style="font-size:1.8rem">Jaki masz cel?</h1><p class="small muted">Wybierz do ${GOALS_MAX}. Cel zaznacza, czego mamy pilnować w produktach. Zmienisz to w profilu.</p></div>
+        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, draft.goals.includes(g.key), 'goal')).join('')}</div>
+        ${A.watchLine(draft.watch)}
         <p class="msg" role="status" id="startMsg">${esc(msg)}</p>`;
     } else if (step === 2) {
-      body = `<div class="row" style="align-items:flex-end">${A.mascot('think', 60)}<div class="bubble">Czego nie jesz albo czego unikasz? Sprawdzę to przy każdym produkcie.</div></div>
-        <div><h1 id="startTitle" style="font-size:1.8rem">Czego unikasz?</h1><p class="small muted">Możesz nic nie zaznaczać. Pełną listę (alergeny, diety, własne składniki) znajdziesz w profilu.</p></div>
+      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Czego nie jesz?</h1><p class="small muted">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać. Pełna lista alergenów i własne składniki są w profilu.</p></div>
         <div class="pchips">${QUICK_AVOID.map(([g, k]) => `<label class="pchip"><input type="checkbox" data-pick="${g}:${k}"${draft.picks[g + ':' + k] ? ' checked' : ''}>${esc(opt(g, k).label)}</label>`).join('')}</div>
         <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Zawsze sprawdź etykietę.</p>`;
     } else {
-      body = `<div class="row" style="align-items:flex-end">${A.mascot('wink', 60)}<div class="bubble">Ostatnia rzecz. Jak mam się do Ciebie zwracać?</div></div>
-        <div><h1 id="startTitle" style="font-size:1.8rem">Jak masz na imię?</h1><p class="small muted">Nieobowiązkowe. Imię zostaje tylko w tym telefonie.</p></div>
+      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Jak masz na imię?</h1><p class="small muted">Nieobowiązkowe. Imię zostaje tylko w tym telefonie.</p></div>
         <input class="field" id="startName" maxlength="30" autocomplete="given-name" placeholder="np. Ania" value="${esc(draft.name)}" aria-label="Twoje imię">
-        <div class="panel stack"><b style="font-family:var(--f-display)">Jak to działa?</b><ul class="why">
-          <li class="why-plus"><span class="why-ic">1</span><span>Skanujesz produkt i od razu widzisz, czy pasuje do Ciebie.</span></li>
-          <li class="why-plus"><span class="why-ic">2</span><span>Zgadujesz „dobre czy nie”, zbierasz punkty i odznaki.</span></li>
-          <li class="why-plus"><span class="why-ic">3</span><span>Odkładasz dobre produkty na półki, czyli listy zakupów.</span></li></ul></div>`;
+        <div class="panel stack"><b style="font-family:var(--f-display)">Jak liczymy dopasowanie?</b><ul class="why">
+          <li class="why-plus"><span class="why-ic">1</span><span>Zaczynamy od oceny składu produktu, takiej samej dla wszystkich.</span></li>
+          <li class="why-plus"><span class="why-ic">2</span><span>Każda rzecz, której pilnujesz, dodaje albo odejmuje punkty. Zawsze pokażemy ile i dlaczego.</span></li>
+          <li class="why-plus"><span class="why-ic">3</span><span>Jeśli produkt zawiera coś, czego nie jesz, oznaczymy go „Nie pasuje”.</span></li></ul></div>`;
     }
     el.innerHTML = `<div class="wrap" style="gap:12px">${bar}${body}
       <div class="stack" style="margin-top:auto;gap:6px">
@@ -42,7 +52,7 @@
       </div></div>`;
   }
   function saveStart(finish) {
-    const p = Object.assign({}, A.profile, { goals: draft.goals.slice() });
+    const p = Object.assign({}, A.profile, { goals: draft.goals.slice(), watch: draft.watch.slice() });
     ['allergens', 'diet', 'avoid'].forEach(g => {
       const quick = QUICK_AVOID.filter(q => q[0] === g).map(q => q[1]);
       p[g] = A.profile[g].filter(k => !quick.includes(k)).concat(quick.filter(k => draft.picks[g + ':' + k]));
@@ -59,9 +69,9 @@
   A.startAction = (act, el) => {
     if (act === 'goal') {
       const k = el.dataset.k, i = draft.goals.indexOf(k);
-      if (i >= 0) { draft.goals.splice(i, 1); msg = ''; }
+      if (i >= 0) { draft.goals.splice(i, 1); draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, false); msg = ''; }
       else if (draft.goals.length >= GOALS_MAX) msg = `Możesz wybrać najwyżej ${GOALS_MAX} cele. Odznacz któryś, żeby dodać nowy.`;
-      else { draft.goals.push(k); msg = ''; }
+      else { draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, true); draft.goals.push(k); msg = ''; }
       renderStart();
       const again = A.$('scr-start').querySelector(`[data-k="${k}"]`); if (again) again.focus();
     } else if (act === 'start-next') {
@@ -80,17 +90,16 @@
 
   /* ---------- Dla Ciebie ---------- */
   // Czy osoba ustawiła coś, co zmienia ocenę (cel inny niż „Po prostu zdrowiej” albo ograniczenie)?
-  A.hasProfile = () => A.profile.goals.some(g => { const x = GOALS.find(y => y.key === g); return x && !x.general; }) || ['allergens', 'diet', 'avoid', 'custom'].some(g => A.profile[g].length);
+  A.hasProfile = () => A.profile.watch.length > 0 || ['allergens', 'diet', 'avoid', 'custom'].some(g => A.profile[g].length);
   A.pctClass = lvl => ({ great: 'great', good: 'good', poor: 'poor', bad: 'bad' }[lvl] || 'unknown');
   A.profileChips = () => {
     const out = [];
-    A.profile.goals.forEach(k => { const t = GOAL_TILES[k]; if (t) out.push(`<span class="chip"><span class="ci">${art(t.icon, 24)}</span>${esc(t.label)}</span>`); });
+    A.profile.watch.forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(`<span class="chip d-chip">${A.dIcon(w.icon, 16)}${esc(w.label)}</span>`); });
     ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => {
       const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (!o) return;
-      const icon = k === 'palm' ? 'avoid_palm' : 'avoid_generic';
-      out.push(g === 'diet' ? `<span class="chip plain">${esc(o.label)}</span>` : `<span class="chip avoid"><span class="ci">${art(icon, 24)}</span>Bez: ${esc(o.label.toLowerCase())}</span>`);
+      out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}${g === 'diet' ? esc(o.label) : 'Nie jem: ' + esc(o.label.toLowerCase())}</span>`);
     }));
-    A.profile.custom.forEach(c => out.push(`<span class="chip avoid"><span class="ci">${art('avoid_generic', 24)}</span>Bez: ${esc(c)}</span>`));
+    A.profile.custom.forEach(c => out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}Nie jem: ${esc(c)}</span>`));
     return out;
   };
   A.route('home', () => {

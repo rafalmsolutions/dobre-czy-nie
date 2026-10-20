@@ -123,6 +123,19 @@
       <div class="d-hside">${chip}${verdict}</div>
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
+  /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
+  function billHtml(pm) {
+    const sign = d => d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '0';
+    const watch = pm.rows.filter(r => !r.exclude), excl = pm.rows.filter(r => r.exclude);
+    const line = r => `<li class="bill-row ${r.kind}">${r.watch ? `<span class="bill-ic">${A.dIcon((WATCH.find(w => w.key === r.watch) || {}).icon, 18)}</span>` : `<span class="bill-ic">${A.dIcon(r.kind === 'good' ? 'healthy' : 'ban', 18)}</span>`}<span class="grow"><b>${esc(r.title)}</b>${r.word ? ` <span class="bill-word">${esc(r.word)}</span>` : ''}${r.value ? `<small>${esc(r.value)}${r.text ? ', ' + esc(r.text) : ''}</small>` : r.text ? `<small>${esc(r.text)}</small>` : ''}</span><span class="bill-pts">${r.delta == null ? (r.cap ? 'max ' + r.cap + '%' : '') : sign(r.delta)}</span></li>`;
+    const fail = pm.status === 'fail';
+    return `<ul class="bill" aria-label="Jak policzyliśmy dopasowanie">
+      ${pm.base != null ? `<li class="bill-row base"><span class="bill-ic">${A.dIcon('healthy', 18)}</span><span class="grow"><b>Ocena składu</b><small>taka sama dla wszystkich</small></span><span class="bill-pts">${pm.base}</span></li>` : ''}
+      ${watch.map(line).join('')}${excl.map(line).join('')}
+      <li class="bill-sum"><span class="grow">Dla Ciebie</span><b>${pm.pct == null ? '–' : pm.pct + '%'}</b></li></ul>
+      ${fail ? '<p class="small bill-note">Zawiera coś, czego nie jesz, więc dopasowanie wynosi najwyżej 10%.</p>' : pm.capped && pm.capBy ? `<p class="small bill-note">Najwyżej ${pm.cap}% (${esc(pm.capBy)}).</p>` : pm.pct === 12 && pm.base != null && pm.base + pm.sum < 12 ? '<p class="small bill-note">Najmniej 12%: niżej są tylko produkty z czymś, czego nie jesz.</p>' : ''}
+      <a class="small" href="#/profil">Zmień, czego pilnujesz</a>`;
+  }
   function critRow(r) {
     const ic = { good: '✓', bad: '✕', warn: '!', info: 'i' }[r.kind] || 'i';
     const goalIcon = ''; // wersja D: bez kolorowych ikonek celów, sam znak ✓ ✕ ! i
@@ -153,8 +166,7 @@
     parts.push('<div class="d-side">');
     parts.push(`<div class="panel stack${pm.personal ? '' : ' general'}" id="matchBox">
       <span class="small muted" style="font-weight:800;letter-spacing:.06em">${pm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
-      ${pm.personal ? (pm.rows.length ? `<div class="stack" style="gap:6px">${pm.rows.map(critRow).join('')}</div>` : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
-      ${A.profile.diet.some(k => (PROFILE_OPTIONS.diet.find(o => o.key === k) || {}).approx) ? '<p class="small muted">Diety oznaczone jako orientacyjne nie zastępują zaleceń lekarza ani dietetyka.</p>' : ''}
+      ${pm.personal ? billHtml(pm) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     const onShelf = Shelf.hasCode(A.shelves, prod.code);
     parts.push(`<div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -173,7 +185,7 @@
   }
   function wrongHint() {
     const r = cur.pm.rows.find(x => x.kind === (cur.pm.good ? 'good' : 'bad'));
-    if (r) return (cur.pm.good ? 'Pasuje, bo: ' : 'Nie bardzo, bo: ') + r.title.toLowerCase() + (r.text ? ' (' + r.text + ')' : '') + '.';
+    if (r) return (cur.pm.good ? 'Pasuje, bo: ' : 'Nie bardzo, bo: ') + r.title.toLowerCase() + (r.word ? ' – ' + r.word : '') + (r.value ? ' (' + r.value + ')' : '') + '.';
     return cur.pm.good ? 'Ten produkt wypada dobrze w ocenie składu.' : 'Ten produkt wypada słabiej w ocenie składu.';
   }
 

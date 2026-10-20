@@ -22,11 +22,12 @@ const App = {};
     set(k, v) { try { localStorage.setItem('dcn-' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
     del(k) { try { localStorage.removeItem('dcn-' + k); } catch (e) { } }
   };
-  A.profile = cleanProfile(A.store.get('profile', {}));
+  // Wersja D ma własny profil („Nie jem” + „Pilnuję”). Za pierwszym razem przenosimy ustawienia z głównej aplikacji.
+  A.profile = A.store.get('d-profile', null) ? cleanProfile(A.store.get('d-profile', {})) : migrateProfileD(A.store.get('profile', {}));
   A.settings = Object.assign({ guess: true }, A.store.get('settings', {}));
   A.game = Game.load(A.store.get('game', null));
   A.shelves = Shelf.load(A.store.get('shelves', null));
-  A.saveProfile = () => A.store.set('profile', A.profile);
+  A.saveProfile = () => A.store.set('d-profile', A.profile);
   A.saveSettings = () => A.store.set('settings', A.settings);
   A.saveShelves = () => A.store.set('shelves', A.shelves);
   A.saveGame = () => A.store.set('game', A.game);
@@ -44,7 +45,7 @@ const App = {};
     const names = { rules: 'points-rules', levels: 'levels', achievements: 'achievements', challenges: 'weekly-challenges' };
     try {
       const entries = await Promise.all(Object.entries(names).map(async ([k, f]) => {
-        const r = await fetch('../config/' + f + '.json', { cache: 'no-cache' });
+        const r = await fetch(f === 'achievements' ? 'achievements.json' : '../config/' + f + '.json', { cache: 'no-cache' }); // wersja D: własne odznaki
         if (!r.ok) throw new Error(f);
         return [k, await r.json()];
       }));
@@ -55,7 +56,25 @@ const App = {};
       A.cfg = c; A.store.set('cfg', c);
     } catch (e) { /* bez sieci: zostaje ostatnia zapisana konfiguracja */ }
   };
-  A.extraMetrics = () => ({ breakfast_on_shelf: Shelf.breakfastGood(A.shelves) });
+  // Wersja D: dodatkowe liczniki odznak. Kategorie i „perełki” zbieramy w osobnych zbiorach, bo historia trzyma tylko 30 produktów.
+  A.extraMetrics = () => {
+    const hist = A.store.get('history', []).filter(h => h && h.code);
+    const cats = new Set(A.store.get('d-cats', [])), great = new Set(A.store.get('d-great', []));
+    const n0 = cats.size, g0 = great.size;
+    hist.forEach(h => {
+      const k = h.kind === 'cosmetic' ? '' : (A.catKeyOf ? (A.catKeyOf(h.categories) || A.catKeyByName(h.name)) : '');
+      if (k) cats.add(k); else if (h.categories && h.categories.length) cats.add(h.categories[h.categories.length - 1]);
+      if (h.pct != null && h.pct >= 75) great.add(h.code);
+    });
+    if (cats.size !== n0) A.store.set('d-cats', [...cats].slice(-500));
+    if (great.size !== g0) A.store.set('d-great', [...great].slice(-1000));
+    const c = (A.game && A.game.counters) || {}, p = A.profile || {};
+    return {
+      breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
+      data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0),
+      profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0)
+    };
+  };
 
   /* ---------- Anonimowe statystyki (GoatCounter, bez ciasteczek) ----------
      Wysyłamy tylko nazwę ekranu albo zdarzenia (np. „skan-znaleziony”). Bez kodów produktów, profilu,
@@ -132,7 +151,8 @@ const App = {};
     if (e.type === 'achievement') {
       const a = ((A.cfg.achievements && A.cfg.achievements.achievements) || []).find(x => x.id === e.id) || {};
       ribbon = 'Nowa odznaka!'; head = e.name; sub = a.description || '';
-      emblem = medalSvg(a.icon, a.category, true, 170, 3);
+      emblem = medalSvg(a.icon, a.category, true, 170, a.tier || 3, 'm-pop');
+      if (a.tier) { head = e.name + ' · ' + ['brąz', 'srebro', 'złoto'][a.tier - 1]; }
     } else if (e.type === 'level') {
       ribbon = 'Nowy poziom!'; head = e.name; sub = 'Poziom ' + e.level + '. Tak trzymaj!';
       emblem = shieldSvg(e.level, 150);
@@ -140,7 +160,7 @@ const App = {};
       ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Nowe wyzwanie pojawi się w poniedziałek.';
       emblem = art('packet_strawberry', 150);
     }
-    const colors = ['#FFD23F', '#FF6B6B', '#5BB4F5', '#7EE08A', '#C9B2FF', '#FF9F6B', '#FFFFFF'];
+    const colors = ['#9FCDB0', '#F5D36B', '#F2A15E', '#EFA2B4', '#C9DAEC', '#E4DAF0', '#2B2C30']; // wersja D: pastelowe konfetti
     let conf = '';
     for (let i = 0; i < 36; i++) conf += `<i style="left:${(i * 37) % 100}%;background:${colors[i % colors.length]};animation-duration:${(3.5 + (i % 7) * .5).toFixed(1)}s;animation-delay:${(-(i % 9) * .7).toFixed(1)}s"></i>`;
     box.innerHTML = `<div class="rays"></div><div class="glow"></div><div class="confetti" aria-hidden="true">${conf}</div>
@@ -222,6 +242,25 @@ const App = {};
   A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
   A.prodCatKey = p => p && p.kind !== 'cosmetic' ? (A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
   A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
+  // Wersja D: liniowe ikony celów i pozycji „Pilnuję” (kolor z otoczenia).
+  const D_ICONS = {
+    sugar: 'M7 9l5-3 5 3v6l-5 3-5-3zM7 9l5 3 5-3M12 12v6',
+    heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM8 12h2l1-2 2 4 1-2h2',
+    pressure: 'M4 16a8 8 0 1 1 16 0M12 16l4-5M5 16h1.5M17.5 16H19M12 8V9.5M7.5 10.5l1 1M16.5 10.5l-1 1',
+    weight: 'M5 6h14l-1.5 13h-11zM9 11a3 3 0 0 1 6 0M12 11l1.6-1.6',
+    protein: 'M3 10v4M6 7.5v9M18 7.5v9M21 10v4M6 12h12',
+    fiber: 'M12 21V9M12 9c-2-1-3-3-3-5 2 1 3 3 3 5zM12 9c2-1 3-3 3-5-2 1-3 3-3 5zM12 15c-2-1-3.5-3-3.5-5 2 1 3.5 3 3.5 5zM12 15c2-1 3.5-3 3.5-5-2 1-3.5 3-3.5 5z',
+    processing: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9',
+    healthy: 'M5 19c0-8 6-14 14-14 0 8-6 14-14 14zM5 19l7-7',
+    salt: 'M8 10h8l-1 10H9zM8 10a4 4 0 0 1 8 0M10.5 6.5h.01M13.5 6.5h.01M12 5h.01',
+    fat: 'M12 3C9 8 6 11 6 15a6 6 0 0 0 12 0c0-4-3-7-6-12zM9.5 15a2.5 2.5 0 0 0 2.5 2.5',
+    kcal: 'M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 2 4 0-3 1-5 1-8z',
+    palm: 'M12 21v-9M12 12c-1-3-4-5-8-4M12 12c1-3 4-5 8-4M12 12c-3-1-6 0-7 3M12 12c3-1 6 0 7 3',
+    sweetener: 'M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2M12 10a2 2 0 1 0 0 4a2 2 0 1 0 0-4',
+    caffeine: 'M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M9 3c0 1.5 1 1.5 1 3M12.5 3c0 1.5 1 1.5 1 3',
+    ban: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM5.6 5.6l12.8 12.8'
+  };
+  A.dIcon = (name, size) => D_ICONS[name] ? `<svg class="d-ic" width="${size || 22}" height="${size || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${D_ICONS[name]}"/></svg>` : '';
   // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };
 

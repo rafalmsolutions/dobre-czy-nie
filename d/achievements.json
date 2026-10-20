@@ -1,0 +1,789 @@
+{
+ "version": 2,
+ "note": "Wersja D: każda odznaka ma 3 stopnie (brąz, srebro, złoto). Nowy stopień = jeden wpis.",
+ "categories": {
+  "odkrywanie": {
+   "label": "Odkrywanie",
+   "color": "#C9DAEC"
+  },
+  "wybory": {
+   "label": "Wybory",
+   "color": "#D3E8DA"
+  },
+  "baza": {
+   "label": "Pomoc bazie",
+   "color": "#F6D3B6"
+  },
+  "profil": {
+   "label": "Ty",
+   "color": "#E4DAF0"
+  }
+ },
+ "achievements": [
+  {
+   "id": "detektyw-1",
+   "base": "detektyw",
+   "tier": 1,
+   "name": "Detektyw składów",
+   "category": "odkrywanie",
+   "icon": "magnifier",
+   "description": "Sprawdź 10 produktów.",
+   "metric": "products_checked",
+   "target": 10,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "detektyw-2",
+   "base": "detektyw",
+   "tier": 2,
+   "name": "Detektyw składów",
+   "category": "odkrywanie",
+   "icon": "magnifier",
+   "description": "Sprawdź 50 produktów.",
+   "metric": "products_checked",
+   "target": 50,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "detektyw-3",
+   "base": "detektyw",
+   "tier": 3,
+   "name": "Detektyw składów",
+   "category": "odkrywanie",
+   "icon": "magnifier",
+   "description": "Sprawdź 200 produktów.",
+   "metric": "products_checked",
+   "target": 200,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "typ-1",
+   "base": "typ",
+   "tier": 1,
+   "name": "Trafny typ",
+   "category": "odkrywanie",
+   "icon": "target",
+   "description": "Zgadnij trafnie 5 razy.",
+   "metric": "guesses_right",
+   "target": 5,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "typ-2",
+   "base": "typ",
+   "tier": 2,
+   "name": "Trafny typ",
+   "category": "odkrywanie",
+   "icon": "target",
+   "description": "Zgadnij trafnie 25 razy.",
+   "metric": "guesses_right",
+   "target": 25,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "typ-3",
+   "base": "typ",
+   "tier": 3,
+   "name": "Trafny typ",
+   "category": "odkrywanie",
+   "icon": "target",
+   "description": "Zgadnij trafnie 100 razy.",
+   "metric": "guesses_right",
+   "target": 100,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "czytelnik-1",
+   "base": "czytelnik",
+   "tier": 1,
+   "name": "Czytelnik etykiet",
+   "category": "odkrywanie",
+   "icon": "label",
+   "description": "Otwórz wyjaśnienie oceny 5 razy.",
+   "metric": "explanations_opened",
+   "target": 5,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "czytelnik-2",
+   "base": "czytelnik",
+   "tier": 2,
+   "name": "Czytelnik etykiet",
+   "category": "odkrywanie",
+   "icon": "label",
+   "description": "Otwórz wyjaśnienie oceny 25 razy.",
+   "metric": "explanations_opened",
+   "target": 25,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "czytelnik-3",
+   "base": "czytelnik",
+   "tier": 3,
+   "name": "Czytelnik etykiet",
+   "category": "odkrywanie",
+   "icon": "label",
+   "description": "Otwórz wyjaśnienie oceny 100 razy.",
+   "metric": "explanations_opened",
+   "target": 100,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "enumery-1",
+   "base": "enumery",
+   "tier": 1,
+   "name": "Znawca E-numerów",
+   "category": "odkrywanie",
+   "icon": "e",
+   "description": "Przeczytaj opis 5 różnych dodatków E.",
+   "metric": "additives_read",
+   "target": 5,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "enumery-2",
+   "base": "enumery",
+   "tier": 2,
+   "name": "Znawca E-numerów",
+   "category": "odkrywanie",
+   "icon": "e",
+   "description": "Przeczytaj opis 20 różnych dodatków E.",
+   "metric": "additives_read",
+   "target": 20,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "enumery-3",
+   "base": "enumery",
+   "tier": 3,
+   "name": "Znawca E-numerów",
+   "category": "odkrywanie",
+   "icon": "e",
+   "description": "Przeczytaj opis 50 różnych dodatków E.",
+   "metric": "additives_read",
+   "target": 50,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "cukier-1",
+   "base": "cukier",
+   "tier": 1,
+   "name": "Cukrowy detektyw",
+   "category": "odkrywanie",
+   "icon": "sugar",
+   "description": "Sprawdź, skąd cukier, w 3 produktach.",
+   "metric": "sugar_explanations_read",
+   "target": 3,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "cukier-2",
+   "base": "cukier",
+   "tier": 2,
+   "name": "Cukrowy detektyw",
+   "category": "odkrywanie",
+   "icon": "sugar",
+   "description": "Sprawdź, skąd cukier, w 10 produktach.",
+   "metric": "sugar_explanations_read",
+   "target": 10,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "cukier-3",
+   "base": "cukier",
+   "tier": 3,
+   "name": "Cukrowy detektyw",
+   "category": "odkrywanie",
+   "icon": "sugar",
+   "description": "Sprawdź, skąd cukier, w 30 produktach.",
+   "metric": "sugar_explanations_read",
+   "target": 30,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "kategorie-1",
+   "base": "kategorie",
+   "tier": 1,
+   "name": "Odkrywca półek",
+   "category": "odkrywanie",
+   "icon": "pin",
+   "description": "Sprawdź produkty z 5 różnych kategorii.",
+   "metric": "categories_explored",
+   "target": 5,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "kategorie-2",
+   "base": "kategorie",
+   "tier": 2,
+   "name": "Odkrywca półek",
+   "category": "odkrywanie",
+   "icon": "pin",
+   "description": "Sprawdź produkty z 15 różnych kategorii.",
+   "metric": "categories_explored",
+   "target": 15,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "kategorie-3",
+   "base": "kategorie",
+   "tier": 3,
+   "name": "Odkrywca półek",
+   "category": "odkrywanie",
+   "icon": "pin",
+   "description": "Sprawdź produkty z 30 różnych kategorii.",
+   "metric": "categories_explored",
+   "target": 30,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "bywalec-1",
+   "base": "bywalec",
+   "tier": 1,
+   "name": "Stały bywalec",
+   "category": "odkrywanie",
+   "icon": "calendar",
+   "description": "Zajrzyj w 3 różne dni jednego tygodnia.",
+   "metric": "active_days_week",
+   "target": 3,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "bywalec-2",
+   "base": "bywalec",
+   "tier": 2,
+   "name": "Stały bywalec",
+   "category": "odkrywanie",
+   "icon": "calendar",
+   "description": "Zajrzyj w 5 różne dni jednego tygodnia.",
+   "metric": "active_days_week",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "bywalec-3",
+   "base": "bywalec",
+   "tier": 3,
+   "name": "Stały bywalec",
+   "category": "odkrywanie",
+   "icon": "calendar",
+   "description": "Zajrzyj w 7 różne dni jednego tygodnia.",
+   "metric": "active_days_week",
+   "target": 7,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "trafienia-1",
+   "base": "trafienia",
+   "tier": 1,
+   "name": "Łowca perełek",
+   "category": "wybory",
+   "icon": "trophy",
+   "description": "Znajdź 3 produkty z bardzo dobrym dopasowaniem.",
+   "metric": "great_finds",
+   "target": 3,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "trafienia-2",
+   "base": "trafienia",
+   "tier": 2,
+   "name": "Łowca perełek",
+   "category": "wybory",
+   "icon": "trophy",
+   "description": "Znajdź 15 produktów z bardzo dobrym dopasowaniem.",
+   "metric": "great_finds",
+   "target": 15,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "trafienia-3",
+   "base": "trafienia",
+   "tier": 3,
+   "name": "Łowca perełek",
+   "category": "wybory",
+   "icon": "trophy",
+   "description": "Znajdź 50 produktów z bardzo dobrym dopasowaniem.",
+   "metric": "great_finds",
+   "target": 50,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "zamiany-1",
+   "base": "zamiany",
+   "tier": 1,
+   "name": "Mistrz zamian",
+   "category": "wybory",
+   "icon": "swap",
+   "description": "Zamień produkt na lepszy 1 raz.",
+   "metric": "swap_to_better",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "zamiany-2",
+   "base": "zamiany",
+   "tier": 2,
+   "name": "Mistrz zamian",
+   "category": "wybory",
+   "icon": "swap",
+   "description": "Zamień produkt na lepszy 5 razy.",
+   "metric": "swap_to_better",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "zamiany-3",
+   "base": "zamiany",
+   "tier": 3,
+   "name": "Mistrz zamian",
+   "category": "wybory",
+   "icon": "swap",
+   "description": "Zamień produkt na lepszy 20 razy.",
+   "metric": "swap_to_better",
+   "target": 20,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "polka-1",
+   "base": "polka",
+   "tier": 1,
+   "name": "Dobra półka",
+   "category": "wybory",
+   "icon": "check",
+   "description": "Odłóż 5 produktów na półkę.",
+   "metric": "shelf_add",
+   "target": 5,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "polka-2",
+   "base": "polka",
+   "tier": 2,
+   "name": "Dobra półka",
+   "category": "wybory",
+   "icon": "check",
+   "description": "Odłóż 25 produktów na półkę.",
+   "metric": "shelf_add",
+   "target": 25,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "polka-3",
+   "base": "polka",
+   "tier": 3,
+   "name": "Dobra półka",
+   "category": "wybory",
+   "icon": "check",
+   "description": "Odłóż 100 produktów na półkę.",
+   "metric": "shelf_add",
+   "target": 100,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "koszyk-1",
+   "base": "koszyk",
+   "tier": 1,
+   "name": "Pełny koszyk",
+   "category": "wybory",
+   "icon": "cart",
+   "description": "Odhacz całą listę zakupów 1 raz.",
+   "metric": "lists_completed",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "koszyk-2",
+   "base": "koszyk",
+   "tier": 2,
+   "name": "Pełny koszyk",
+   "category": "wybory",
+   "icon": "cart",
+   "description": "Odhacz całą listę zakupów 5 razy.",
+   "metric": "lists_completed",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "koszyk-3",
+   "base": "koszyk",
+   "tier": 3,
+   "name": "Pełny koszyk",
+   "category": "wybory",
+   "icon": "cart",
+   "description": "Odhacz całą listę zakupów 20 razy.",
+   "metric": "lists_completed",
+   "target": 20,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "sniadanie-1",
+   "base": "sniadanie",
+   "tier": 1,
+   "name": "Śniadaniowy as",
+   "category": "wybory",
+   "icon": "bowl",
+   "description": "Miej na półce 1 produkt na śniadanie z dobrym dopasowaniem.",
+   "metric": "breakfast_on_shelf",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "sniadanie-2",
+   "base": "sniadanie",
+   "tier": 2,
+   "name": "Śniadaniowy as",
+   "category": "wybory",
+   "icon": "bowl",
+   "description": "Miej na półce 3 produkty na śniadanie z dobrym dopasowaniem.",
+   "metric": "breakfast_on_shelf",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "sniadanie-3",
+   "base": "sniadanie",
+   "tier": 3,
+   "name": "Śniadaniowy as",
+   "category": "wybory",
+   "icon": "bowl",
+   "description": "Miej na półce 5 produktów na śniadanie z dobrym dopasowaniem.",
+   "metric": "breakfast_on_shelf",
+   "target": 5,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "odkrywca-1",
+   "base": "odkrywca",
+   "tier": 1,
+   "name": "Odkrywca",
+   "category": "baza",
+   "icon": "plus",
+   "description": "Dodaj do bazy 1 produkt, których jeszcze nie było.",
+   "metric": "products_added",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "odkrywca-2",
+   "base": "odkrywca",
+   "tier": 2,
+   "name": "Odkrywca",
+   "category": "baza",
+   "icon": "plus",
+   "description": "Dodaj do bazy 3 produkty, których jeszcze nie było.",
+   "metric": "products_added",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "odkrywca-3",
+   "base": "odkrywca",
+   "tier": 3,
+   "name": "Odkrywca",
+   "category": "baza",
+   "icon": "plus",
+   "description": "Dodaj do bazy 10 produktów, których jeszcze nie było.",
+   "metric": "products_added",
+   "target": 10,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "uzupelnij-1",
+   "base": "uzupelnij",
+   "tier": 1,
+   "name": "Uzupełniacz",
+   "category": "baza",
+   "icon": "heart",
+   "description": "Uzupełnij skład lub wartości odżywcze 1 raz.",
+   "metric": "data_completed",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "uzupelnij-2",
+   "base": "uzupelnij",
+   "tier": 2,
+   "name": "Uzupełniacz",
+   "category": "baza",
+   "icon": "heart",
+   "description": "Uzupełnij skład lub wartości odżywcze 5 razy.",
+   "metric": "data_completed",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "uzupelnij-3",
+   "base": "uzupelnij",
+   "tier": 3,
+   "name": "Uzupełniacz",
+   "category": "baza",
+   "icon": "heart",
+   "description": "Uzupełnij skład lub wartości odżywcze 20 razy.",
+   "metric": "data_completed",
+   "target": 20,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "fotograf-1",
+   "base": "fotograf",
+   "tier": 1,
+   "name": "Fotograf etykiet",
+   "category": "baza",
+   "icon": "camera",
+   "description": "Dodaj 1 zdjęcie etykiety.",
+   "metric": "photos_added",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "fotograf-2",
+   "base": "fotograf",
+   "tier": 2,
+   "name": "Fotograf etykiet",
+   "category": "baza",
+   "icon": "camera",
+   "description": "Dodaj 5 zdjęć etykiety.",
+   "metric": "photos_added",
+   "target": 5,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "fotograf-3",
+   "base": "fotograf",
+   "tier": 3,
+   "name": "Fotograf etykiet",
+   "category": "baza",
+   "icon": "camera",
+   "description": "Dodaj 20 zdjęć etykiety.",
+   "metric": "photos_added",
+   "target": 20,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "straznik-1",
+   "base": "straznik",
+   "tier": 1,
+   "name": "Strażnik danych",
+   "category": "baza",
+   "icon": "shield",
+   "description": "Zgłoś 1 błąd w danych.",
+   "metric": "reports_sent",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "straznik-2",
+   "base": "straznik",
+   "tier": 2,
+   "name": "Strażnik danych",
+   "category": "baza",
+   "icon": "shield",
+   "description": "Zgłoś 3 błędy w danych.",
+   "metric": "reports_sent",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "straznik-3",
+   "base": "straznik",
+   "tier": 3,
+   "name": "Strażnik danych",
+   "category": "baza",
+   "icon": "shield",
+   "description": "Zgłoś 10 błędów w danych.",
+   "metric": "reports_sent",
+   "target": 10,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "profil-1",
+   "base": "profil",
+   "tier": 1,
+   "name": "Mój profil",
+   "category": "profil",
+   "icon": "quiz",
+   "description": "Ustaw 1 pozycję w profilu (Pilnuję lub Nie jem).",
+   "metric": "profile_items",
+   "target": 1,
+   "reward": {
+    "points": 10
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "profil-2",
+   "base": "profil",
+   "tier": 2,
+   "name": "Mój profil",
+   "category": "profil",
+   "icon": "quiz",
+   "description": "Ustaw 3 pozycje w profilu (Pilnuję lub Nie jem).",
+   "metric": "profile_items",
+   "target": 3,
+   "reward": {
+    "points": 25
+   },
+   "inVersion": "1.0"
+  },
+  {
+   "id": "profil-3",
+   "base": "profil",
+   "tier": 3,
+   "name": "Mój profil",
+   "category": "profil",
+   "icon": "quiz",
+   "description": "Ustaw 6 pozycji w profilu (Pilnuję lub Nie jem).",
+   "metric": "profile_items",
+   "target": 6,
+   "reward": {
+    "points": 50
+   },
+   "inVersion": "1.0"
+  }
+ ]
+}

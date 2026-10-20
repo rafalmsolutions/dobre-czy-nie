@@ -39,6 +39,7 @@ jobs:
           node tests/bundle.js
           node tests/unit-core.cjs
           node tests/unit-v1.cjs
+          node tests/unit-d.cjs
           node tests/worker-test.mjs
 
       - name: Ostatnia udana kopia danych (zapas, gdy Open Food Facts nie odpowiada)

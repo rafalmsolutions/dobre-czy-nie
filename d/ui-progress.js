@@ -24,9 +24,17 @@
     const cats = (cfg.achievements && cfg.achievements.categories) || {};
     const extra = A.extraMetrics();
     const prog = achs.map(a => Object.assign({ a }, Game.progress(g, cfg, a, now, extra)));
-    const earned = prog.filter(p => p.done).length;
-    if (!sel || !achs.some(a => a.id === sel)) sel = (prog.find(p => !p.done) || prog[0] || {}).a ? (prog.find(p => !p.done) || prog[0]).a.id : null;
-    const s = prog.find(p => p.a.id === sel);
+    // Wersja D: odznaki w 3 stopniach. Grupujemy wpisy po „base”; medal pokazuje najwyższy zdobyty stopień.
+    const groups = [], byBase = {};
+    prog.forEach(p => { const b = p.a.base || p.a.id; if (!byBase[b]) { byBase[b] = { base: b, a: p.a, tiers: [] }; groups.push(byBase[b]); } byBase[b].tiers.push(p); });
+    groups.forEach(x => { x.tiers.sort((m, n) => (m.a.tier || 1) - (n.a.tier || 1)); x.doneTier = x.tiers.filter(t => t.done).length; x.next = x.tiers.find(t => !t.done) || null; });
+    const seen = A.store.get('d-seen-ach', {}), seenNext = {};
+    groups.forEach(x => { x.fresh = x.doneTier > (seen[x.base] || 0); seenNext[x.base] = x.doneTier; });
+    A.store.set('d-seen-ach', seenNext);
+    const earned = groups.filter(x => x.doneTier > 0).length, tiersDone = prog.filter(p => p.done).length;
+    if (!sel || !byBase[sel]) sel = (groups.find(x => x.next) || groups[0] || {}).base || null;
+    const s = sel ? byBase[sel] : null;
+    const TIER = ['', 'Brąz', 'Srebro', 'Złoto'];
     const usedCats = [...new Set(achs.map(a => a.category))];
     const dots = levels.map((l, i) => `${i ? `<span class="lvline${l.level <= lv.level ? ' done' : ''}"></span>` : ''}<span class="lvdot ${l.level < lv.level ? 'done' : l.level === lv.level ? 'cur' : 'next'}" title="${esc(l.name)}">${l.level}</span>`).join('');
     const rulesEv = (cfg.rules && cfg.rules.events) || {};
@@ -48,11 +56,15 @@
         <div class="card stat">${medalSvg('shield', 'baza', true, 40)}<div><b>${(g.counters.product_added || 0) + (g.counters.report_sent || 0)}</b><span>${plural((g.counters.product_added || 0) + (g.counters.report_sent || 0), 'pomoc dla bazy', 'pomoce dla bazy', 'pomocy dla bazy')}</span></div></div>
       </div>
       ${ch ? `<div class="card stack"><div class="sec-head"><h2 style="font-size:1.1rem">Wyzwanie tygodnia</h2><span class="small muted">${ch.done ? 'ukończone' : 'zostało ' + ch.daysLeft + ' ' + plural(ch.daysLeft, 'dzień', 'dni', 'dni')}</span></div><b>${esc(ch.title)}</b><span class="xp green"><i style="width:${Math.round(ch.have / ch.target * 100)}%"></i><span>${ch.have} z ${ch.target}</span></span></div>` : ''}
-      ${ribbonSvg(esc(`Odznaki ${earned} z ${achs.length}`), 250, ['#7EE08A', '#2E9A3E', '#1E6B2A'])}
+      ${ribbonSvg(esc(`Odznaki ${earned} z ${groups.length}`), 250)}
+      <p class="small muted center" style="margin-top:-8px">Zdobyte stopnie: ${tiersDone} z ${prog.length}. Każda odznaka ma brąz, srebro i złoto.</p>
       <div class="chips" style="justify-content:center" role="group" aria-label="Kategorie odznak">${[['all', 'Wszystkie']].concat(usedCats.map(c => [c, (cats[c] || {}).label || c])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="ach-cat" data-cat="${esc(k)}" aria-pressed="${k === cat}">${esc(l)}</button>`).join('')}</div>
-      ${s ? `<div class="panel row" id="achDetail" aria-live="polite"><span style="flex:0 0 auto">${medalSvg(s.a.icon, s.a.category, s.done, 88, s.done ? 3 : 0)}</span><div class="grow stack" style="gap:4px"><b style="font-family:var(--f-display);font-size:1.2rem">${esc(s.a.name)}</b><span class="small">${esc(s.a.description)}</span><span class="small" style="font-weight:800;color:var(--green-d)">${s.done ? 'Zdobyta!' : 'Postęp: ' + s.have + ' z ' + s.target}</span>${s.a.reward ? `<div class="chips">${A.rewardChips(s.a.reward)}</div>` : ''}</div></div>` : ''}
-      <div class="panel medals" id="medals">${prog.filter(p => cat === 'all' || p.a.category === cat).map(p => `<button class="medal-btn${p.done ? '' : ' locked'}" type="button" data-act="ach-pick" data-id="${esc(p.a.id)}" aria-pressed="${p.a.id === sel}" aria-label="${esc(p.a.name)}${p.done ? ', zdobyta' : ', ' + p.have + ' z ' + p.target}">${medalSvg(p.a.icon, p.a.category, p.done, 66)}<b>${esc(p.a.name)}</b>${!p.done && p.target > 1 ? `<span class="mini-xp"><i style="width:${Math.round(p.have / p.target * 100)}%"></i></span><span class="small muted" style="font-size:12px;font-weight:700">${p.have} z ${p.target}</span>` : ''}</button>`).join('')}</div>
-      ${inv.length ? `<div class="card stack"><h2 style="font-size:1.1rem">Twoje nagrody</h2><div class="chips">${inv.map(([k, n]) => `<span class="reward-chip red">${esc(A.ITEM_NAMES[k] || k)}${n > 1 ? ' ×' + n : ''}</span>`).join('')}</div><p class="small muted">Nasiona i ozdoby czekają na ogródek Ziarenka w kolejnej wersji.</p></div>` : ''}
+      ${s ? `<div class="panel row" id="achDetail" aria-live="polite"><span style="flex:0 0 auto">${medalSvg(s.a.icon, s.a.category, s.doneTier > 0, 92, s.doneTier, s.fresh ? 'm-pop' : '')}</span><div class="grow stack" style="gap:6px"><b style="font-family:var(--f-display);font-size:1.2rem">${esc(s.a.name)}${s.doneTier ? ' · ' + TIER[s.doneTier] : ''}</b>
+        <span class="small">${s.next ? esc(s.next.a.description) : 'Masz złoto. Brawo!'}</span>
+        ${s.next ? `<span class="xp"><i style="width:${Math.round(s.next.have / s.next.target * 100)}%"></i></span><span class="small" style="font-weight:800">${s.next.have} z ${s.next.target} do: ${TIER[s.next.a.tier || 1].toLowerCase()} (+${(s.next.a.reward || {}).points || 0} pkt)</span>` : ''}
+        <div class="d-tiers">${s.tiers.map(t => `<span class="d-tier${t.done ? ' done' : ''}">${medalSvg(t.a.icon, t.a.category, t.done, 34, t.a.tier || 1)}${TIER[t.a.tier || 1]} · ${t.a.target}</span>`).join('')}</div></div></div>` : ''}
+      <div class="panel medals" id="medals">${groups.filter(x => cat === 'all' || x.a.category === cat).map(x => `<button class="medal-btn${x.doneTier ? '' : ' locked'}" type="button" data-act="ach-pick" data-id="${esc(x.base)}" aria-pressed="${x.base === sel}" aria-label="${esc(x.a.name)}${x.doneTier ? ', ' + TIER[x.doneTier].toLowerCase() : ''}${x.next ? ', do następnego stopnia ' + x.next.have + ' z ' + x.next.target : ', wszystkie stopnie'}">${medalSvg(x.a.icon, x.a.category, x.doneTier > 0, 66, x.doneTier, x.fresh ? 'm-pop' : '')}<b>${esc(x.a.name)}</b><span class="small" style="font-size:12px;font-weight:800">${x.doneTier ? TIER[x.doneTier] : 'Jeszcze nie'}</span>${x.next ? `<span class="mini-xp"><i style="width:${Math.round(x.next.have / x.next.target * 100)}%"></i></span><span class="small muted" style="font-size:12px;font-weight:700">${x.next.have} z ${x.next.target}</span>` : ''}</button>`).join('')}</div>
+      ${inv.length ? `<div class="card stack"><h2 style="font-size:1.1rem">Twoje nagrody</h2><div class="chips">${inv.map(([k, n]) => `<span class="reward-chip red">${esc(A.ITEM_NAMES[k] || k)}${n > 1 ? ' ×' + n : ''}</span>`).join('')}</div><p class="small muted">Nasiona i ozdoby przydadzą się w ogródku w kolejnej wersji.</p></div>` : ''}
       ${ribbonSvg('Jak zdobyć punkty', 270)}
       <div class="panel stack" style="gap:0">${EARN.map(([gl, c, t, n, ev], i) => { const p = ev ? (rulesEv[ev] || {}).points : 50; return `<div class="row" style="padding:7px 0;${i ? 'border-top:1.5px dashed #E2CFA8' : ''}">${medalSvg(gl, c, true, 38)}<span class="grow"><b style="display:block;font-size:.95rem">${esc(t)}</b><span class="small muted">${esc(n)}</span></span><span class="reward-chip gold">+${p || 0}</span></div>`; }).join('')}</div>
       <p class="small muted center">Punktów nie da się kupić. Przerwa nie kasuje postępów. Nie ma rankingów wagi ani porównywania się z innymi.</p>
@@ -68,20 +80,33 @@
   A.route('profile', () => { draftCustom = A.profile.custom.slice(); confirmWipe = false; renderProfile(); });
   function renderProfile() {
     const p = A.profile;
-    const groups = [['allergens', 'Alergeny'], ['diet', 'Dieta'], ['avoid', 'Unikam w jedzeniu'], ['cosmetic', 'Unikam w kosmetykach']];
+    const chip = (name, key, label, on, icon) => `<label class="pchip${icon ? ' d-pchip' : ''}"><input type="checkbox" name="${name}" value="${key}"${on ? ' checked' : ''}>${icon ? A.dIcon(icon, 18) : ''}${esc(label)}</label>`;
     A.$('scr-profile').innerHTML = `<div class="wrap"><form class="stack" id="profileForm" novalidate style="gap:16px">
       <div class="topbar"><h1>Twój profil</h1>${A.hudPill()}</div>
-      <div class="row">${A.mascot('smile', 60)}<p class="bubble small">Sprawdzam to przy każdym produkcie. Zmiany zapisuję od razu, a profil zostaje tylko w tym telefonie.</p></div>
+      <p class="small muted">Sprawdzamy to przy każdym produkcie. Zmiany zapisują się od razu, a profil zostaje tylko w tym telefonie.</p>
       <p class="save-state small" id="saveState" role="status" aria-live="polite"></p>
       <div class="card stack"><label for="profName"><b style="font-family:var(--f-display)">Imię</b> <span class="small muted">(nieobowiązkowe)</span></label><input class="field" id="profName" maxlength="30" autocomplete="given-name" value="${esc(A.userName())}"></div>
-      <fieldset class="card"><legend>Twoje cele <span class="small muted" style="font-family:var(--f-body)">(do ${GOALS_MAX})</span></legend>
-        <div class="goal-grid">${GOALS.map(g => { const t = GOAL_TILES[g.key]; return `<button class="goal-tile" type="button" data-act="prof-goal" data-k="${g.key}" aria-pressed="${p.goals.includes(g.key)}" style="background:radial-gradient(circle at 30% 25%,#fff 0%,${t.bg} 65%)"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span>${art(t.icon, 38)}<b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; }).join('')}</div>
+      <fieldset class="card"><legend>Cele <span class="small muted" style="font-family:var(--f-body)">(do ${GOALS_MAX})</span></legend>
+        <p class="small muted">Cel to skrót: zaznacza, czego pilnujemy na liście niżej.</p>
+        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, p.goals.includes(g.key), 'prof-goal')).join('')}</div>
         <p class="msg" id="goalMsg" role="status"></p></fieldset>
-      ${groups.map(([g, title]) => `<fieldset class="card"><legend>${title}</legend><div class="pchips">${PROFILE_OPTIONS[g].map(o => `<label class="pchip"><input type="checkbox" name="${g}" value="${o.key}"${p[g].includes(o.key) ? ' checked' : ''}>${esc(o.label)}${o.approx ? ' *' : ''}</label>`).join('')}</div>${g === 'diet' ? '<p class="small muted">* Orientacyjnie, na podstawie etykiety. Nie zastępuje zaleceń lekarza ani dietetyka.</p>' : ''}</fieldset>`).join('')}
-      <fieldset class="card"><legend>Własne składniki do unikania</legend>
-        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. sól, czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-green btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
+      <fieldset class="card" id="watchSet"><legend>Pilnuję <span class="small muted" style="font-family:var(--f-body)">(do ${WATCH_MAX})</span></legend>
+        <div class="pchips">${WATCH.map(w => chip('watch', w.key, w.label, p.watch.includes(w.key), w.icon)).join('')}</div>
+        <p class="msg" id="watchMsg" role="status"></p>
+        <div class="d-rules small"><b>Jak liczymy każdą pozycję</b>
+          <span>Cukier, sól, tłuszcze, kalorie, przetworzenie: mało <b>+5</b>, średnio <b>−10</b>, dużo <b>−25</b> i najwyżej 45%.</span>
+          <span>Olej palmowy, słodziki, kofeina: zawiera <b>−25</b> i najwyżej 45%.</span>
+          <span>Białko, błonnik: dużo <b>+10</b>, źródło <b>+5</b>.</span>
+          <span>Brak danych w bazie: najwyżej 70%.</span></div></fieldset>
+      <fieldset class="card"><legend>Nie jem</legend>
+        <p class="small muted">Produkt, który to zawiera, oznaczamy „Nie pasuje” (0–10%). Śladowe ilości: najwyżej 35%.</p>
+        <b class="small">Alergeny</b><div class="pchips">${PROFILE_OPTIONS.allergens.map(o => chip('allergens', o.key, o.label, p.allergens.includes(o.key))).join('')}</div>
+        <b class="small" style="margin-top:8px">Dieta</b><div class="pchips">${PROFILE_OPTIONS.diet.map(o => chip('diet', o.key, o.label, p.diet.includes(o.key))).join('')}${PROFILE_OPTIONS.avoid.map(o => chip('avoid', o.key, o.label, p.avoid.includes(o.key))).join('')}</div>
+        <b class="small" style="margin-top:8px">Własne składniki</b>
+        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-green btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
         <p class="msg" id="customMsg" role="status"></p><div class="pchips" id="customChips"></div>
-        <p class="small muted">Szukamy też odmian (np. „soli”, „czosnku”) i pomijamy frazy w rodzaju „bez dodatku soli”.</p></fieldset>
+        <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p></fieldset>
+      <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label>
@@ -96,6 +121,12 @@
       ${confirmWipe ? `<div class="stack"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, półki, punkty, historię)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small" type="button" data-act="wipe" style="align-self:flex-start">Usuń wszystkie moje dane</button>'}
     </div></div>`;
     renderCustomChips();
+    A.$('watchSet').addEventListener('change', e => {
+      if (e.target.name !== 'watch') return;
+      const n = A.$('watchSet').querySelectorAll('input[name="watch"]:checked').length;
+      if (n > WATCH_MAX) { e.target.checked = false; A.$('watchMsg').textContent = `Możesz pilnować najwyżej ${WATCH_MAX} rzeczy. Odznacz którąś, żeby dodać nową.`; }
+      else A.$('watchMsg').textContent = '';
+    }, true);
     A.snapshotMeta().then(m => { const el = A.$('dataDate'); if (m && el) el.textContent = `Kopia bazy produktów: ${m.products.toLocaleString('pl-PL')} produktów, aktualizacja ${new Date(m.built).toLocaleDateString('pl-PL')}.`; });
   }
   function renderCustomChips() {
@@ -104,10 +135,18 @@
   }
   A.profAction = (act, el) => {
     if (act === 'prof-goal') {
-      const on = [...A.$('scr-profile').querySelectorAll('[data-act=prof-goal][aria-pressed=true]')];
-      if (el.getAttribute('aria-pressed') === 'true') { el.setAttribute('aria-pressed', 'false'); A.$('goalMsg').textContent = ''; }
+      const root = A.$('scr-profile');
+      const on = [...root.querySelectorAll('[data-act=prof-goal][aria-pressed=true]')];
+      const goals = on.map(b => b.dataset.k), watchNow = [...root.querySelectorAll('input[name="watch"]:checked')].map(i => i.value);
+      let turnOn = null;
+      if (el.getAttribute('aria-pressed') === 'true') { el.setAttribute('aria-pressed', 'false'); A.$('goalMsg').textContent = ''; turnOn = false; }
       else if (on.length >= GOALS_MAX) A.$('goalMsg').textContent = `Wybierz najwyżej ${GOALS_MAX} cele. Odznacz któryś, żeby dodać nowy.`;
-      else { el.setAttribute('aria-pressed', 'true'); A.$('goalMsg').textContent = ''; }
+      else { el.setAttribute('aria-pressed', 'true'); A.$('goalMsg').textContent = ''; turnOn = true; }
+      if (turnOn !== null) {
+        const next = A.toggleGoalWatch(watchNow, turnOn ? goals : goals.filter(k => k !== el.dataset.k), el.dataset.k, turnOn);
+        root.querySelectorAll('input[name="watch"]').forEach(i => { i.checked = next.includes(i.value); });
+        A.$('watchMsg').textContent = '';
+      }
       A.profAutoSave();
     } else if (act === 'add-custom') {
       const inp = A.$('customInput'), problem = customProblem(inp.value, draftCustom);
@@ -127,7 +166,7 @@
   // Zapis przy każdej zmianie: nie trzeba pamiętać o przycisku na dole strony.
   function collect(includePending) {
     const f = A.$('profileForm'), next = { noScores: A.$('profNoScores').checked };
-    ['allergens', 'diet', 'avoid', 'cosmetic'].forEach(g => { next[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map(i => i.value); });
+    ['allergens', 'diet', 'avoid', 'cosmetic', 'watch'].forEach(g => { next[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map(i => i.value); });
     next.goals = [...f.querySelectorAll('[data-act=prof-goal][aria-pressed=true]')].map(b => b.dataset.k);
     next.custom = draftCustom.slice();
     const pending = A.$('customInput').value.trim();
