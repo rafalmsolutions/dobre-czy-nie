@@ -19,7 +19,12 @@
     const f = { id: 'f' + Date.now().toString(36), name: 'Osoba ' + n, p: cleanProfile({}) };
     A.family.push(f); A.saveFamily(); return f;
   };
-  A.familyRemove = id => { A.family = A.family.filter(f => f.id !== id); A.saveFamily(); };
+  A.familyRemove = id => { A.family = A.family.filter(f => f.id !== id); A.saveFamily(); if (A.focusId === id) A.setFocus('me'); };
+  /* Kto jest najważniejszy przy produkcie: jego wyjaśnienie („rachunek”) widać pod zdjęciem. Zapamiętujemy wybór. */
+  A.familyRows = () => [{ id: 'me', name: A.userName() || 'Ja', p: A.profile }].concat(A.family);
+  A.focusId = A.store.get('d-focus', 'me');
+  A.setFocus = id => { A.focusId = id; A.store.set('d-focus', id); };
+  A.focusPerson = () => A.family.length ? (A.familyRows().find(r => r.id === A.focusId) || A.familyRows()[0]) : null;
   const profSize = p => p.watch.length + ['allergens', 'diet', 'avoid', 'custom'].reduce((s, g) => s + p[g].length, 0);
 
   /* Werdykt dla jednej osoby: krótko, bez liczb, gdy wykluczenie. */
@@ -31,6 +36,18 @@
     if (pm.pct == null) return { cls: 'muted', text: 'za mało danych' };
     const word = pm.pct >= 75 ? 'pasuje bardzo dobrze' : pm.pct >= 50 ? 'pasuje' : pm.pct >= 25 ? 'raczej nie' : 'słabo pasuje';
     return { cls: pm.pct >= 50 ? 'good' : 'mid', text: `${pm.pct}% · ${word}` };
+  };
+  /* Przy zdjęciu produktu: wszyscy domownicy od razu, bez przewijania. Stuknięcie wybiera osobę do wyjaśnienia. */
+  A.familyHeroHtml = (prod, an) => {
+    if (!A.family.length || prod.kind === 'cosmetic') return '';
+    const focus = A.focusPerson();
+    return `<div class="fam-hero" role="group" aria-label="Dopasowanie dla domowników">${A.familyRows().map(r => {
+      const pm = personalMatch(prod, an, r.p), on = focus && focus.id === r.id;
+      const lvl = pm.status === 'fail' ? 'bad' : pm.status === 'traces' ? 'poor' : (pm.pct != null ? pm.level : 'unknown');
+      const big = pm.status === 'fail' ? '✕' : pm.status === 'traces' ? '!' : pm.pct != null ? pm.pct + (pm.personal ? '%' : '') : '?';
+      const word = pm.status === 'fail' ? 'nie pasuje' : pm.status === 'traces' ? 'może zawierać' : pm.pct == null ? 'brak danych' : pm.pct >= 75 ? 'bardzo dobre' : pm.pct >= 50 ? 'pasuje' : pm.pct >= 25 ? 'słabo' : 'raczej nie';
+      return `<button type="button" class="fam-hrow${on ? ' on' : ''}" data-act="fam-focus" data-id="${esc(r.id)}" aria-pressed="${on}" aria-label="${esc(r.name)}: ${esc(word)}${on ? ', wyjaśnienie poniżej' : ''}"><span class="fam-sq" data-level="${esc(lvl)}">${esc(big)}</span><span class="fam-who"><b>${esc(r.name)}</b><small>${esc(word)}</small></span></button>`;
+    }).join('')}</div>`;
   };
   A.familyHtml = (prod, an) => {
     if (!A.family.length || prod.kind === 'cosmetic') return '';

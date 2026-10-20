@@ -510,3 +510,12 @@ body.no-scores .bill-pts,body.no-scores .bill-sum{display:none}
 .d-arc-disc{--arc:#FFF0C2;left:38%;top:-180px;width:440px;height:440px;border-width:60px}
 #scr-discoveries .wrap{position:relative;display:flex;flex-direction:column;gap:14px}
 .disc-steps{display:flex;flex-direction:column;gap:4px;margin-top:4px}.disc-steps .xp{height:6px}.disc-trust.on .disc-steps .small{color:#FFE897}
+
+/* Domownicy przy zdjęciu produktu */
+.fam-hero{display:flex;flex-direction:column;gap:6px;align-self:stretch}
+.fam-hrow{display:flex;align-items:center;gap:8px;min-height:44px;padding:4px 8px 4px 4px;border:2px solid transparent;border-radius:14px;background:rgba(255,255,255,.7);color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.fam-hrow.on{border-color:var(--ink);background:#fff}
+.fam-sq{flex:0 0 auto;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-size:14px;font-weight:800;background:var(--v-none)}
+.fam-sq[data-level="great"]{background:var(--v-great)}.fam-sq[data-level="good"]{background:var(--v-good)}.fam-sq[data-level="poor"]{background:var(--v-poor)}.fam-sq[data-level="bad"]{background:var(--v-bad)}
+.fam-who{display:flex;flex-direction:column;min-width:0}.fam-who b{font-size:13px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fam-who small{font-size:11px;font-weight:700;color:#3E4046}
+body.no-scores .fam-sq{font-size:0}

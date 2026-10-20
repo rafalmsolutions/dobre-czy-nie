@@ -130,14 +130,15 @@
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
       : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
     const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
-    const verdict = pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
+    const fam = pm && A.familyHeroHtml ? A.familyHeroHtml(p, cur.an) : '';
+    const verdict = fam ? fam : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
     return `<div class="d-hero" data-level="${esc(lvl)}"><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
       <div class="d-hside">${chip}${verdict}</div>
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
-  function billHtml(pm) {
+  function billHtml(pm, who) {
     const sign = d => d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '0';
     const watch = pm.rows.filter(r => !r.exclude), excl = pm.rows.filter(r => r.exclude);
     const line = r => `<li class="bill-row ${r.kind}">${r.watch ? `<span class="bill-ic">${A.dIcon((WATCH.find(w => w.key === r.watch) || {}).icon, 18)}</span>` : `<span class="bill-ic">${A.dIcon(r.kind === 'good' ? 'healthy' : 'ban', 18)}</span>`}<span class="grow"><b>${esc(r.title)}</b>${r.word ? ` <span class="bill-word">${esc(r.word)}</span>` : ''}${r.value ? `<small>${esc(r.value)}${r.text ? ', ' + esc(r.text) : ''}</small>` : r.text ? `<small>${esc(r.text)}</small>` : ''}</span><span class="bill-pts">${r.delta == null ? (r.cap ? 'max ' + r.cap + '%' : '') : sign(r.delta)}</span></li>`;
@@ -145,7 +146,7 @@
     return `<ul class="bill" aria-label="Jak policzyliśmy dopasowanie">
       ${pm.base != null ? `<li class="bill-row base"><span class="bill-ic">${A.dIcon('healthy', 18)}</span><span class="grow"><b>Ocena składu</b><small>taka sama dla wszystkich</small></span><span class="bill-pts">${pm.base}</span></li>` : ''}
       ${watch.map(line).join('')}${excl.map(line).join('')}
-      <li class="bill-sum"><span class="grow">Dla Ciebie</span><b>${pm.pct == null ? '–' : pm.pct + '%'}</b></li></ul>
+      <li class="bill-sum"><span class="grow">${who ? 'Dla: ' + esc(who) : 'Dla Ciebie'}</span><b>${pm.pct == null ? '–' : pm.pct + '%'}</b></li></ul>
       ${fail ? '<p class="small bill-note">Zawiera coś, czego nie jesz, więc dopasowanie wynosi najwyżej 10%.</p>' : pm.capped && pm.capBy ? `<p class="small bill-note">Najwyżej ${pm.cap}% (${esc(pm.capBy)}).</p>` : pm.pct === 12 && pm.base != null && pm.base + pm.sum < 12 ? '<p class="small bill-note">Najmniej 12%: niżej są tylko produkty z czymś, czego nie jesz.</p>' : ''}
       <a class="small" href="#/profil">Zmień, czego pilnujesz</a>`;
   }
@@ -177,12 +178,15 @@
     const lvl = pm.level;
     const ringColor = { great: '#2E9A3E', good: '#7CBF3A', poor: '#F0B021', bad: '#D9412B' }[lvl] || '#C9CFD6';
     parts.push('<div class="d-side">');
-    parts.push(`<div class="panel stack${pm.personal ? '' : ' general'}" id="matchBox">
-      <span class="small muted" style="font-weight:800;letter-spacing:.06em">${pm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
-      ${pm.personal ? billHtml(pm) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
+    const fp = A.focusPerson ? A.focusPerson() : null, other = fp && fp.id !== 'me';
+    const bpm = other ? personalMatch(prod, an, fp.p) : pm;
+    parts.push(`<div class="panel stack${bpm.personal ? '' : ' general'}" id="matchBox">
+      <span class="small muted" style="font-weight:800;letter-spacing:.06em">${other ? 'DLACZEGO DLA: ' + esc(fp.name.toUpperCase()) : bpm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
+      ${other && !bpm.personal ? `<p class="small">${esc(fp.name)} nie ma jeszcze ustawień profilu, więc to ogólna ocena składu. <a href="#/profil">Ustaw</a></p>` : ''}
+      ${bpm.personal ? billHtml(bpm, other ? fp.name : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     parts.push('<div id="discBox"></div>');
-    if (A.familyHtml) parts.push(A.familyHtml(prod, an));
+    // Domownicy są przy zdjęciu (A.familyHeroHtml), więc osobnej sekcji niżej już nie ma.
     const qc = prod.qchg && prod.qchg.length > 1 ? prod.qchg : null;
     if (qc) {
       const a = qc[qc.length - 2], z = qc[qc.length - 1], num = x => parseFloat(x[2]), mon = d => new Date(d + 'T12:00:00').toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' });
