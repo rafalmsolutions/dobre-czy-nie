@@ -48,3 +48,11 @@ Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
 - Punkty za karty (raz na produkt): zwykła 2, rzadka 5, epicka 15, legendarna 50, błysk +20; reguły w `A.ALBUM_RULES` (`ui-base.js`). Krople ukryte.
 - Zakładka „Album” zastąpiła „Postępy” (odznaki i poziom: link w albumie i gwiazdka z punktami).
 - Test w przeglądarce: `tests/e2e-d-album.mjs`.
+
+## Galeria (test, 20.10.2026)
+
+- Trzy strony albumu (Czekolady, Jogurty, Pieczywo) mają obraz z ChatGPT (`d/img/gal/*.webp`, 800×1000) zamiast samego talerza.
+- Obraz jest podzielony na 10 fragmentów (2 × 5); każda karta z tej strony odsłania kolejny (kolejność w `ORDER` w `ui-album.js`, środek na koniec).
+- Odsłonięcie po skanie pokazuje miniaturę obrazu z animacją nowego fragmentu; pełna strona pokazuje cały obraz w złotej ramie.
+- Na stronie albumu przycisk „Podgląd: odsłoń cały obraz (test)” odsłania resztę bez zmiany danych.
+- Nowy obraz: plik `d/img/gal/<klucz>.webp` i wpis w `GALLERY` w `ui-album.js`.

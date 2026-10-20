@@ -11,6 +11,34 @@
   };
   const SOUND = { zwykla: 'shelf', rzadka: 'right', epicka: 'badge', legendarna: 'gold' };
 
+  /* ---------- Galeria (test na 3 stronach): strona albumu = obraz odsłaniany po fragmencie ----------
+     10 fragmentów (2 kolumny × 5 rzędów), każda karta z tej strony odsłania kolejny. Środek obrazu na koniec. */
+  const GALLERY = {
+    'en:chocolates': { img: 'img/gal/chocolates.webp', style: 'plakat art deco' },
+    'en:yogurts': { img: 'img/gal/yogurts.webp', style: 'martwa natura' },
+    'en:breads': { img: 'img/gal/breads.webp', style: 'drzeworyt' }
+  };
+  const ORDER = [1, 8, 3, 6, 0, 9, 2, 7, 5, 4];
+  A.gallery = key => GALLERY[key] || null;
+  A.galleryHtml = (key, n, opts = {}) => {
+    const g = GALLERY[key]; if (!g) return '';
+    const have = Math.max(0, Math.min(n, ORDER.length)), open = new Set(ORDER.slice(0, have));
+    const fresh = opts.fresh && have ? ORDER[have - 1] : -1, page = A.pageInfo(key) || { label: '' };
+    const cls = 'gal' + (have >= ORDER.length ? ' full' : '') + (opts.size ? ' ' + opts.size : '');
+    return `<div class="${cls}" style="background-image:url('${esc(g.img)}')" role="img" aria-label="Obraz ${esc(page.label)}: odsłonięte ${have} z ${ORDER.length} fragmentów">${ORDER.map((_, i) =>
+      open.has(i) && i !== fresh ? '<span class="gal-t open"></span>' : `<span class="gal-t${i === fresh ? ' fresh' : ''}">?</span>`).join('')}</div>`;
+  };
+  A.galleryDemo = el => {
+    const gal = el.closest('.gal-box') && el.closest('.gal-box').querySelector('.gal');
+    if (!gal || gal.dataset.demo) return;
+    gal.dataset.demo = '1'; el.disabled = true;
+    const tiles = [...gal.children], todo = ORDER.filter(i => !tiles[i].classList.contains('open'));
+    todo.forEach((ti, k) => setTimeout(() => {
+      tiles[ti].classList.add('fresh');
+      if (k === todo.length - 1) setTimeout(() => { gal.classList.add('full'); A.sound('level'); }, 1700);
+    }, 450 * k));
+  };
+
   const scansText = c => {
     if (c.r === 'legendarna') return 'dodane przez Ciebie';
     if (c.sc == null) return 'zeskanowana przez Ciebie';
@@ -53,7 +81,7 @@
       <div class="rv-stage">${rv.flipped ? `<div class="rv-rays" aria-hidden="true" style="background:${c.h ? RAYS.holo : RAYS[c.r]}"></div><div class="rv-front">${A.cardHtml(c, 224)}</div>`
         : `<button class="rv-back" type="button" data-act="reveal-flip" aria-label="Odsłoń nową kartę"><span class="rv-q">?</span><span class="rv-logo"><span>dobre </span><b>czy nie?</b></span></button>`}</div>
       ${rv.flipped ? `<div class="rv-text" role="status"><h2><span class="w-light">${esc(h1[0])}</span> <span class="w-bold">${esc(h1[1])}</span></h2><p>${esc(text)}${extra ? ' ' + esc(extra) : ''}</p>
-        ${isCat ? `<div class="rv-progress"><div class="row" style="justify-content:space-between"><b>Strona: ${esc(page.label)}</b><b>${have} z ${A.ALBUM_SLOTS}</b></div><span class="xp"><i style="width:${have * 10}%"></i></span></div>` : ''}
+        ${isCat && A.gallery(c.k) ? `<div class="rv-progress rv-gal">${A.galleryHtml(c.k, have, { size: 'tiny', fresh: rv.res.isNew && A.cardsOf(c.k).length <= A.ALBUM_SLOTS })}<span class="stack" style="gap:4px;text-align:left"><b>Obraz: ${esc(page.label)}</b><span>${rv.res.isNew && A.cardsOf(c.k).length <= A.ALBUM_SLOTS ? 'Odsłoniłeś kolejny fragment' : 'Wszystkie fragmenty już odsłonięte'}: ${have} z ${A.ALBUM_SLOTS}</span></span></div>` : isCat ? `<div class="rv-progress"><div class="row" style="justify-content:space-between"><b>Strona: ${esc(page.label)}</b><b>${have} z ${A.ALBUM_SLOTS}</b></div><span class="xp"><i style="width:${have * 10}%"></i></span></div>` : ''}
         <div class="rv-btns"><button class="btn btn-white" type="button" data-act="reveal-close">Wynik produktu</button>${rv.res.pageFull ? '<button class="btn btn-green" type="button" data-act="reveal-page">Dalej ›</button>' : `<a class="btn btn-green" href="#/album/${esc(c.k)}" data-act="reveal-album">Zobacz album</a>`}</div></div>`
         : '<div class="rv-text"><h2><span class="w-light">Nowa</span> <span class="w-bold">karta</span></h2><p>Stuknij, żeby ją odsłonić.</p></div>'}
     </div>`;
@@ -65,7 +93,7 @@
       <div class="pd-rays" aria-hidden="true"></div>
       <span class="pd-chip">STRONA ${Object.keys(A.album.done).length} Z ${SHOP_CATEGORIES.length}</span>
       <h2 class="pd-h"><span class="w-light">Strona</span> <span class="w-bold">ukończona!</span></h2>
-      <div class="pd-plate m-pop"><span class="pd-ring"></span>${page.img ? `<img src="${esc(page.img)}" alt="">` : ''}<span class="pd-tw t1">✦</span><span class="pd-tw t2">✦</span><span class="pd-tw t3">✦</span><span class="pd-label">${esc(page.label)} · ${A.ALBUM_SLOTS} / ${A.ALBUM_SLOTS}</span></div>
+      ${A.gallery(key) ? `<div class="pd-gal m-pop">${A.galleryHtml(key, A.ALBUM_SLOTS, { size: 'mid' })}<span class="pd-tw t1">✦</span><span class="pd-tw t2">✦</span><span class="pd-tw t3">✦</span><span class="pd-label">${esc(page.label)} · obraz odsłonięty</span></div>` : `<div class="pd-plate m-pop"><span class="pd-ring"></span>${page.img ? `<img src="${esc(page.img)}" alt="">` : ''}<span class="pd-tw t1">✦</span><span class="pd-tw t2">✦</span><span class="pd-tw t3">✦</span><span class="pd-label">${esc(page.label)} · ${A.ALBUM_SLOTS} / ${A.ALBUM_SLOTS}</span></div>`}
       <p class="pd-p">Masz wszystkie karty z tej strony${rare ? `, w tym ${rare} ${plural(rare, 'rzadszą', 'rzadsze', 'rzadszych')}` : ''}${holo ? ` i ${holo} ${plural(holo, 'błyszczącą', 'błyszczące', 'błyszczących')}` : ''}.</p>
       <div class="chips" style="justify-content:center"><span class="reward-chip gold">+100 pkt</span><span class="reward-chip">Złota ramka strony</span></div>
       <div class="rv-btns" style="margin-top:auto"><button class="btn btn-white" type="button" data-act="share-page" data-k="${esc(key)}">Udostępnij</button><a class="btn btn-green" href="#/album/${esc(key)}" data-act="reveal-album">Zobacz stronę</a></div></div>`;
@@ -106,7 +134,7 @@
       <a class="al-week${wk.done ? ' done' : ''}" href="#/album/${esc(wk.key)}">${wk.img ? `<img src="${esc(wk.img)}" alt="">` : ''}<span class="grow"><span class="al-week-k">KARTA TYGODNIA</span><b>Dowolny produkt: ${esc(wk.label.toLowerCase())}</b><span>${wk.done ? 'Zdobyta w tym tygodniu ✓' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')} · złota ramka i +30 pkt`}</span></span><span aria-hidden="true">›</span></a>
       ${st.cards ? '' : '<div class="empty stack" style="align-items:center"><b>Twój album jest jeszcze pusty</b><span>Zeskanuj dowolny produkt, a dostaniesz pierwszą kartę.</span><button class="btn btn-green" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj produkt</button></div>'}
       <div class="sec-head"><h2>Strony albumu</h2><span class="small muted" style="font-weight:700">${st.started} z ${SHOP_CATEGORIES.length} rozpoczętych</span></div>
-      <div class="al-grid">${pages.concat(extra).map(p => `<a class="al-page${p.full ? ' full' : p.n ? '' : ' empty-page'}" href="#/album/${esc(p.key)}">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="al-noimg">${A.dIcon(p.key === 'cosmetics' ? 'healthy' : 'processing', 34)}</span>`}<b>${esc(p.label)}</b>${SHOP_CATEGORIES.some(c => c.key === p.key) ? `<span class="xp"><i style="width:${Math.min(100, p.n * 10)}%"></i></span><span class="al-n">${p.full ? 'pełna strona' : p.n ? Math.min(p.n, A.ALBUM_SLOTS) + ' z ' + A.ALBUM_SLOTS : 'jeszcze pusta'}</span>` : `<span class="al-n">${p.n} ${plural(p.n, 'karta', 'karty', 'kart')}</span>`}${p.full ? '<span class="al-star">★</span>' : ''}${newest && newest.k === p.key && Date.now() - newest.t < 864e5 ? '<span class="al-new">NOWA</span>' : ''}</a>`).join('')}</div>
+      <div class="al-grid">${pages.concat(extra).map(p => `<a class="al-page${p.full ? ' full' : p.n ? '' : ' empty-page'}" href="#/album/${esc(p.key)}">${A.gallery(p.key) ? A.galleryHtml(p.key, p.n, { size: 'mini' }) : p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="al-noimg">${A.dIcon(p.key === 'cosmetics' ? 'healthy' : 'processing', 34)}</span>`}<b>${esc(p.label)}</b>${SHOP_CATEGORIES.some(c => c.key === p.key) ? `<span class="xp"><i style="width:${Math.min(100, p.n * 10)}%"></i></span><span class="al-n">${p.full ? 'pełna strona' : p.n ? Math.min(p.n, A.ALBUM_SLOTS) + ' z ' + A.ALBUM_SLOTS : 'jeszcze pusta'}</span>` : `<span class="al-n">${p.n} ${plural(p.n, 'karta', 'karty', 'kart')}</span>`}${p.full ? '<span class="al-star">★</span>' : ''}${newest && newest.k === p.key && Date.now() - newest.t < 864e5 ? '<span class="al-new">NOWA</span>' : ''}</a>`).join('')}</div>
       <a class="al-link" href="#/postepy">Odznaki i poziom ›</a>
     </div>`;
   });
@@ -124,6 +152,7 @@
       <div class="ap-head${full ? ' full' : ''}">${page.img ? `<img src="${esc(page.img)}" alt="">` : ''}<div class="stack" style="gap:6px"><h1><span class="w-light">Strona</span> <span class="w-bold">${esc(page.label)}</span></h1>
         <span class="small muted" style="font-weight:700">${isCat ? `${Math.min(cards.length, A.ALBUM_SLOTS)} z ${A.ALBUM_SLOTS} kart` : `${cards.length} ${plural(cards.length, 'karta', 'karty', 'kart')}`}${holo ? ` · ${holo} ${plural(holo, 'błyszcząca', 'błyszczące', 'błyszczących')}` : ''}${full ? ' · pełna ★' : ''}</span>
         ${isCat ? `<span class="xp"><i style="width:${Math.min(100, cards.length * 10)}%"></i></span>` : ''}</div></div>
+      ${isCat && A.gallery(key) ? `<div class="gal-box">${A.galleryHtml(key, cards.length)}<div class="gal-cap"><b>${full ? 'Obraz odsłonięty w całości' : 'Obraz do odsłonięcia'}</b><span>styl: ${esc(A.gallery(key).style)} · ${Math.min(cards.length, A.ALBUM_SLOTS)} z ${A.ALBUM_SLOTS} fragmentów. Każda nowa karta z tej strony odsłania kolejny.</span></div>${full ? '' : '<button class="btn btn-white" type="button" data-act="gal-demo">Podgląd: odsłoń cały obraz (test)</button>'}</div>` : ''}
       ${isCat && !full ? '<p class="ap-reward small"><b>Nagroda za pełną stronę:</b> złota ramka, +100 pkt i postęp w odznace „Kolekcjoner”.</p>' : ''}
       ${!isCat ? `<p class="small muted">${key === 'other' ? 'Produkty, których kategorii nie rozpoznaliśmy. Ta strona nie ma limitu kart.' : 'Kosmetyki z Open Beauty Facts. Ta strona nie ma limitu kart.'}</p>` : ''}
       ${sketch ? `<a class="ap-sketch" href="#/p/${esc(sketch.c)}"><span class="ap-sketch-ic">✎</span><span class="grow"><b>Ożyw szkic „${esc(sketch.n)}”</b><span>Uzupełnij dane, a karta nabierze kolorów (+10 pkt)</span></span><span aria-hidden="true">›</span></a>` : ''}

@@ -40,6 +40,7 @@ ok(await page.evaluate(() => !!App.album.done['en:yogurts']), 'strona oznaczona 
 await page.click('#reveal [data-act=reveal-album]'); await page.waitForTimeout(700);
 await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'al-page.png', fullPage: true });
 ok((await page.innerText('#scr-albumpage')).toLowerCase().includes('jogurty'), 'strona albumu Jogurty');
+ok(await page.locator('#scr-albumpage .gal.full .gal-t.open').count() === 10, 'Galeria: pełna strona Jogurty = obraz odsłonięty w całości');
 await page.goto('http://localhost:8790/d/index.html#/album'); await page.waitForTimeout(700);
 await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'al.png', fullPage: true });
 ok((await page.innerText('#scr-album')).includes('KARTA TYGODNIA'), 'album z kartą tygodnia');

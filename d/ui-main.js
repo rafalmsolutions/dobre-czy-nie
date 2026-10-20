@@ -55,6 +55,7 @@
       case 'cel-ok': A.nextCelebration(); break;
       case 'reveal-flip': case 'reveal-close': case 'reveal-page': case 'reveal-album': A.revealAction(act, el); break;
       case 'share-page': A.sharePage(el.dataset.k); break;
+      case 'gal-demo': A.galleryDemo(el); break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;

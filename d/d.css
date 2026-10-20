@@ -430,3 +430,25 @@ body.no-scores .bill-pts,body.no-scores .bill-sum{display:none}
 .acard-img img.dish{width:auto;height:118%;max-height:none}
 .acard-img img.dish{width:100%;height:100%;object-fit:contain;transform:scale(1.1)}
 .acard-name,.acard-brand,.acard-foot,.acard-top{flex:0 0 auto}
+
+/* Galeria (test): obraz odsłaniany po fragmencie */
+.gal{position:relative;width:100%;max-width:340px;aspect-ratio:4/5;margin:0 auto;border-radius:18px;overflow:hidden;background-size:cover;background-position:center;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));box-shadow:0 14px 30px rgba(40,40,50,.18);transition:box-shadow .6s}
+.gal.mid{max-width:210px;border-radius:14px}
+.gal.tiny{max-width:92px;flex:0 0 92px;border-radius:10px;box-shadow:0 6px 14px rgba(40,40,50,.16)}
+.gal.mini{width:84px;max-width:84px;border-radius:10px;box-shadow:0 6px 12px rgba(40,40,50,.14)}
+.gal-t{display:flex;align-items:center;justify-content:center;background:rgba(43,44,48,.5);-webkit-backdrop-filter:blur(14px) saturate(.3);backdrop-filter:blur(14px) saturate(.3);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.28);color:rgba(255,255,255,.8);font-family:var(--f-display);font-weight:900;font-size:22px}
+.gal.tiny .gal-t,.gal.mini .gal-t,.gal.mid .gal-t{font-size:0}
+.gal-t.open{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+.gal-t.fresh{animation:galOpen 1.6s .5s ease forwards}
+@keyframes galOpen{0%{opacity:1}35%{opacity:1;box-shadow:inset 0 0 0 3px #FFE897}100%{opacity:0;box-shadow:inset 0 0 0 3px #FFE897}}
+.gal.full{box-shadow:0 0 0 5px #E8C25A,0 18px 40px rgba(209,154,18,.4)}
+.gal.mini.full,.gal.tiny.full{box-shadow:0 0 0 3px #E8C25A,0 6px 14px rgba(209,154,18,.35)}
+.gal-box{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.gal-cap{display:flex;flex-direction:column;gap:3px;text-align:center;font-size:13px;line-height:1.4}
+.gal-cap span{color:#3E4046}
+.gal-box .btn{align-self:center}
+.rv-gal{flex-direction:row;align-items:center;gap:12px}
+.pd-gal{position:relative;width:210px;margin:6px 0 18px}
+.pd-gal .pd-label{bottom:-14px}
+@media (prefers-reduced-motion: reduce){.gal-t.fresh{animation:none;opacity:0}}
+.gal.mini .gal-t:not(.open),.gal.tiny .gal-t:not(.open){background:rgba(43,44,48,.74)}
