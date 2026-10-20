@@ -26,28 +26,32 @@
   const has = (arr, re) => (arr || []).some(t => re.test(t));
   const N = (p, k) => p.nutriments && p.nutriments[k] != null ? p.nutriments[k] : null;
   // h = grupa podpowiedzi do tajnego miejsca; w = pozycje „Pilnuję”, z którymi warunek idzie w parze (pierwszeństwo przy doborze).
+  // Gdzie warunek ma sens: „only” = tylko te strony, „skip” = wszystkie poza tymi (np. „wegański” dla wody nic nie znaczy).
+  const DRINKS_PLAIN = ['en:waters', 'en:teas', 'en:coffees'];
+  const PLANT_BASIC = ['en:waters', 'en:teas', 'en:coffees', 'en:fruit-juices', 'en:sodas', 'en:beers', 'en:fresh-fruits', 'en:fresh-vegetables', 'en:legumes', 'en:nuts', 'en:rices', 'en:groats', 'en:vegetable-oils', 'en:dried-fruits', 'en:frozen-vegetables', 'en:canned-vegetables', 'en:pickles', 'en:jams', 'en:hummus', 'en:plant-based-milk-alternatives'];
+  const ANIMAL = ['en:milks', 'en:yogurts', 'en:cheeses', 'en:quarks', 'en:butters', 'en:creams', 'en:dairy-desserts', 'en:eggs', 'en:fresh-meats', 'en:sausages', 'en:prepared-meats', 'en:fishes', 'en:canned-fishes'];
   const COND = [
-    { id: 'ns-a', label: 'Nutri-Score A', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat', 'kcal'], test: p => p.nutriscore === 'a' },
-    { id: 'ns-ab', label: 'Nutri-Score A lub B', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat', 'kcal'], test: p => ['a', 'b'].includes(p.nutriscore) },
-    { id: 'ns-c', label: 'Nutri-Score C lub lepszy', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat'], test: p => ['a', 'b', 'c'].includes(p.nutriscore) },
-    { id: 'nova12', label: 'Mało przetworzony (NOVA 1–2)', h: 'przetworzenie', w: ['processing'], test: p => p.nova && p.nova <= 2 },
-    { id: 'nova3', label: 'Nie ultraprzetworzony (NOVA 1–3)', h: 'przetworzenie', w: ['processing'], test: p => p.nova && p.nova <= 3 },
-    { id: 'noadd', label: 'Bez dodatków E', h: 'skład', w: ['processing'], test: p => Array.isArray(p.additiveTags) && p.additiveTags.length === 0 },
-    { id: 'nopalm', label: 'Bez oleju palmowego', h: 'skład', w: ['palm', 'satfat'], test: p => p.analysis.includes('en:palm-oil-free') },
-    { id: 'vegan', label: 'Wegański', h: 'skład', w: [], test: p => p.analysis.includes('en:vegan') },
-    { id: 'vegetarian', label: 'Wegetariański', h: 'skład', w: [], test: p => p.analysis.includes('en:vegetarian') },
+    { id: 'ns-a', label: 'Nutri-Score A', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat', 'kcal'], skip: DRINKS_PLAIN, test: p => p.nutriscore === 'a' },
+    { id: 'ns-ab', label: 'Nutri-Score A lub B', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat', 'kcal'], skip: DRINKS_PLAIN, test: p => ['a', 'b'].includes(p.nutriscore) },
+    { id: 'ns-c', label: 'Nutri-Score C lub lepszy', h: 'wartość odżywcza', w: ['sugar', 'salt', 'satfat'], skip: DRINKS_PLAIN, test: p => ['a', 'b', 'c'].includes(p.nutriscore) },
+    { id: 'nova12', label: 'Mało przetworzony (NOVA 1–2)', h: 'przetworzenie', w: ['processing'], skip: DRINKS_PLAIN, test: p => p.nova && p.nova <= 2 },
+    { id: 'nova3', label: 'Nie ultraprzetworzony (NOVA 1–3)', h: 'przetworzenie', w: ['processing'], skip: DRINKS_PLAIN, test: p => p.nova && p.nova <= 3 },
+    { id: 'noadd', label: 'Bez dodatków E', h: 'skład', w: ['processing'], skip: DRINKS_PLAIN, test: p => Array.isArray(p.additiveTags) && p.additiveTags.length === 0 },
+    { id: 'nopalm', label: 'Bez oleju palmowego', h: 'skład', w: ['palm', 'satfat'], only: ['en:chocolates', 'en:biscuits', 'en:crisps', 'en:salty-snacks', 'en:sweet-spreads', 'en:ice-creams', 'en:candies', 'en:breakfast-cereals', 'en:mueslis', 'en:breads', 'en:meals', 'en:pizzas', 'en:soups', 'en:sauces', 'en:dairy-desserts', 'en:pierogi', 'en:butters'], test: p => p.analysis.includes('en:palm-oil-free') },
+    { id: 'vegan', label: 'Wegański', h: 'skład', w: [], skip: PLANT_BASIC.concat(ANIMAL), test: p => p.analysis.includes('en:vegan') },
     { id: 'bio', label: 'Bio (ekologiczny)', h: 'znak na opakowaniu', w: [], test: p => has(p.labels, /organic|^en:bio$|eu-organic/) },
-    { id: 'fair', label: 'Fair trade', h: 'znak na opakowaniu', w: [], test: p => has(p.labels, /fair-trade|fairtrade|rainforest/) },
-    { id: 'nosugar', label: 'Bez dodanego cukru', h: 'znak na opakowaniu', w: ['sugar'], test: p => has(p.labels, /no-added-sugar/) },
-    { id: 'glutenfree', label: 'Oznaczony „bez glutenu”', h: 'znak na opakowaniu', w: [], test: p => has(p.labels, /no-gluten|gluten-free/) },
-    { id: 'lactosefree', label: 'Bez laktozy', h: 'znak na opakowaniu', w: [], test: p => has(p.labels, /no-lactose|lactose-free/) || has(p.categories, /lactose-free/) },
-    { id: 'lowsugar', label: 'Mało cukru', h: 'wartość odżywcza', w: ['sugar', 'kcal'], test: p => N(p, 'sugars') != null && N(p, 'sugars') <= (p.drink ? 2.5 : 5) },
-    { id: 'lowsalt', label: 'Mało soli', h: 'wartość odżywcza', w: ['salt'], test: p => N(p, 'salt') != null && N(p, 'salt') <= 0.3 },
-    { id: 'lowfat', label: 'Mało tłuszczu', h: 'wartość odżywcza', w: ['kcal', 'satfat'], test: p => N(p, 'fat') != null && N(p, 'fat') <= (p.drink ? 1.5 : 3) },
-    { id: 'lowsat', label: 'Mało tłuszczów nasyconych', h: 'wartość odżywcza', w: ['satfat'], test: p => N(p, 'sat') != null && N(p, 'sat') <= (p.drink ? 0.75 : 1.5) },
-    { id: 'protein', label: 'Dużo białka (min. 10 g)', h: 'wartość odżywcza', w: ['protein'], test: p => N(p, 'proteins') != null && N(p, 'proteins') >= 10 },
-    { id: 'fiber', label: 'Dużo błonnika (min. 6 g)', h: 'wartość odżywcza', w: ['fiber'], test: p => N(p, 'fiber') != null && N(p, 'fiber') >= 6 }
+    { id: 'fair', label: 'Fair trade', h: 'znak na opakowaniu', w: [], only: ['en:chocolates', 'en:coffees', 'en:teas', 'en:fresh-fruits', 'en:sweet-spreads'], test: p => has(p.labels, /fair-trade|fairtrade|rainforest/) },
+    { id: 'nosugar', label: 'Bez dodanego cukru', h: 'znak na opakowaniu', w: ['sugar'], only: ['en:yogurts', 'en:breakfast-cereals', 'en:mueslis', 'en:jams', 'en:sweet-spreads', 'en:dairy-desserts', 'en:plant-based-milk-alternatives', 'en:fruit-juices', 'en:sodas', 'en:chocolates', 'en:ketchup', 'en:sauces', 'en:biscuits', 'en:ice-creams', 'en:quarks', 'en:dried-fruits'], test: p => has(p.labels, /no-added-sugar/) },
+    { id: 'glutenfree', label: 'Oznaczony „bez glutenu”', h: 'znak na opakowaniu', w: [], only: ['en:breads', 'en:breakfast-cereals', 'en:mueslis', 'en:pastas', 'en:biscuits', 'en:beers', 'en:meals', 'en:pizzas', 'en:soups', 'en:salty-snacks', 'en:crisps', 'en:candies', 'en:chocolates', 'en:ice-creams', 'en:sauces', 'en:pierogi', 'en:groats', 'en:prepared-meats', 'en:sausages'], test: p => has(p.labels, /no-gluten|gluten-free/) },
+    { id: 'lactosefree', label: 'Bez laktozy', h: 'znak na opakowaniu', w: [], only: ['en:milks', 'en:yogurts', 'en:cheeses', 'en:quarks', 'en:dairy-desserts', 'en:creams', 'en:butters', 'en:ice-creams'], test: p => has(p.labels, /no-lactose|lactose-free/) || has(p.categories, /lactose-free/) },
+    { id: 'lowsugar', label: 'Mało cukru', h: 'wartość odżywcza', w: ['sugar', 'kcal'], skip: DRINKS_PLAIN.concat(['en:vegetable-oils', 'en:eggs', 'en:fresh-meats']), test: p => N(p, 'sugars') != null && N(p, 'sugars') <= (p.drink ? 2.5 : 5) },
+    { id: 'lowsalt', label: 'Mało soli', h: 'wartość odżywcza', w: ['salt'], skip: ['en:teas', 'en:coffees', 'en:vegetable-oils', 'en:fruit-juices', 'en:sodas'], test: p => N(p, 'salt') != null && N(p, 'salt') <= 0.3 },
+    { id: 'lowfat', label: 'Mało tłuszczu', h: 'wartość odżywcza', w: ['kcal', 'satfat'], skip: DRINKS_PLAIN.concat(['en:fruit-juices', 'en:sodas', 'en:vegetable-oils']), test: p => N(p, 'fat') != null && N(p, 'fat') <= (p.drink ? 1.5 : 3) },
+    { id: 'lowsat', label: 'Mało tłuszczów nasyconych', h: 'wartość odżywcza', w: ['satfat'], skip: DRINKS_PLAIN.concat(['en:fruit-juices', 'en:sodas']), test: p => N(p, 'sat') != null && N(p, 'sat') <= (p.drink ? 0.75 : 1.5) },
+    { id: 'protein', label: 'Dużo białka (min. 10 g)', h: 'wartość odżywcza', w: ['protein'], skip: DRINKS_PLAIN.concat(['en:fruit-juices', 'en:sodas', 'en:vegetable-oils', 'en:beers']), test: p => N(p, 'proteins') != null && N(p, 'proteins') >= 10 },
+    { id: 'fiber', label: 'Dużo błonnika (min. 6 g)', h: 'wartość odżywcza', w: ['fiber'], skip: DRINKS_PLAIN.concat(['en:fruit-juices', 'en:sodas', 'en:vegetable-oils', 'en:beers', 'en:milks']), test: p => N(p, 'fiber') != null && N(p, 'fiber') >= 6 }
   ];
+  const condFits = (c, key) => (!c.only || c.only.includes(key)) && !(c.skip && c.skip.includes(key));
   const COND_BY_ID = Object.fromEntries(COND.map(c => [c.id, c]));
   // Podkategorie z bazy z polską nazwą: dają stronom różnorodność („Gorzka”, „Skyr”, „Żytni”).
   const SUB = {
@@ -140,7 +144,7 @@
     const base = comp.length >= 6 ? comp : all, n = base.length;
     const cands = [];
     Object.entries(SUB[key] || {}).forEach(([tag, label]) => cands.push({ id: 's:' + tag, label, h: 'rodzaj produktu', pri: 2 }));
-    COND.forEach(c => cands.push({ id: 'c:' + c.id, label: c.label, h: c.h, pri: c.w.some(x => watch.includes(x)) ? 0 : 1 }));
+    COND.filter(c => condFits(c, key)).forEach(c => cands.push({ id: 'c:' + c.id, label: c.label, h: c.h, pri: c.w.some(x => watch.includes(x)) ? 0 : 1 }));
     const used = new Set((keep || []).map(s => s.id)), scored = [];
     cands.forEach(c => {
       if (used.has(c.id) || !n) return;
