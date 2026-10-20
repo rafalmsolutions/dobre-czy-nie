@@ -84,11 +84,13 @@
         <p class="small muted">Szukamy też odmian (np. „soli”, „czosnku”) i pomijamy frazy w rodzaju „bez dodatku soli”.</p></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
-        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label></fieldset>
+        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label>
+        ${A.statsAvailable() ? `<label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setStats" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.stats !== false ? ' checked' : ''}><span><b>Anonimowe statystyki</b><br><span class="small muted">Liczymy tylko, które funkcje są używane i ile osób wraca. Bez ciasteczek, profilu i kodów produktów.</span></span></label>` : ''}</fieldset>
       <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
       <button class="btn btn-green btn-block" type="submit">Gotowe</button>
     </form>
     <div class="card stack"><h2 style="font-size:1.1rem">Informacje</h2>
+      ${A.CFG.contactEmail ? `<a class="btn btn-green btn-sm" id="feedbackBtn" href="${A.feedbackHref()}" style="align-self:flex-start">Wyślij uwagi o aplikacji</a>` : ''}
       <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="privacy.html">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
       <p class="small muted">Dane produktów: Open Food Facts i Open Beauty Facts (licencja ODbL). Wersja aplikacji ${esc(A.CFG.appVersion || '1.0')}.</p><p class="small muted" id="dataDate"></p>
       ${confirmWipe ? `<div class="stack"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, półki, punkty, historię)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small" type="button" data-act="wipe" style="align-self:flex-start">Usuń wszystkie moje dane</button>'}
@@ -131,7 +133,9 @@
     const pending = A.$('customInput').value.trim();
     if (includePending && pending && !customProblem(pending, next.custom)) { next.custom.push(cleanCustom(pending)); draftCustom = next.custom.slice(); }
     A.profile = cleanProfile(next); A.saveProfile();
-    A.settings.guess = A.$('setGuess').checked; A.saveSettings();
+    A.settings.guess = A.$('setGuess').checked;
+    if (A.$('setStats')) A.settings.stats = A.$('setStats').checked;
+    A.saveSettings();
     A.store.set('name', A.$('profName').value.replace(/[<>]/g, '').trim().slice(0, 30));
     document.body.classList.toggle('no-scores', A.profile.noScores);
     if (A.rerenderProduct) A.rerenderProduct();

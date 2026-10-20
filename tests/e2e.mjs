@@ -14,8 +14,19 @@ const browser = await chromium.launch();
 async function fresh(opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: opts.width || 390, height: 844 }, serviceWorkers: 'block', permissions: ['clipboard-read', 'clipboard-write'] });
   await setup(ctx, opts);
+  if (opts.proxy || opts.stats) {
+    await ctx.route(/\/config\.js$/, async r => {
+      let body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
+      if (opts.proxy) body = body.replace("offProxyUrl: ''", "offProxyUrl: 'https://proxy.test/'");
+      if (opts.stats) body = body.replace("goatcounter: ''", "goatcounter: 'testdcn'");
+      r.fulfill({ body, contentType: 'text/javascript' });
+    });
+  }
+  if (opts.stats) {
+    opts.hits = [];
+    await ctx.route(/goatcounter\.com\/count/, r => { const u = new URL(r.request().url()); opts.hits.push({ p: u.searchParams.get('p'), e: u.searchParams.get('e') === 'true', url: u.href }); r.fulfill({ status: 200, body: '' }); });
+  }
   if (opts.proxy) {
-    await ctx.route(/\/config\.js$/, async r => { const body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8').replace("offProxyUrl: ''", "offProxyUrl: 'https://proxy.test/'"); r.fulfill({ body, contentType: 'text/javascript' }); });
     opts.categoryCalls = 0;
     await ctx.route(/proxy\.test\/category/, async r => {
       opts.categoryCalls++;
@@ -569,6 +580,37 @@ await section('Kopia bazy', async () => {
   ok(await d.page.locator('#notFound').count() === 0, 'bez komunikatu o błędzie');
   await go(d.page, '#/p/' + C.missing); await d.page.waitForTimeout(3500);
   ok(await d.page.locator('#notFound').count() === 1, 'produktu nie ma nigdzie: komunikat');
+  await d.ctx.close();
+});
+
+/* 11d. Statystyki i uwagi */
+await section('Statystyki i uwagi', async () => {
+  const o = { stats: true, onboarded: false };
+  const { ctx, page } = await fresh(o);
+  await page.click('[data-act=start-skip]'); await page.waitForTimeout(300);
+  const ev = () => o.hits.filter(h => h.e).map(h => h.p), views = () => o.hits.filter(h => !h.e).map(h => h.p);
+  ok(ev().includes('nowa-instalacja') && ev().includes('aktywny-tydzien-1'), 'pierwsze otwarcie i tydzień 1 (' + ev() + ')');
+  ok(views().includes('/start') && views().includes('/home'), 'odsłony ekranów (' + views() + ')');
+  await page.evaluate(() => { App.settings.guess = false; App.saveSettings(); });
+  for (const c of [C.nutella, C.milk, C.oil, C.ham, C.msg]) { await go(page, '#/p/' + c); await page.waitForTimeout(600); }
+  await go(page, '#/p/' + C.missing); await page.waitForTimeout(700);
+  ok(ev().filter(x => x === 'skan-znaleziony').length === 5 && ev().includes('skan-brak'), 'skany znalezione i brak (' + ev().join(',') + ')');
+  ok(o.hits.every(h => !/\d{8,}/.test(h.url.replace(/rnd=[^&]*/, ''))), 'bez kodów kreskowych w statystykach');
+  ok(o.hits.every(h => !/Ania|milk|mleko/i.test(h.p)), 'bez danych z profilu');
+  ok((await txt(page, '#toast')).includes('5 produktów') && /^mailto:/.test(await page.getAttribute('#toast a', 'href')), 'po 5 produktach prośba o uwagi');
+  await go(page, '#/profil');
+  const href = await page.getAttribute('#feedbackBtn', 'href');
+  ok(/^mailto:rafalmsolutions@gmail\.com\?subject=/.test(href) && decodeURIComponent(href).includes('Co przeszkadzało'), 'przycisk „Wyślij uwagi” z szablonem');
+  // wyłączenie statystyk
+  await page.uncheck('#setStats'); await page.waitForTimeout(200);
+  const n = o.hits.length;
+  await go(page, '#/polki'); await go(page, '#/p/' + C.nutella); await page.waitForTimeout(600);
+  ok(o.hits.length === n, 'po wyłączeniu nic nie wysyłamy');
+  ok(!page.errs.length, 'brak błędów JS: ' + page.errs.join(' | '));
+  await ctx.close();
+  // bez kodu GoatCounter: brak przełącznika i brak wysyłek
+  const d = await fresh({ hash: '#/profil' });
+  ok(await d.page.locator('#setStats').count() === 0, 'bez konfiguracji: brak przełącznika statystyk');
   await d.ctx.close();
 });
 

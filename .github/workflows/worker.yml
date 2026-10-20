@@ -1,0 +1,70 @@
+# Wysyła pośrednika (folder worker/) do Cloudflare. Potrzebny tylko do dodawania brakujących produktów.
+# Uruchamia się ręcznie (Actions → Uruchom pośrednika → Run workflow) i po zmianie plików w worker/.
+# Wymaga sekretów repozytorium (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID – z panelu Cloudflare (instrukcja: worker/README.md)
+#   OFF_USER, OFF_PASS – login i hasło konta aplikacji w Open Food Facts
+name: Uruchom pośrednika
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['worker/**']
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Czy są sekrety?
+        id: check
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          U: ${{ secrets.OFF_USER }}
+          P: ${{ secrets.OFF_PASS }}
+        run: |
+          missing=""
+          [ -n "$T" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$A" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -n "$U" ] || missing="$missing OFF_USER"
+          [ -n "$P" ] || missing="$missing OFF_PASS"
+          if [ -n "$missing" ]; then
+            echo "::warning::Brak sekretów:$missing. Pomijam wysyłkę pośrednika (instrukcja w worker/README.md)."
+            echo "ready=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == '1'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == '1'
+        with:
+          node-version: '20'
+
+      - name: Testy pośrednika
+        if: steps.check.outputs.ready == '1'
+        run: node tests/worker-test.mjs
+
+      - name: Wysyłka do Cloudflare
+        if: steps.check.outputs.ready == '1'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          secrets: |
+            OFF_USER
+            OFF_PASS
+        env:
+          OFF_USER: ${{ secrets.OFF_USER }}
+          OFF_PASS: ${{ secrets.OFF_PASS }}
+
+      - name: Sprawdzenie
+        if: steps.check.outputs.ready == '1'
+        run: echo "Pośrednik wysłany. Adres znajdziesz w Cloudflare → Workers & Pages → dcn-off-proxy."

@@ -15,5 +15,9 @@ const CONFIG = {
   reportEmail: 'rafalmsolutions@gmail.com',
   contactEmail: 'rafalmsolutions@gmail.com',
   offProxyUrl: '',
+  // goatcounter: kod strony w GoatCounter (np. 'dobreczynie' dla https://dobreczynie.goatcounter.com).
+  // Anonimowe statystyki bez ciasteczek: które ekrany i funkcje są używane, ile osób wraca w kolejnych tygodniach.
+  // Puste pole = statystyki wyłączone.
+  goatcounter: '',
   appVersion: '1.0'
 };

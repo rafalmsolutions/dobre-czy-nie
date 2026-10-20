@@ -57,8 +57,40 @@ const App = {};
   };
   A.extraMetrics = () => ({ breakfast_on_shelf: Shelf.breakfastGood(A.shelves) });
 
+  /* ---------- Anonimowe statystyki (GoatCounter, bez ciasteczek) ----------
+     Wysyłamy tylko nazwę ekranu albo zdarzenia (np. „skan-znaleziony”). Bez kodów produktów, profilu,
+     imienia ani identyfikatora osoby. Powroty liczymy w telefonie: „aktywny-tydzien-2” wysyłamy raz,
+     gdy ktoś używa aplikacji w drugim tygodniu od pierwszego otwarcia. */
+  const GC = typeof A.CFG.goatcounter === 'string' && /^[a-z0-9-]{2,50}$/.test(A.CFG.goatcounter) ? A.CFG.goatcounter : '';
+  A.statsOn = () => !!GC && A.settings.stats !== false && navigator.doNotTrack !== '1' && navigator.globalPrivacyControl !== true;
+  A.statsAvailable = () => !!GC;
+  function hit(path, event) {
+    if (!A.statsOn()) return;
+    const url = `https://${GC}.goatcounter.com/count?p=${encodeURIComponent(path)}${event ? '&e=true' : ''}&rnd=${Math.random().toString(36).slice(2, 8)}`;
+    try { if (!(navigator.sendBeacon && navigator.sendBeacon(url))) new Image().src = url; } catch (e) { }
+  }
+  A.track = name => hit(name, true);
+  // Uwagi od testerów: gotowy e-mail z szablonem i wersją aplikacji (bez danych z profilu).
+  A.feedbackHref = () => {
+    const v = A.CFG.appVersion || '1.0', scr = `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`;
+    const ua = /Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'komputer';
+    const body = `Co było przydatne:\n\n\nCo przeszkadzało albo nie działało:\n\n\nCzego brakuje:\n\n\n---\nWersja ${v}, ${ua}, ekran ${scr}`;
+    return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Dobre czy nie? ' + v)}&body=${encodeURIComponent(body)}`;
+  };
+  A.trackView = screen => hit('/' + screen, false);
+  A.trackWeek = () => {
+    const now = Date.now();
+    let first = A.store.get('first', 0);
+    if (!first || first > now) { first = now; A.store.set('first', first); A.track('nowa-instalacja'); }
+    const week = Math.floor((now - first) / (7 * 864e5)) + 1;
+    const sent = A.store.get('weeksSent', []);
+    if (!sent.includes(week)) { A.store.set('weeksSent', sent.concat(week).slice(-60)); A.track('aktywny-tydzien-' + week); }
+  };
+  const EVENT_STATS = { product_checked: 'skan-znaleziony', guess_right: 'zgadnij-trafione', guess_wrong: 'zgadnij-pudlo', shelf_add: 'na-polke', swap_to_better: 'zamiana', list_completed: 'lista-kupiona', product_added: 'dodano-produkt', report_sent: 'zgloszenie', shelf_shared: 'polka-udostepniona', explanation_opened: 'wyjasnienie' };
+
   /* ---------- Punkty, odznaki, gratulacje ---------- */
   A.award = (event, ctx = {}) => {
+    if (EVENT_STATS[event]) A.track(EVENT_STATS[event]);
     const r = Game.award(A.game, A.cfg, event, Object.assign({ extra: A.extraMetrics() }, ctx));
     if (r.state !== A.game) { A.game = r.state; A.saveGame(); }
     if (r.gained > 0) A.plusFly(r.gained);
@@ -156,6 +188,7 @@ const App = {};
     document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === screen) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
+    if (changed) A.trackView(screen);
     if (A.routes[screen]) A.routes[screen](arg);
     if (changed) {
       window.scrollTo({ top: 0 });

@@ -21,7 +21,22 @@ Koszt: 0 zł (darmowy plan Cloudflare Workers: 100 000 zapytań dziennie).
 5. Zapisuje produkt w Open Food Facts kontem aplikacji, z `app_name`, `app_version` i losowym `app_uuid` użytkownika.
 6. Niczego nie zapisuje u siebie.
 
-## Uruchomienie krok po kroku (ok. 15 minut)
+## Najprościej: uruchomienie z GitHuba (ok. 10 minut, bez instalowania czegokolwiek)
+
+1. **Konto Cloudflare:** https://dash.cloudflare.com/sign-up (może być rafalmsolutions@gmail.com). Wejdź raz w **Workers & Pages** i wybierz nazwę subdomeny `workers.dev`, jeśli Cloudflare o nią zapyta.
+2. **Account ID:** w **Workers & Pages** po prawej stronie jest **Account ID**. Skopiuj go.
+3. **Token API:** ikona profilu → **My Profile → API Tokens → Create Token** → szablon **Edit Cloudflare Workers** → **Use template** → w **Account Resources** wybierz swoje konto → **Continue to summary → Create Token**. Skopiuj token (widać go tylko raz).
+4. **Sekrety w GitHubie:** https://github.com/rafalmsolutions/dobre-czy-nie/settings/secrets/actions → **New repository secret**, cztery razy:
+   - `CLOUDFLARE_API_TOKEN`: token z kroku 3;
+   - `CLOUDFLARE_ACCOUNT_ID`: Account ID z kroku 2;
+   - `OFF_USER`: nazwa użytkownika konta aplikacji w Open Food Facts (nie e-mail). Na start konto z serwera testowego `world.openfoodfacts.net`;
+   - `OFF_PASS`: hasło do tego konta.
+5. **Uruchomienie:** https://github.com/rafalmsolutions/dobre-czy-nie/actions/workflows/worker.yml → **Run workflow**.
+6. Adres pośrednika znajdziesz w Cloudflare: **Workers & Pages → dcn-off-proxy** (np. `https://dcn-off-proxy.twoja-nazwa.workers.dev`). Ten adres trzeba wpisać w `config.js` (`offProxyUrl`). Wtedy w aplikacji włączy się dodawanie produktów.
+
+Hasła i token są tylko w sekretach GitHuba i Cloudflare. Nie ma ich w kodzie ani w historii repozytorium.
+
+## Uruchomienie z własnego komputera (ok. 15 minut)
 
 Potrzebujesz komputera z Node.js (https://nodejs.org, wersja LTS).
 

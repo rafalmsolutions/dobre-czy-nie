@@ -159,6 +159,7 @@
   let listToken = null;
   A.route('list', cat => {
     if (!SHOP_CATEGORIES.some(c => c.key === cat)) { A.go('#/'); return; }
+    A.track('kategoria-' + cat.replace(/^en:/, ''));
     const sel = A.store.get('shopStore', 'all');
     renderList(cat, sel === 'all' || STORES.some(s => s.key === sel) ? sel : 'all');
   });

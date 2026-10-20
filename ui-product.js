@@ -45,7 +45,7 @@
         if (pendingToken !== token) return;
         if (snap) show(snap, { snapshot: true });
         else if (local) show(local, { local: true });
-        else renderMissing(code, 'missing');
+        else { A.track('skan-brak'); renderMissing(code, 'missing'); }
         return;
       }
       if (local && !prod.ingredients) prod.ingredients = local.ingredients;
@@ -59,7 +59,7 @@
     if (cached && cached.p) { show(cached.p, { cached: true }); A.toast(kind === 'offline' ? 'Jesteś offline. Pokazuję zapisany wynik.' : 'Baza nie odpowiada. Pokazuję zapisany wynik.'); }
     else if (snap) show(snap, { snapshot: true });
     else if (local) show(local, { local: true });
-    else renderMissing(code, kind);
+    else { A.track('skan-blad-' + kind); renderMissing(code, kind); }
   }
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
@@ -80,6 +80,11 @@
     A.remember(prod, an, pm);
     cur = { prod, an, pm, local: !!opts.local, cached: !!opts.cached, snapshot: !!opts.snapshot, guess: null, rendered: true };
     if (!opts.local && !opts.cached) A.award('product_checked', { code: prod.code, category: prod.category });
+    // Po 5 sprawdzonych produktach jeden raz pytamy o uwagi.
+    if (A.CFG.contactEmail && !A.store.get('askedFeedback', false) && (A.game.sets.product_checked || []).length >= 5) {
+      A.store.set('askedFeedback', true);
+      setTimeout(() => A.toast('Sprawdziłeś już 5 produktów. Co działa, a co nie?', `<a href="${A.feedbackHref()}">Napisz nam</a>`), 1500);
+    }
     const ask = A.settings.guess !== false && pm.pct != null && !guessedToday(prod.code) && !opts.local;
     if (!ask) cur.guess = 'skip-silent';
     render();
@@ -470,7 +475,7 @@
   /* ---------- Zgadywanie ---------- */
   A.doGuess = v => {
     if (!cur || cur.guess !== null) return;
-    if (v === 'skip') { cur.guess = 'skip'; render(); return; }
+    if (v === 'skip') { cur.guess = 'skip'; A.track('zgadnij-pominiete'); render(); return; }
     const right = (v === 'good') === !!cur.pm.good;
     cur.guess = right ? 'right' : 'wrong';
     A.award(right ? 'guess_right' : 'guess_wrong', { code: cur.prod.code });
