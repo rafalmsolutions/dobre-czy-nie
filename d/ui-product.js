@@ -94,13 +94,20 @@
 
   /* ---------- Widok produktu ---------- */
   function prodCard(p, pm) {
-    const img = A.safeImg(p.image), dish = A.prodCatImg(p);
+    const img = A.safeImg(p.image), key = A.prodCatKey(p), dish = A.catImg(key);
+    const catLabel = key ? ((SHOP_CATEGORIES.find(c => c.key === key) || {}).label || '') : '';
     const lvl = (pm && pm.pct != null && pm.level) || 'unknown';
     const nm = p.name || 'Produkt bez nazwy';
+    // Zdjęcie produktu z bazy ma pierwszeństwo; miska kategorii jest wtedy małym znaczkiem w rogu z nazwą kategorii.
+    const main = img ? `<button class="prod-img-btn d-plate" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
+      : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
+      : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
+    const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
+    const verdict = pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
     return `<div class="d-hero" data-level="${esc(lvl)}"><span class="d-arc" aria-hidden="true"></span>
-      ${dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480">${img ? `<button class="prod-img-btn d-pack" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie opakowania"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie opakowania"></button>` : ''}</span>`
-        : img ? `<button class="prod-img-btn d-plate" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>` : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 96)}</span>`}
-      <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1><p class="small muted mono">${esc(p.code)}</p></div></div>`;
+      <div class="d-hmain">${main}</div>
+      <div class="d-hside">${chip}${verdict}</div>
+      <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   function critRow(r) {
     const ic = { good: '✓', bad: '✕', warn: '!', info: 'i' }[r.kind] || 'i';
@@ -131,8 +138,7 @@
     const ringColor = { great: '#2E9A3E', good: '#7CBF3A', poor: '#F0B021', bad: '#D9412B' }[lvl] || '#C9CFD6';
     parts.push('<div class="d-side">');
     parts.push(`<div class="panel stack${pm.personal ? '' : ' general'}" id="matchBox">
-      <div class="row" style="gap:14px">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}
-        <div class="grow"><span class="small muted" style="font-weight:800;letter-spacing:.06em">${pm.personal ? 'DLA CIEBIE' : 'OCENA OGÓLNA'}</span><div class="mlabel lvl-${lvl}" id="matchLabel">${esc(pm.label)}</div></div></div>
+      <span class="small muted" style="font-weight:800;letter-spacing:.06em">${pm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
       ${pm.personal ? (pm.rows.length ? `<div class="stack" style="gap:6px">${pm.rows.map(critRow).join('')}</div>` : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
       ${A.profile.diet.some(k => (PROFILE_OPTIONS.diet.find(o => o.key === k) || {}).approx) ? '<p class="small muted">Diety oznaczone jako orientacyjne nie zastępują zaleceń lekarza ani dietetyka.</p>' : ''}
     </div>`);

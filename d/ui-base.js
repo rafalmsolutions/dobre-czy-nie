@@ -220,6 +220,7 @@ const App = {};
   ];
   A.catKeyByName = name => { const f = fold(name).replace(/[^a-z0-9 ]+/g, ' '); for (const [re, k] of NAME_RULES) if (re.test(f)) return k; return ''; };
   A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
+  A.prodCatKey = p => p && p.kind !== 'cosmetic' ? (A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
   A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
   // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };

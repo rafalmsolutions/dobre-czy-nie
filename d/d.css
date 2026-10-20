@@ -236,3 +236,34 @@ body.no-scores .d-badge{display:none !important}
 .level-card .xp{margin-top:2px}
 .medal-btn.locked b{color:var(--muted)}
 .stat .medal{flex:0 0 auto}
+
+/* ---------- Produkt: kompaktowy nagłówek (zdjęcie | kategoria i ocena, pod spodem nazwa) ---------- */
+.d-hero{display:grid;grid-template-columns:150px minmax(0,1fr);grid-template-areas:"main side" "title title";column-gap:16px;row-gap:10px;align-items:center;padding:0}
+.d-hmain{grid-area:main;position:relative}
+.d-hside{grid-area:side;display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0}
+.d-hero .d-title{grid-area:title}
+.d-hero .d-plate{width:136px;margin:6px 0 6px 6px;box-shadow:0 0 0 8px #8A8C91,0 16px 24px rgba(0,0,0,.18)}
+.d-hero .d-plate .prod-img{width:74%;height:74%}
+.d-hero .d-dishwrap{width:156px;margin:0 0 0 -6px}
+.d-catchip{display:inline-flex;align-items:center;gap:8px;max-width:100%;min-height:44px;padding:2px 12px 2px 2px;border-radius:999px;background:rgba(255,255,255,.75);text-decoration:none;font-size:13px;font-weight:800;color:var(--ink)}
+.d-catchip:not(:has(img)){padding-left:12px}
+.d-catchip img{width:40px;height:40px;flex:0 0 auto;object-fit:contain}
+.d-catchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d-verdict{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.d-verdict .d-badge{width:72px;height:72px}
+.d-verdict .d-badge b{font-size:26px}
+.d-verdict .mlabel{font-size:1.15rem;line-height:1.15}
+.d-hero .d-title h1{font-size:clamp(28px,8.6vw,38px)}
+.d-hero .d-title h1.d-long{font-size:clamp(22px,6.4vw,28px)}
+.d-hero .d-arc{left:44%;top:-200px;width:440px;height:440px;border-width:56px}
+@media (min-width:960px){
+  #scr-product .wrap > .d-hero{display:grid;grid-template-columns:260px minmax(0,1fr) 260px;grid-template-areas:"main title side";column-gap:40px;padding:6px 0 18px}
+  #scr-product .d-hero .d-plate{width:230px;margin:10px}
+  #scr-product .d-hero .d-dishwrap{width:250px;margin:0}
+  #scr-product .d-hero .d-title h1{font-size:60px}
+  #scr-product .d-hero .d-title h1.d-long{font-size:42px}
+  #scr-product .d-verdict .d-badge{width:96px;height:96px}
+  #scr-product .d-verdict .d-badge b{font-size:36px}
+  #scr-product .d-verdict .mlabel{font-size:1.5rem}
+  #scr-product .d-hero .d-arc{left:34%;top:-330px;width:760px;height:760px;border-width:90px}
+}
