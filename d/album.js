@@ -139,8 +139,8 @@
     const comp = all.filter(p => A.huntCompatible(p).ok);
     const base = comp.length >= 6 ? comp : all, n = base.length;
     const cands = [];
-    Object.entries(SUB[key] || {}).forEach(([tag, label]) => cands.push({ id: 's:' + tag, label, h: 'rodzaj produktu', pri: 1 }));
-    COND.forEach(c => cands.push({ id: 'c:' + c.id, label: c.label, h: c.h, pri: c.w.some(x => watch.includes(x)) ? 0 : 2 }));
+    Object.entries(SUB[key] || {}).forEach(([tag, label]) => cands.push({ id: 's:' + tag, label, h: 'rodzaj produktu', pri: 2 }));
+    COND.forEach(c => cands.push({ id: 'c:' + c.id, label: c.label, h: c.h, pri: c.w.some(x => watch.includes(x)) ? 0 : 1 }));
     const used = new Set((keep || []).map(s => s.id)), scored = [];
     cands.forEach(c => {
       if (used.has(c.id) || !n) return;
@@ -151,11 +151,15 @@
     // Podobne warunki nie obok siebie (np. „Nutri-Score A” i „A lub B” – zostaje trudniejszy z pary, jeśli oba w tym samym stopniu).
     const twins = [['c:ns-a', 'c:ns-ab', 'c:ns-c'], ['c:nova12', 'c:nova3']];
     const pickFrom = (tier, k, out) => {
-      const pool = scored.filter(c => c.tier === tier && !out.some(o => o.id === c.id)).sort((a, b) => a.pri - b.pri || a.share - b.share);
+      const sorted = scored.filter(c => c.tier === tier && !out.some(o => o.id === c.id)).sort((a, b) => a.pri - b.pri || a.share - b.share);
+      // Na zmianę: warunek zdrowotny i rodzaj produktu, żeby strona była zdrowa, ale różnorodna.
+      const conds = sorted.filter(c => !c.id.startsWith('s:')), subs = sorted.filter(c => c.id.startsWith('s:')), pool = [];
+      while (conds.length || subs.length) { if (conds.length) pool.push(conds.shift()); if (subs.length) pool.push(subs.shift()); }
       for (const c of pool) {
         if (out.length >= SLOTS || k <= 0) break;
         const tw = twins.find(t => t.includes(c.id));
-        if (tw && out.some(o => tw.includes(o.id) && o.tier === c.tier)) continue;
+        if (tw && out.some(o => tw.includes(o.id))) continue; // z pary podobnych warunków tylko jeden na stronę
+        if (c.id.startsWith('s:') && out.filter(o => o.id.startsWith('s:')).length >= 3) continue; // najwyżej 3 rodzaje produktu
         out.push(c); k--;
       }
     };
