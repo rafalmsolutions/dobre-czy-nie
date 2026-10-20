@@ -35,6 +35,21 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: okOrigin ? 204 : 403, headers: cors });
     if (url.pathname === '/health') return reply(200, { ok: true });
+    // Sprawdzenie, czy login i hasło konta aplikacji są poprawne (bez zapisywania czegokolwiek w bazie).
+    if (url.pathname === '/check') {
+      if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
+      if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
+      if (!env.OFF_USER || !env.OFF_PASS) return reply(500, { ok: false, error: 'not_configured' });
+      if (!rateOk(request.headers.get('CF-Connecting-IP') || 'unknown')) return reply(429, { ok: false, error: 'rate' });
+      const base = (env.OFF_BASE || 'https://world.openfoodfacts.org').replace(/\/$/, '');
+      const headers = { 'User-Agent': `${APP_NAME}/1.0 (${env.CONTACT_EMAIL || 'rafalmsolutions@gmail.com'})` };
+      if (env.OFF_BASIC) headers.Authorization = 'Basic ' + btoa(env.OFF_BASIC);
+      const fd = new FormData(); fd.append('user_id', env.OFF_USER); fd.append('password', env.OFF_PASS);
+      try {
+        const r = await fetch(`${base}/cgi/auth.pl`, { method: 'POST', body: fd, headers });
+        return reply(200, { ok: r.status === 200, upstream: r.status, server: base, userLooksLikeEmail: env.OFF_USER.includes('@') });
+      } catch (e) { return reply(502, { ok: false, error: 'network', server: base }); }
+    }
     if (url.pathname === '/category') {
       if (request.method !== 'GET') return reply(405, { ok: false, error: 'method' });
       if (!okOrigin) return reply(403, { ok: false, error: 'origin' });

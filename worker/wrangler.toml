@@ -4,9 +4,8 @@ main = "off-proxy.js"
 compatibility_date = "2026-06-01"
 
 [vars]
-# Na start serwer TESTOWY Open Food Facts. Po testach zmień na https://world.openfoodfacts.org i usuń OFF_BASIC.
-OFF_BASE = "https://world.openfoodfacts.net"
-OFF_BASIC = "off:off"
+# Prawdziwa baza Open Food Facts. Serwer testowy (https://world.openfoodfacts.net) wymaga dodatkowo OFF_BASIC = "off:off".
+OFF_BASE = "https://world.openfoodfacts.org"
 # Adres(y) Twojej aplikacji, oddzielone przecinkami. Bez tego pośrednik odrzuci każde zapytanie.
 ALLOWED_ORIGINS = "https://rafalmsolutions.github.io"
 CONTACT_EMAIL = "rafalmsolutions@gmail.com"
