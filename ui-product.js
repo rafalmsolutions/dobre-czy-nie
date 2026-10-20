@@ -7,7 +7,7 @@
   let pendingToken = null;
 
   A.route('product', code => {
-    if (cur && cur.prod && cur.prod.code === code && cur.rendered) return; // ponowne wejście bez zmian
+    if (cur && cur.prod && cur.prod.code === code && cur.rendered && !cur.missing && !cur.local) return; // ponowne wejście bez zmian
     openProduct(code);
   });
   A.currentProduct = () => cur;
@@ -48,7 +48,9 @@
         else { A.track('skan-brak'); renderMissing(code, 'missing'); }
         return;
       }
+      // Dane, które użytkownik właśnie uzupełnił, a baza jeszcze ich nie pokazuje.
       if (local && !prod.ingredients) prod.ingredients = local.ingredients;
+      if (local && local.nutriments && !Object.values(prod.nutriments || {}).some(v => v != null)) prod.nutriments = Object.assign({}, local.nutriments);
       show(prod, {});
       return;
     }
@@ -103,7 +105,9 @@
   }
   function render() {
     const { prod, an, pm } = cur;
-    const parts = [topbar(cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt'), prodCard(prod)];
+    const added = cur.local && prod.added;
+    const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt'), prodCard(prod)];
+    if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
     if (cur.guess === null) {
       parts.push(`<div class="panel stack center" id="guessBox" style="align-items:center">
@@ -131,6 +135,12 @@
     parts.push(`<div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <button class="btn btn-green" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na półce' : 'Na półkę (+5 pkt)'}</button>
       <button class="btn btn-white" type="button" data-act="scan">Skanuj kolejny</button></div>`);
+    // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
+    const nmKnown = Object.values(prod.nutriments || {}).some(v => v != null);
+    if (A.CFG.offProxyUrl && prod.kind === 'food' && !cur.snapshot && (prod.source === 'off' || added) && (!prod.ingredients || !nmKnown)) {
+      const what = [!prod.ingredients && 'składu', !nmKnown && 'wartości odżywczych'].filter(Boolean).join(' i ');
+      parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button></div></div>`);
+    }
     parts.push(detailsHtml(prod, an, !pm.personal));
     screen(parts.join(''));
     if (prod.kind === 'food' && prod.source !== 'local' && prod.category) loadCategory();
@@ -187,11 +197,11 @@
     if (isFood) {
       const pv = k => ((an.parts || []).find(p => p.key === k) || {}).v;
       const bar = v => v == null ? '' : `<div class="bar"><i style="width:${v}%;background:${grade(v).color}"></i></div>`;
-      const ns = prod.nutriscore in NUTRI_POINTS ? prod.nutriscore : null;
+      const ns = an.nutriscore in NUTRI_POINTS ? an.nutriscore : null;
       const novaTxt = { 1: 'nieprzetworzone lub minimalnie przetworzone', 2: 'przetworzone składniki kulinarne', 3: 'przetworzone', 4: 'wysoko przetworzone' }[Number(prod.nova)];
       const worst = an.additives.reduce((m, a) => Math.max(m, a.level ?? -1), -1);
       s.push(`<div class="card stack parts-card"><h3>Z czego wynika ocena</h3><div class="parts">
-        <div class="part"><b>Wartość odżywcza</b><span class="ns" aria-label="Nutri-Score ${ns ? ns.toUpperCase() : 'brak'}">${'abcde'.split('').map(l => `<span class="${l}${l === ns ? ' on' : ''}">${l.toUpperCase()}</span>`).join('')}</span>${bar(pv('nutrition'))}<span class="sub">${ns ? 'Nutri-Score ' + ns.toUpperCase() : 'Brak Nutri-Score w bazie'}</span></div>
+        <div class="part"><b>Wartość odżywcza</b><span class="ns" aria-label="Nutri-Score ${ns ? ns.toUpperCase() : 'brak'}">${'abcde'.split('').map(l => `<span class="${l}${l === ns ? ' on' : ''}">${l.toUpperCase()}</span>`).join('')}</span>${bar(pv('nutrition'))}<span class="sub">${ns ? 'Nutri-Score ' + ns.toUpperCase() + (an.nutriscoreEstimated ? ' (szacunkowy z wpisanych wartości)' : '') : 'Brak Nutri-Score w bazie'}</span></div>
         <div class="part"><b>Dodatki</b><span class="small">${an.additivesKnown ? an.additives.length + ' ' + plural(an.additives.length, 'dodatek', 'dodatki', 'dodatków') : 'brak danych'}</span>${bar(pv('additives'))}<span class="sub">${!an.additivesKnown ? 'Baza nie ma składu tego produktu.' : !an.additives.length ? 'Nie znaleźliśmy dodatków z numerem E.' : worst >= 0 ? 'Najpoważniejsze: ' + LEVELS[worst].label.toLowerCase() : 'Dodatki spoza naszej bazy.'}</span></div>
         <div class="part"><b>Przetworzenie</b><span class="small">${novaTxt ? 'NOVA ' + Number(prod.nova) : 'brak danych'}</span>${bar(pv('processing'))}<span class="sub">${novaTxt ? 'Grupa ' + Number(prod.nova) + ': ' + novaTxt : 'Brak grupy NOVA w bazie'}</span></div></div></div>`);
       const nm = prod.nutriments || {};
@@ -215,7 +225,7 @@
     const offUrl = `${prod.source === 'obf' ? OBF : OFF}/product/${encodeURIComponent(prod.code)}`;
     s.push(`<div class="card stack"><div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="share"><svg><use href="#i-share"/></svg>Udostępnij</button><button class="btn btn-white btn-sm" type="button" data-act="report">Zgłoś błąd</button>${prod.source !== 'local' ? '<button class="btn btn-white btn-sm" type="button" data-act="manual-ing">Wpisz skład ręcznie</button>' : ''}</div>
       <div id="ingSlot"></div>
-      <div class="source">${prod.source === 'local' ? '<span>Skład wpisany przez Ciebie, zapisany tylko w tym telefonie.</span>' : `<span>Źródło danych: <a href="${offUrl}" target="_blank" rel="noopener">${prod.source === 'obf' ? 'Open Beauty Facts' : 'Open Food Facts'}</a> (licencja ODbL). Widzisz błąd? Możesz go poprawić w bazie.</span>`}<span>Ocena ma charakter informacyjny i nie jest poradą medyczną.</span></div></div>`);
+      <div class="source">${prod.source === 'local' ? (prod.added ? '<span>Dane, które dodałeś do Open Food Facts (licencja ODbL). Dziękujemy!</span>' : '<span>Skład wpisany przez Ciebie, zapisany tylko w tym telefonie.</span>') : `<span>Źródło danych: <a href="${offUrl}" target="_blank" rel="noopener">${prod.source === 'obf' ? 'Open Beauty Facts' : 'Open Food Facts'}</a> (licencja ODbL). Widzisz błąd? Możesz go poprawić w bazie.</span>`}<span>Ocena ma charakter informacyjny i nie jest poradą medyczną.</span></div></div>`);
     return s.join('');
   }
 
@@ -366,15 +376,38 @@
     const btn = A.$('addSend'); btn.disabled = true; btn.textContent = 'Wysyłam…'; msg.className = 'msg';
     const rec = { id: code + '-' + Date.now(), code, name, lang: 'pl', uuid: A.appUuid(), at: Date.now(), photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
     const res = await A.sendAdd(rec);
-    if (res === 'ok') addedSuccess(code);
+    if (res === 'ok') addedSuccess(code, name);
     else if (res === 'queued') { msg.className = 'msg ok'; msg.textContent = 'Nie ma teraz połączenia. Zapisaliśmy produkt w telefonie i wyślemy go, gdy internet wróci. Nagrodę dostaniesz po wysłaniu.'; btn.textContent = 'Zapisane do wysłania'; }
     else if (res === 'exists') { msg.className = 'msg ok'; msg.textContent = 'Ktoś właśnie dodał ten produkt do bazy. Dziękujemy! Sprawdź go za chwilę ponownie.'; btn.textContent = 'Produkt już jest w bazie'; }
     else { msg.textContent = res === 'rejected' ? 'Baza nie przyjęła tego produktu. Sprawdź nazwę i zdjęcia albo spróbuj później.' : 'Nie udało się wysłać. Spróbuj ponownie za chwilę.'; btn.disabled = false; updateSend(); }
   };
-  function addedSuccess(code) {
+  function addedSuccess(code, name) {
     const box = A.$('addForm'); if (!box) return;
-    box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small muted">Produkt trafił do bazy. Ocenę zobaczysz, gdy dane zostaną odczytane ze zdjęć, zwykle w ciągu kilku dni.</p><a class="btn btn-gold btn-block" href="#/postepy">Zobacz swoje odznaki</a></div>`;
+    A.rememberAdded(code, name);
+    const shots = { ingredients: photos.ingredients && photos.ingredients.blob, nutrition: photos.nutrition && photos.nutrition.blob };
+    box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small">Produkt jest już w bazie Open Food Facts. Jeszcze 2 krótkie kroki, a od razu zobaczysz jego ocenę.</p></div><div id="completeBox"></div>`;
+    A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, photos: shots, onDone: () => {
+      const el = A.$('completeBox'); if (!el) return;
+      el.innerHTML = `<div class="panel stack center" style="align-items:center">${A.mascot('wow', 70)}<b style="font-family:var(--f-display);font-size:1.15rem">Gotowe!</b><p class="small">Wszyscy zobaczą produkt w bazie zwykle w ciągu kilku minut. Ty możesz od razu sprawdzić jego ocenę.</p><button class="btn btn-gold btn-block" type="button" data-act="retry" data-code="${esc(code)}">Zobacz ocenę produktu</button><a class="small" href="#/postepy">Zobacz swoje odznaki</a></div>`;
+    } });
   }
+  function agoText(t) {
+    const m = Math.max(0, Math.round((Date.now() - (t || Date.now())) / 60000));
+    return m < 1 ? 'przed chwilą' : m < 60 ? `${m} min temu` : m < 1440 ? `${Math.round(m / 60)} godz. temu` : 'niedawno';
+  }
+  A.startComplete = () => {
+    if (!cur || !cur.prod) return;
+    const p = cur.prod, el = A.$('completeBox'); if (!el) return;
+    const nmKnown = Object.values(p.nutriments || {}).some(v => v != null);
+    A.openComplete(el, { code: p.code, name: p.name, needIngr: !p.ingredients, needNut: !nmKnown, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
+      const local = A.store.get('local', {})[p.code] || {};
+      if (local.ingredients && !p.ingredients) p.ingredients = local.ingredients;
+      if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
+      cur.an = analyze(p); cur.pm = personalMatch(p, cur.an, A.profile); A.remember(p, cur.an, cur.pm);
+      render();
+      A.toast(saved.length ? 'Dziękujemy! Ocena uwzględnia już Twoje dane.' : 'Możesz wrócić do uzupełniania w każdej chwili.');
+    } });
+  };
 
   /* Wysyłka przez pośrednika (Cloudflare Worker). Zwraca 'ok', 'queued', 'rejected' albo 'error'. */
   A.sendAdd = async (rec, fromQueue) => {

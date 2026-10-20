@@ -49,6 +49,7 @@
       case 'rate-ing': A.rateIngredients(); break;
       case 'how': A.openDlg('howDlg'); break;
       case 'photo-open': A.openPhoto(); break;
+      case 'complete': A.startComplete(); break;
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
       case 'cel-ok': A.nextCelebration(); break;

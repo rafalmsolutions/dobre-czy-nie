@@ -63,8 +63,8 @@ r = await run(form({ lang: '"><x' })); ok(r.status === 200 && calls.find(c => c.
 exists = true; r = await run(form()); ok(r.status === 409 && !calls.some(c => c.url.includes('jqm2')), 'istniejący produkt nie jest nadpisywany'); exists = false;
 saveFail = true; r = await run(form()); ok(r.status === 502 && !calls.some(c => c.url.includes('image_upload')), 'błąd zapisu: 502 bez wysyłki zdjęć'); saveFail = false;
 r = await run(form(), { env: Object.assign({}, env, { OFF_PASS: '' }) }); ok(r.status === 500 && r.j.error === 'not_configured', 'brak hasła w ustawieniach');
-let last; for (let i = 0; i < 13; i++) last = await run(form(), { ip: '9.9.9.9' });
-ok(last.status === 429, 'limit 12 na godzinę z jednego adresu');
+let last; for (let i = 0; i < 41; i++) last = await run(form(), { ip: '9.9.9.9' });
+ok(last.status === 429, 'limit 40 zapytań na godzinę z jednego adresu');
 // Kategorie
 r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts' });
 ok(r.status === 200 && r.j.ok && r.j.products.length === 2, 'kategoria: 200 i produkty z poprawnym kodem');
@@ -79,4 +79,38 @@ ok(r.h.get('Access-Control-Allow-Origin') === 'https://app.test', 'kategoria: CO
 r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts"%20OR%201' }); ok(r.status === 400, 'kategoria: zły tag');
 r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts', origin: 'https://zly.test' }); ok(r.status === 403, 'kategoria: obca strona');
 searchDown = true; r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts' }); ok(r.status === 502 && calls.filter(c => c.url.includes('search.openfoodfacts')).length === 2, 'kategoria: awaria wyszukiwarki, jedna ponowna próba'); searchDown = false;
+// Uzupełnianie: OCR, zdjęcie, skład i wartości
+let existing = { ingredients_text_pl: '', nutriments: {} };
+const origFetch = globalThis.fetch;
+globalThis.fetch = async (url, init = {}) => {
+  const u = String(url);
+  if (u.includes('/cgi/ingredients.pl')) { calls.push({ url: u, headers: init.headers || {} }); return new Response(JSON.stringify({ status: 0, ingredients_text_from_image: 'mleko, <b>kultury</b> bakterii' })); }
+  if (u.includes('/api/v2/product/') && u.includes('ingredients_text')) { calls.push({ url: u }); return new Response(JSON.stringify({ status: 1, product: existing })); }
+  return origFetch(url, init);
+};
+const ef = o => { const f = new FormData(); for (const [k, v] of Object.entries(Object.assign({ code: CODE, lang: 'pl', app_uuid: '0123456789abcdef0123', app_version: '1.0' }, o))) if (v !== null) f.append(k, v); return f; };
+r = await run(ef({}), { path: '/ocr' }); ok(r.status === 200 && r.j.ok && r.j.text === 'mleko, b kultury /b bakterii', 'OCR składu: tekst oczyszczony (' + JSON.stringify(r.j) + ')');
+ok(calls.some(c => c.url.includes('id=ingredients_pl&process_image=1')), 'OCR: właściwe pole zdjęcia');
+r = await run(ef({ code: '123' }), { path: '/ocr' }); ok(r.status === 400, 'OCR: zły kod');
+r = await run(ef({ ingredients_text: 'mleko, kultury bakterii' }), { path: '/edit' });
+let save2 = calls.find(c => c.url.includes("jqm2"));
+ok(r.status === 200 && r.j.saved.join() === 'ingredients' && save2.body.ingredients_text_pl === 'mleko, kultury bakterii' && save2.body.password === 'sekret', 'skład zapisany kontem aplikacji');
+r = await run(ef({ nutriments: JSON.stringify({ 'energy-kcal': 63, fat: 0.2, 'saturated-fat': 0.1, carbohydrates: 4, sugars: 4, proteins: 11, salt: 0.1 }) }), { path: '/edit' });
+save2 = calls.find(c => c.url.includes('jqm2'));
+ok(r.status === 200 && save2.body['nutriment_energy-kcal'] === '63' && save2.body['nutriment_energy-kcal_unit'] === 'kcal' && save2.body.nutriment_salt_unit === 'g' && save2.body.nutrition_data_per === '100g', 'wartości odżywcze zapisane na 100 g');
+for (const [bad, why] of [[{ 'energy-kcal': 2000 }, 'za dużo kcal'], [{ 'energy-kcal': 100, fat: 10, 'saturated-fat': 20 }, 'nasycone > tłuszcz'], [{ 'energy-kcal': 100, sugars: 50, carbohydrates: 10 }, 'cukry > węglowodany'], [{ 'energy-kcal': 100, xyz: 1 }, 'nieznane pole'], [{ fat: 1 }, 'bez kalorii'], [{ 'energy-kcal': 100, fat: 60, carbohydrates: 60 }, 'suma > 100 g']]) {
+  r = await run(ef({ nutriments: JSON.stringify(bad) }), { path: '/edit' }); ok(r.status === 400 && r.j.error === 'nutriments', 'złe wartości: ' + why);
+}
+r = await run(ef({ nutriments: 'nie-json' }), { path: '/edit' }); ok(r.status === 400, 'wartości: zły JSON');
+r = await run(ef({}), { path: '/edit' }); ok(r.status === 400 && r.j.error === 'empty', 'pusta edycja');
+existing = { ingredients_text_pl: 'już jest', nutriments: { 'energy-kcal_100g': 50 } };
+r = await run(ef({ ingredients_text: 'nowy skład', nutriments: JSON.stringify({ 'energy-kcal': 63 }) }), { path: '/edit' });
+ok(r.status === 409 && !calls.some(c => c.url.includes('jqm2')), 'nie nadpisujemy istniejących danych');
+existing = { ingredients_text_pl: '', nutriments: {} };
+r = await run(ef({ field: 'ingredients' }), { path: '/image' }); ok(r.status === 400, 'zdjęcie: brak pliku');
+const fi = ef({ field: 'ingredients' }); fi.append('photo', jpg(500), 'i.jpg');
+r = await run(fi, { path: '/image' }); ok(r.status === 200 && calls.some(c => c.url.includes('image_upload') && c.body.imagefield === 'ingredients_pl'), 'zdjęcie składu do istniejącego produktu');
+const fx = ef({ field: 'selfie' }); fx.append('photo', jpg(500), 'i.jpg');
+r = await run(fx, { path: '/image' }); ok(r.status === 400 && r.j.error === 'field', 'zdjęcie: złe pole');
+r = await run(ef({}), { path: '/edit', origin: 'https://zly.test' }); ok(r.status === 403, 'edycja z obcej strony: 403');
 console.log(`Pośrednik: ${pass} OK, ${fail} błędów`); process.exit(fail ? 1 : 0);

@@ -18,7 +18,7 @@
 const APP_NAME = 'DobreCzyNie';
 const MAX_PHOTO = 6 * 1024 * 1024;
 const PHOTOS = { front: 'front', ingredients: 'ingredients', nutrition: 'nutrition' };
-const RATE = { perHour: 12, hits: new Map() }; // ochrona przed zalewem (w obrębie jednej instancji)
+const RATE = { perHour: 40, hits: new Map() }; // ochrona przed zalewem (w obrębie jednej instancji)
 const SEARCH = 'https://search.openfoodfacts.org/search';
 const CAT_TTL = 24 * 3600;
 const CAT_FIELDS = 'code,product_name,product_name_pl,brands,quantity,image_front_small_url,image_front_url,nutriscore_grade,nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,nutriments,categories_tags,categories,stores';
@@ -62,6 +62,79 @@ export default {
       if (!/^[a-z]{2}:[a-z0-9-]{2,60}$/.test(tag)) return reply(400, { ok: false, error: 'tag' });
       const r = await category(tag, env);
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': r.status === 200 ? 'public, max-age=3600' : 'no-store' }, cors) });
+    }
+    if (['/ocr', '/image', '/edit'].includes(url.pathname)) {
+      if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
+      if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
+      if (!env.OFF_USER || !env.OFF_PASS) return reply(500, { ok: false, error: 'not_configured' });
+      if (!rateOk(request.headers.get('CF-Connecting-IP') || 'unknown')) return reply(429, { ok: false, error: 'rate' });
+      let form;
+      try { form = await request.formData(); } catch (e) { return reply(400, { ok: false, error: 'form' }); }
+      const code = String(form.get('code') || '').replace(/\D/g, '');
+      if (!validBarcode(code)) return reply(400, { ok: false, error: 'code' });
+      const lang = /^[a-z]{2}$/.test(String(form.get('lang') || '')) ? String(form.get('lang')) : 'pl';
+      const appVersion = /^[0-9.]{1,10}$/.test(String(form.get('app_version') || '')) ? String(form.get('app_version')) : '1.0';
+      const o = offCtx(env, appVersion);
+      // Odczyt składu ze zdjęcia (OCR Open Food Facts). Niczego nie zapisuje: tekst wraca do aplikacji do sprawdzenia.
+      if (url.pathname === '/ocr') {
+        try {
+          const r = await fetch(`${o.base}/cgi/ingredients.pl?code=${code}&id=ingredients_${lang}&process_image=1&ocr_engine=google_cloud_vision`, { headers: o.headers });
+          const j = r.ok ? await r.json().catch(() => null) : null;
+          const text = j && typeof j.ingredients_text_from_image === 'string' ? cleanText(j.ingredients_text_from_image, 5000) : '';
+          return reply(200, text ? { ok: true, text } : { ok: false, error: 'no_text' });
+        } catch (e) { return reply(502, { ok: false, error: 'network' }); }
+      }
+      const uuid = String(form.get('app_uuid') || '');
+      if (!/^[a-z0-9-]{16,64}$/.test(uuid)) return reply(400, { ok: false, error: 'uuid' });
+      const common = Object.assign({ user_id: env.OFF_USER, password: env.OFF_PASS, app_name: APP_NAME, app_version: appVersion, app_uuid: uuid });
+      // Jedno zdjęcie do istniejącego produktu (np. skład, którego brakuje).
+      if (url.pathname === '/image') {
+        const field = String(form.get('field') || '');
+        if (!PHOTOS[field]) return reply(400, { ok: false, error: 'field' });
+        const f = form.get('photo');
+        if (!f || typeof f === 'string' || f.size > MAX_PHOTO || f.size < 100) return reply(400, { ok: false, error: 'photo_size' });
+        const buf = new Uint8Array(await f.arrayBuffer()), type = imageType(buf);
+        if (!type) return reply(400, { ok: false, error: 'photo_type' });
+        const fd = new FormData(), imagefield = `${field}_${lang}`;
+        Object.entries(Object.assign({ code, imagefield, lc: lang, cc: 'pl' }, common)).forEach(([k, v]) => fd.append(k, v));
+        fd.append('imgupload_' + imagefield, new Blob([buf], { type }), `${field}.jpg`);
+        try {
+          const r = await fetch(`${o.base}/cgi/product_image_upload.pl`, { method: 'POST', body: fd, headers: o.headers });
+          const j = r.ok ? await r.json().catch(() => null) : null;
+          return j && j.status === 'status ok' ? reply(200, { ok: true }) : reply(502, { ok: false, error: 'off_image', verbose: j && j.error ? String(j.error).slice(0, 160) : '' });
+        } catch (e) { return reply(502, { ok: false, error: 'network' }); }
+      }
+      // Uzupełnienie składu i wartości odżywczych. Tylko brakujące pola: nie nadpisujemy danych, które ktoś już wpisał.
+      const ingredients = cleanText(form.get('ingredients_text'), 5000);
+      const nut = parseNutriments(form.get('nutriments'));
+      if (nut === 'bad') return reply(400, { ok: false, error: 'nutriments' });
+      if (!ingredients && !nut) return reply(400, { ok: false, error: 'empty' });
+      if (ingredients && ingredients.length < 3) return reply(400, { ok: false, error: 'ingredients' });
+      let current = null;
+      try {
+        const r = await fetch(`${o.base}/api/v2/product/${code}.json?fields=code,ingredients_text_${lang},ingredients_text,nutriments`, { headers: o.headers });
+        const j = r.ok ? await r.json().catch(() => null) : null;
+        current = j && j.status === 1 ? j.product : null;
+      } catch (e) { current = null; }
+      // Świeżo dodany produkt bywa przez kilka minut niewidoczny w odczycie; wtedy nie ma czego nadpisać.
+      current = current || {};
+      const fields = { code, lang, lc: lang, cc: 'pl', comment: 'Uzupełnione w aplikacji Dobre czy nie?' };
+      const saved = [];
+      if (ingredients && !String(current['ingredients_text_' + lang] || current.ingredients_text || '').trim()) { fields['ingredients_text_' + lang] = ingredients; saved.push('ingredients'); }
+      const hasNut = current.nutriments && ['energy-kcal_100g', 'fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g'].some(k => current.nutriments[k] !== undefined);
+      if (nut && !hasNut) {
+        fields.nutrition_data_per = '100g';
+        Object.entries(nut).forEach(([k, v]) => { fields['nutriment_' + k] = String(v); fields['nutriment_' + k + '_unit'] = k === 'energy-kcal' ? 'kcal' : 'g'; });
+        saved.push('nutrition');
+      }
+      if (!saved.length) return reply(409, { ok: false, error: 'exists' });
+      const fd = new FormData();
+      Object.entries(Object.assign(fields, common)).forEach(([k, v]) => fd.append(k, v));
+      try {
+        const r = await fetch(`${o.base}/cgi/product_jqm2.pl`, { method: 'POST', body: fd, headers: o.headers });
+        const j = r.ok ? await r.json().catch(() => null) : null;
+        return j && j.status === 1 ? reply(200, { ok: true, saved }) : reply(502, { ok: false, error: 'off_save', upstream: r.status });
+      } catch (e) { return reply(502, { ok: false, error: 'network' }); }
     }
     if (url.pathname !== '/product') return reply(404, { ok: false, error: 'not_found' });
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
@@ -205,4 +278,32 @@ function compact(h) {
     nutriments, categories_hierarchy: arr(h.categories_tags), categories: str(h.categories),
     stores: (Array.isArray(h.stores) ? h.stores : typeof h.stores === 'string' ? h.stores.split(',') : []).map(x => String(x).trim().slice(0, 40)).filter(Boolean).slice(0, 10)
   };
+}
+
+function offCtx(env, appVersion) {
+  const base = (env.OFF_BASE || 'https://world.openfoodfacts.org').replace(/\/$/, '');
+  const headers = { 'User-Agent': `${APP_NAME}/${appVersion} (${env.CONTACT_EMAIL || 'rafalmsolutions@gmail.com'})` };
+  if (env.OFF_BASIC) headers.Authorization = 'Basic ' + btoa(env.OFF_BASIC);
+  return { base, headers };
+}
+/* Wartości odżywcze na 100 g z aplikacji: tylko znane pola i rozsądne zakresy. null = brak, 'bad' = złe dane. */
+const NUT_LIMITS = { 'energy-kcal': 900, fat: 100, 'saturated-fat': 100, carbohydrates: 100, sugars: 100, fiber: 100, proteins: 100, salt: 100 };
+function parseNutriments(raw) {
+  if (raw == null || raw === '') return null;
+  let o;
+  try { o = JSON.parse(String(raw)); } catch (e) { return 'bad'; }
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return 'bad';
+  const out = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (!(k in NUT_LIMITS)) return 'bad';
+    if (v === null || v === '') continue;
+    const n = Number(v);
+    if (!isFinite(n) || n < 0 || n > NUT_LIMITS[k]) return 'bad';
+    out[k] = Math.round(n * 100) / 100;
+  }
+  if (!Object.keys(out).length) return null;
+  if (out['saturated-fat'] > (out.fat ?? 100) || out.sugars > (out.carbohydrates ?? 100)) return 'bad';
+  if ((out.fat || 0) + (out.carbohydrates || 0) + (out.proteins || 0) + (out.salt || 0) + (out.fiber || 0) > 105) return 'bad';
+  if (out['energy-kcal'] === undefined) return 'bad';
+  return out;
 }

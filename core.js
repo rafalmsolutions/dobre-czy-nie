@@ -3,7 +3,7 @@
 
 const OFF = 'https://world.openfoodfacts.org';
 const OBF = 'https://world.openbeautyfacts.org';
-const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy';
+const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,image_ingredients_url,image_nutrition_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy';
 const ZXING_URLS = ['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js', 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js', 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js'];
 const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 
@@ -100,6 +100,23 @@ function foodScore({ nutriscore, nova, additives, additivesKnown, simple }) {
   return { score, parts, partial: wsum < 100, capped, floored, capBy };
 }
 
+/* Szacunkowy Nutri-Score (algorytm z 2023 r. dla żywności ogólnej) z wartości na 100 g.
+   Tylko gdy baza nie podaje oficjalnego. Napojów nie liczymy (inny algorytm). Brak owoców/warzyw = 0 pkt. */
+function estimateNutriScore(nm, drink) {
+  if (drink || !nm) return null;
+  const kcal = nm.kcal, sug = nm.sugars, sat = nm.sat, salt = nm.salt;
+  if ([kcal, sug, sat, salt].some(v => v == null || !isFinite(v))) return null;
+  const steps = (v, list) => list.filter(t => v > t).length;
+  const N = steps(kcal * 4.184, [335, 670, 1005, 1340, 1675, 2010, 2345, 2680, 3015, 3350])
+    + steps(sug, [3.4, 6.8, 10, 14, 17, 20, 24, 27, 31, 34, 37, 41, 44, 48, 51])
+    + steps(sat, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    + steps(salt, [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4]);
+  const protein = steps(nm.proteins || 0, [2.4, 4.8, 7.2, 9.6, 12, 14, 17]);
+  const fiber = steps(nm.fiber || 0, [3, 4.1, 5.2, 6.3, 7.4]);
+  const score = N - (N >= 11 ? fiber : protein + fiber);
+  return score <= 0 ? 'a' : score <= 2 ? 'b' : score <= 10 ? 'c' : score <= 18 ? 'd' : 'e';
+}
+
 /* Produkt prosty: nieprzetworzony albo z 1–2 składników bez dodatków. Nie dostaje najniższego werdyktu za same kalorie czy tłuszcz. */
 function isSimpleFood(prod, additives) {
   const nv = Number(prod.nova);
@@ -187,6 +204,7 @@ function normalizeProduct(p, source) {
     brand: String(p.brands || '').split(',')[0].trim(), quantity: p.quantity || '',
     image: p.image_front_small_url || p.image_front_url || p.image_url || '',
     imageLarge: p.image_front_url || p.image_url || p.image_front_small_url || '',
+    imageIngredients: p.image_ingredients_url || '', imageNutrition: p.image_nutrition_url || '',
     stores: (Array.isArray(p.stores) ? p.stores : typeof p.stores === 'string' ? p.stores.split(',') : Array.isArray(p.stores_tags) ? p.stores_tags : []).map(x => String(x).trim()).filter(Boolean).slice(0, 20),
     nutriscore: (p.nutriscore_grade || '').toLowerCase(), nova: p.nova_group || null,
     additiveTags: Array.isArray(p.additives_tags) ? p.additives_tags : (typeof p.additives_tags === 'string' ? [p.additives_tags] : (Array.isArray(p.ingredients_tags) && p.ingredients_tags.length ? p.ingredients_tags.filter(t => /^en:e\d{3}/.test(t)) : null)),
@@ -219,8 +237,12 @@ function analyze(prod) {
   }
   const additivesKnown = tagsKnown || !!prod.ingredients;
   const simple = isSimpleFood(prod, additives);
-  const s = foodScore({ nutriscore: prod.nutriscore, nova: prod.nova, additives, additivesKnown, simple });
-  return { ...s, additives, additivesKnown, simple, watch: watchFromText(prod.ingredients) };
+  // Brak Nutri-Score w bazie, ale są wartości odżywcze (np. produkt właśnie dodany): liczymy go szacunkowo.
+  const official = String(prod.nutriscore || '').toLowerCase() in NUTRI_POINTS ? String(prod.nutriscore).toLowerCase() : '';
+  const est = official ? null : estimateNutriScore(prod.nutriments, prod.drink);
+  const nutriscore = official || est || '';
+  const s = foodScore({ nutriscore, nova: prod.nova, additives, additivesKnown, simple });
+  return { ...s, nutriscore, nutriscoreEstimated: !!est, additives, additivesKnown, simple, watch: watchFromText(prod.ingredients) };
 }
 
 /* „Dlaczego?” – lista powodów werdyktu. sign: '+' podnosi, '-' obniża, 'i' informacja. */
@@ -238,9 +260,9 @@ function explain(prod, an) {
     else if (an.flags.some(f => f.level >= 3)) add('i', 'Zawiera składnik z dużymi zastrzeżeniami, więc ocena i tak nie mogłaby przekroczyć 49.');
     return out;
   }
-  const ns = String(prod.nutriscore || '').toLowerCase();
+  const ns = String(an.nutriscore || prod.nutriscore || '').toLowerCase();
   if (ns in NUTRI_POINTS) {
-    const L = ns.toUpperCase();
+    const L = ns.toUpperCase() + (an.nutriscoreEstimated ? ', szacunkowy z wpisanych wartości' : '');
     if (ns === 'a' || ns === 'b') add('+', `Dobra wartość odżywcza (Nutri-Score ${L}).`);
     else if (ns === 'c') add('i', `Przeciętna wartość odżywcza (Nutri-Score ${L}).`);
     else add('-', `Słaba wartość odżywcza (Nutri-Score ${L}).`);
@@ -674,7 +696,9 @@ function personalMatch(prod, an, profile) {
   const m = matchProfile(prod, an, prof);
   const goals = goalInsights(prod, an, prof.goals);
   const personal = goals.length > 0 || m.checked > 0;
-  const score = an && an.score != null && isFinite(an.score) ? an.score : null;
+  // Ocena z samych dodatków (bez wartości odżywczych i przetworzenia) to za mało na werdykt.
+  const onlyAdditives = an && an.parts && an.parts.length === 1 && an.parts[0].key === 'additives';
+  const score = an && an.score != null && isFinite(an.score) && !onlyAdditives ? an.score : null;
   if (!personal) {
     const lv = score == null ? { key: 'unknown', label: 'Za mało danych' } : MATCH_LEVELS.find(l => score >= l.min);
     return { pct: score, level: lv.key, label: score == null ? lv.label : grade(score).label, good: score == null ? null : score >= 50, personal: false, general: prof.goals.includes('healthy'), status: m.status, match: m, goals, rows: [], cap: null };
@@ -718,5 +742,5 @@ function departmentFor(item) {
 }
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') {
-  module.exports = { LIMIT_CAP, goalInsights, rankForUser, customProblem, cleanCustom, customMatcher, cleanForMatch, compareInCategory, categoryLabel, matchProfile, cleanProfile, additiveKeyFromTag, additivesFromTags, additivesFromText, watchFromText, foodScore, additivesScore, inciAnalyze, cosmeticScore, grade, nutrientLevel, validBarcode, normalizeProduct, analyze, isSimpleFood, additiveEffect, CAP_CODES, explain, sourcesFor, personalMatch, departmentFor, plural, fmtNum, fold, MATCH_LEVELS };
+  module.exports = { estimateNutriScore, LIMIT_CAP, goalInsights, rankForUser, customProblem, cleanCustom, customMatcher, cleanForMatch, compareInCategory, categoryLabel, matchProfile, cleanProfile, additiveKeyFromTag, additivesFromTags, additivesFromText, watchFromText, foodScore, additivesScore, inciAnalyze, cosmeticScore, grade, nutrientLevel, validBarcode, normalizeProduct, analyze, isSimpleFood, additiveEffect, CAP_CODES, explain, sourcesFor, personalMatch, departmentFor, plural, fmtNum, fold, MATCH_LEVELS };
 }

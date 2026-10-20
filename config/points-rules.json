@@ -81,6 +81,18 @@
     },
     "shelf_shared": {
       "points": 0
+    },
+    "ingredients_added": {
+      "points": 10,
+      "dailyCap": 50,
+      "oncePerBarcode": true,
+      "grantWhen": "Open Food Facts zapisał skład sprawdzony przez użytkownika"
+    },
+    "nutrition_added": {
+      "points": 10,
+      "dailyCap": 50,
+      "oncePerBarcode": true,
+      "grantWhen": "Open Food Facts zapisał wartości odżywcze na 100 g"
     }
   }
 }

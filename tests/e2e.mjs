@@ -33,6 +33,10 @@ async function fresh(opts = {}) {
       const products = YOG.map(p => ({ code: p.code, product_name: p.product_name_pl, brands: p.brands, nutriscore_grade: p.nutriscore_grade, nova_group: p.nova_group, additives_tags: p.additives_tags || null, allergens_tags: p.allergens_tags || [], nutriments: p.nutriments || {}, categories_hierarchy: p.categories_hierarchy, stores: (p.stores_tags || []).map(x => x[0].toUpperCase() + x.slice(1)) }));
       return r.fulfill({ json: { ok: true, products } });
     });
+    opts.edits = [];
+    await ctx.route(/proxy\.test\/ocr/, r => r.fulfill({ json: opts.ocrFail ? { ok: false, error: 'no_text' } : { ok: true, text: 'Skład: mleko, truskawki 8%, cukier, kultury bakterii. Należy spożyć przed: 12.11' } }));
+    await ctx.route(/proxy\.test\/image/, r => r.fulfill({ json: { ok: true } }));
+    await ctx.route(/proxy\.test\/edit/, r => { const b = (r.request().postDataBuffer() || Buffer.alloc(0)).toString('utf8'); opts.edits.push(b); return r.fulfill({ json: { ok: true, saved: [/ingredients_text/.test(b) ? 'ingredients' : 'nutrition'] } }); });
     await ctx.route(/proxy\.test\/product/, async r => {
       opts.proxyCalls = (opts.proxyCalls || 0) + 1;
       const body = r.request().postDataBuffer() || Buffer.alloc(0);
@@ -276,6 +280,31 @@ await section('Dodaj brakujący produkt', async () => {
   ok(await pts(page) >= p0 + 100, 'nagroda: +50 i odznaka +50 (' + (await pts(page) - p0) + ')');
   ok(await page.evaluate(() => App.game.inventory.seed_golden_carrot === 1), 'złota marchewka w nagrodach');
   ok(await page.locator('#addDone').count() === 1, 'podziękowanie po wysłaniu');
+  // krok 2: skład odczytany ze zdjęcia, do sprawdzenia
+  await page.waitForSelector('#cmpIngr', { timeout: 5000 });
+  ok(await page.inputValue('#cmpIngr') === 'mleko, truskawki 8%, cukier, kultury bakterii', 'skład z OCR bez „Skład:” i daty (' + await page.inputValue('#cmpIngr') + ')');
+  await page.screenshot({ path: SHOTS + 'e-complete-ingr.png', fullPage: true });
+  const p1 = await pts(page);
+  await page.click('[data-cmp=save-ingr]'); await page.waitForTimeout(400);
+  ok(o.edits.length === 1 && /ingredients_text/.test(o.edits[0]) && !/password/.test(o.edits[0]), 'skład wysłany do pośrednika');
+  ok(await pts(page) === p1 + 10, 'skład: +10 pkt');
+  // krok 3: wartości odżywcze
+  await page.waitForSelector('[data-nut=energy-kcal]');
+  await page.fill('[data-nut=energy-kcal]', '95'); await page.fill('[data-nut=fat]', '2,5'); await page.fill('[data-nut=saturated-fat]', '4');
+  await page.click('[data-cmp=save-nut]');
+  ok((await txt(page, '#cmpNutMsg')).length > 0, 'wartości: brakujące albo sprzeczne dane, komunikat');
+  for (const [k, v] of [['saturated-fat', '1,6'], ['carbohydrates', '14'], ['sugars', '13'], ['proteins', '3,2'], ['salt', '0,1']]) await page.fill(`[data-nut=${k}]`, v);
+  await page.click('[data-cmp=save-nut]'); await page.waitForTimeout(400);
+  ok(o.edits.length === 2 && decodeURIComponent(o.edits[1]).includes('"saturated-fat":1.6'), 'wartości wysłane z przecinkiem zamienionym na kropkę');
+  ok(await pts(page) === p1 + 20, 'wartości: +10 pkt');
+  await page.waitForSelector('#completeBox [data-act=retry]');
+  await page.click('#completeBox [data-act=retry]'); await page.waitForTimeout(3500);
+  ok(await page.locator('#matchBox').count() === 1 && await page.locator('#addedNote').count() === 1, 'od razu ocena z wpisanych danych i informacja o kilku minutach');
+  ok((await txt(page, '#scr-product')).includes('Pełny skład'), 'skład widoczny przy produkcie');
+  await page.screenshot({ path: SHOTS + 'e-added-product.png', fullPage: true });
+  // ponowny skan tego samego kodu: produkt z danymi, nie „Ojej…”
+  await go(page, '#/'); await go(page, '#/p/' + C.missing); await page.waitForTimeout(3500);
+  ok(await page.locator('#notFound').count() === 0 && await page.locator('#addedNote').count() === 1, 'ponowny skan: produkt zamiast „Ojej…”');
   // drugi raz ten sam kod: bez punktów
   await page.evaluate(code => App.sendAdd({ id: 'x', code, name: 'Jogurt', lang: 'pl', uuid: App.appUuid(), photos: {} }), C.missing);
   ok(await page.evaluate(() => App.game.counters.product_added) === 1, 'ten sam kod nie daje drugiej nagrody');
@@ -294,6 +323,27 @@ await section('Dodaj brakujący produkt', async () => {
   o.proxyMode = 'ok';
   await page.evaluate(() => App.flushAdds()); await page.waitForTimeout(600);
   ok(await page.evaluate(() => App.game.counters.product_added) === 2, 'kolejka wysłana po powrocie sieci');
+  ok(!page.errs.length, 'brak błędów JS: ' + page.errs.join(' | '));
+  await ctx.close();
+});
+
+/* 6b. Uzupełnianie produktu z bazy, któremu brakuje danych */
+await section('Uzupełnij istniejący produkt', async () => {
+  const o = { proxy: true, ocrFail: true };
+  const { ctx, page } = await fresh(o);
+  await page.evaluate(() => { App.settings.guess = false; App.saveSettings(); });
+  await go(page, '#/p/' + C.oil); await page.waitForTimeout(800);
+  ok(await page.locator('[data-act=complete]').count() === 1, 'brak składu: przycisk „Uzupełnij”');
+  await page.click('[data-act=complete]'); await page.waitForTimeout(500);
+  ok(await page.locator('[data-complete-photo=ingredients]').count() === 1, 'brak zdjęcia składu: prośba o zdjęcie');
+  await page.fill('#cmpIngr', 'oliwa z oliwek extra virgin 100%');
+  await page.click('[data-cmp=save-ingr]'); await page.waitForTimeout(500);
+  ok(o.edits.length === 1, 'skład zapisany');
+  ok(await page.locator('[data-nut=energy-kcal]').count() === 0, 'wartości już były: bez drugiego kroku');
+  ok((await page.$eval('#scr-product', e => e.textContent)).includes('oliwa z oliwek extra virgin 100%'), 'skład od razu w produkcie');
+  ok(await page.locator('[data-act=complete]').count() === 0, 'po uzupełnieniu karta znika');
+  await go(page, '#/p/' + C.nutella); await page.waitForTimeout(800);
+  ok(await page.locator('[data-act=complete]').count() === 0, 'pełny produkt: bez karty');
   ok(!page.errs.length, 'brak błędów JS: ' + page.errs.join(' | '));
   await ctx.close();
 });

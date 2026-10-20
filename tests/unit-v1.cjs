@@ -220,5 +220,22 @@ t('restriction unknown → max 70%', pm({ nutriscore: 'a', nova: 1, ingredients:
   t('stores from text', n2.stores.join() === 'Lidl,Aldi' && n2.additiveTags === null, n2);
 }
 
+/* ===== Szacunkowy Nutri-Score i ocena bez wartości odżywczych ===== */
+t('NS est: skyr = A', A.estimateNutriScore({ kcal: 63, sugars: 4, sat: 0.1, salt: 0.1, proteins: 11 }) === 'a');
+t('NS est: krem orzechowy = E', A.estimateNutriScore({ kcal: 539, sugars: 56.3, sat: 10.6, salt: 0.107, proteins: 6.3 }) === 'e');
+t('NS est: jogurt owocowy = C', A.estimateNutriScore({ kcal: 95, sugars: 13, sat: 1.6, salt: 0.1, proteins: 3.2 }) === 'c');
+t('NS est: brak soli = brak oceny', A.estimateNutriScore({ kcal: 95, sugars: 13, sat: 1.6 }) === null);
+t('NS est: napoje nie', A.estimateNutriScore({ kcal: 42, sugars: 10.6, sat: 0, salt: 0 }, true) === null);
+{
+  const local = prod({ source: 'local', ingredients: 'mleko, truskawki 8%, cukier', nutriscore: '', nova: null, additiveTags: null, nutriments: { kcal: 95, sugars: 13, sat: 1.6, salt: 0.1, proteins: 3.2 } });
+  const an = A.analyze(local);
+  t('produkt dodany: ocena z szacunkowego Nutri-Score', an.nutriscore === 'c' && an.nutriscoreEstimated && an.parts.some(x => x.key === 'nutrition'), an);
+  const bare = prod({ source: 'local', ingredients: 'mleko, truskawki, cukier', nutriscore: '', nova: null, additiveTags: null, nutriments: {} });
+  const m = A.personalMatch(bare, A.analyze(bare), {});
+  t('same dodatki: brak werdyktu („Za mało danych”)', m.pct === null && m.label === 'Za mało danych', m);
+  const off = prod({ nutriscore: 'b', nutriments: { kcal: 539, sugars: 56, sat: 10, salt: 0.1 } });
+  t('oficjalny Nutri-Score ma pierwszeństwo', A.analyze(off).nutriscore === 'b' && !A.analyze(off).nutriscoreEstimated);
+}
+
 console.log(`unit-v1: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
