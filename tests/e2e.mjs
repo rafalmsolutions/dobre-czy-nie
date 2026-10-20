@@ -638,6 +638,20 @@ await section('Kopia bazy', async () => {
   await go(d.page, '#/p/' + C.missing); await d.page.waitForTimeout(3500);
   ok(await d.page.locator('#notFound').count() === 1, 'produktu nie ma nigdzie: komunikat');
   await d.ctx.close();
+  // Uzupełnianie działa też na danych z kopii (baza na żywo nie odpowiada).
+  const d2 = await fresh({ snapshot: true, offDown: true, proxy: true });
+  await d2.page.evaluate(() => { App.settings.guess = false; App.saveSettings(); });
+  await go(d2.page, '#/p/' + C.msg); await d2.page.waitForTimeout(3500);
+  const cb = await txt(d2.page, '#completeBox');
+  ok(cb.includes('wartości odżywczych') && !cb.includes('składu'), 'kopia: brak wartości → przycisk uzupełniania (skład jest w bazie)');
+  await go(d2.page, '#/p/' + C.oil); await d2.page.waitForTimeout(3500);
+  ok((await txt(d2.page, '#completeBox')).includes('składu'), 'kopia: brak składu → przycisk uzupełniania');
+  // Skład wpisany wcześniej przez użytkownika: liczy się od razu, przycisk znika.
+  await d2.page.evaluate(code => { const l = JSON.parse(localStorage.getItem('dcn-local') || '{}'); l[code] = { code, ingredients: 'oliwa z oliwek z pierwszego tłoczenia 100%', nutriments: {} }; localStorage.setItem('dcn-local', JSON.stringify(l)); }, C.oil);
+  await go(d2.page, '#/p/' + C.msg); await d2.page.waitForTimeout(3500);
+  await go(d2.page, '#/p/' + C.oil); await d2.page.waitForTimeout(3500);
+  ok(await d2.page.locator('#completeBox').count() === 0, 'kopia + skład od użytkownika: bez ponownego pytania o skład');
+  await d2.ctx.close();
 });
 
 /* 11d. Statystyki i uwagi */

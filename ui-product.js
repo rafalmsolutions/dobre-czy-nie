@@ -63,8 +63,21 @@
     else if (local) show(local, { local: true });
     else { A.track('skan-blad-' + kind); renderMissing(code, kind); }
   }
+  // Dane, które użytkownik sam uzupełnił, a baza (albo nasza cotygodniowa kopia) jeszcze ich nie ma.
+  function mergeLocal(prod) {
+    const local = A.store.get('local', {})[prod.code];
+    if (!local) return prod;
+    if (!prod.ingredients && local.ingredients) prod.ingredients = local.ingredients;
+    if (local.nutriments && !Object.values(prod.nutriments || {}).some(v => v != null)) prod.nutriments = Object.assign({}, local.nutriments);
+    return prod;
+  }
+  // Czego brakuje? Kopia bazy nie ma tekstu składu, ale wie, czy skład istnieje (lista dodatków nie jest wtedy pusta/null).
+  function missingParts(prod, snapshot) {
+    return { ingr: !prod.ingredients && !(snapshot && prod.additiveTags != null), nut: !Object.values(prod.nutriments || {}).some(v => v != null) };
+  }
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
+    mergeLocal(prod);
     const guess = cur.guess, alts = cur.alts;
     const an = analyze(prod), pm = personalMatch(prod, an, A.profile);
     A.remember(prod, an, pm);
@@ -78,6 +91,7 @@
     return !!(d && d.once && d.once['guess|' + code]);
   }
   function show(prod, opts) {
+    if (!opts.local) mergeLocal(prod);
     const an = analyze(prod), pm = personalMatch(prod, an, A.profile);
     A.remember(prod, an, pm);
     cur = { prod, an, pm, local: !!opts.local, cached: !!opts.cached, snapshot: !!opts.snapshot, guess: null, rendered: true };
@@ -136,9 +150,9 @@
       <button class="btn btn-green" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na półce' : 'Na półkę (+5 pkt)'}</button>
       <button class="btn btn-white" type="button" data-act="scan">Skanuj kolejny</button></div>`);
     // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
-    const nmKnown = Object.values(prod.nutriments || {}).some(v => v != null);
-    if (A.CFG.offProxyUrl && prod.kind === 'food' && !cur.snapshot && (prod.source === 'off' || added) && (!prod.ingredients || !nmKnown)) {
-      const what = [!prod.ingredients && 'składu', !nmKnown && 'wartości odżywczych'].filter(Boolean).join(' i ');
+    const miss = missingParts(prod, cur.snapshot);
+    if (A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added) && (miss.ingr || miss.nut)) {
+      const what = [miss.ingr && 'składu', miss.nut && 'wartości odżywczych'].filter(Boolean).join(' i ');
       parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button></div></div>`);
     }
     parts.push(detailsHtml(prod, an, !pm.personal));
@@ -398,8 +412,8 @@
   A.startComplete = () => {
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;
-    const nmKnown = Object.values(p.nutriments || {}).some(v => v != null);
-    A.openComplete(el, { code: p.code, name: p.name, needIngr: !p.ingredients, needNut: !nmKnown, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
+    const miss = missingParts(p, cur.snapshot), nmKnown = !miss.nut;
+    A.openComplete(el, { code: p.code, name: p.name, needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
       const local = A.store.get('local', {})[p.code] || {};
       if (local.ingredients && !p.ingredients) p.ingredients = local.ingredients;
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
