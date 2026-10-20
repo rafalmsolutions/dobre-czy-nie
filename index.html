@@ -12,7 +12,11 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
+<link rel="dns-prefetch" href="https://images.openfoodfacts.org">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap"></noscript>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body class="no-nav">
@@ -35,6 +39,7 @@
 </svg>
 
 <main id="app">
+  <div class="boot" id="boot" aria-hidden="true"><img src="icons/icon.svg" width="72" height="72" alt=""><b>Dobre czy nie?</b><span>Sprawdź skład w 2 sekundy</span></div>
   <section class="screen" id="scr-start" aria-labelledby="startTitle"></section>
   <section class="screen" id="scr-home" aria-label="Dla Ciebie"></section>
   <section class="screen" id="scr-product" aria-label="Produkt"></section>
@@ -133,18 +138,18 @@
 
 <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="core.js"></script>
-<script src="game.js"></script>
-<script src="shelf.js"></script>
-<script src="art.js"></script>
-<script src="ui-base.js"></script>
-<script src="ui-home.js"></script>
-<script src="ui-product.js"></script>
-<script src="ui-shelves.js"></script>
-<script src="ui-progress.js"></script>
-<script src="ui-complete.js"></script>
-<script src="ui-main.js"></script>
+<script defer src="config.js"></script>
+<script defer src="data.js"></script>
+<script defer src="core.js"></script>
+<script defer src="game.js"></script>
+<script defer src="shelf.js"></script>
+<script defer src="art.js"></script>
+<script defer src="ui-base.js"></script>
+<script defer src="ui-home.js"></script>
+<script defer src="ui-product.js"></script>
+<script defer src="ui-shelves.js"></script>
+<script defer src="ui-progress.js"></script>
+<script defer src="ui-complete.js"></script>
+<script defer src="ui-main.js"></script>
 </body>
 </html>

@@ -119,7 +119,10 @@
   async function boot() {
     document.body.classList.toggle('no-scores', !!A.profile.noScores);
     const hadCfg = !!(A.cfg.levels && A.cfg.levels.levels);
-    if (hadCfg) A.render();
+    // Ekran startowy, produkt, półki itd. nie potrzebują konfiguracji punktów – rysujemy je od razu, bez czekania na sieć.
+    const h = location.hash.replace(/^#?\/?/, '');
+    const needsCfg = (h === '' && A.store.get('onboarded', false)) || h === 'postepy';
+    if (hadCfg || !needsCfg) A.render();
     await A.loadConfig();
     // Ekrany zależne od konfiguracji (poziomy, odznaki) przerysowujemy po jej odświeżeniu.
     if (!hadCfg || ['home', 'progress'].includes(A.current.screen)) A.render();

@@ -105,7 +105,7 @@ const App = {};
     A.announce('Zdobywasz ' + n + ' ' + plural(n, 'punkt', 'punkty', 'punktów') + '.');
   };
   A.refreshHud = () => document.querySelectorAll('[data-hud=points]').forEach(e => { e.textContent = A.game.points; });
-  A.hudPill = () => `<a class="pill" href="#/postepy" aria-label="Twoje punkty, przejdź do postępów"><svg><use href="#i-star"/></svg><span data-hud="points">${A.game.points}</span></a>`;
+  A.hudPill = () => `<a class="pill" href="#/postepy"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Punkty: </span><span data-hud="points">${A.game.points}</span><span class="sr"> – przejdź do postępów</span></a>`;
 
   const celQueue = [];
   A.celebrate = events => {
@@ -186,12 +186,15 @@ const App = {};
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen));
     document.body.classList.toggle('no-nav', screen === 'start');
     document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === screen) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
+    const boot = A.$('boot'); if (boot) boot.remove();
     if (changed) A.trackView(screen);
     if (A.routes[screen]) A.routes[screen](arg);
     if (changed) {
-      window.scrollTo({ top: 0 });
+      // Przy pierwszym ekranie strona jest już na górze – pomijamy przewijanie (wymusza dodatkowe przeliczenie układu).
+      if (!first) window.scrollTo({ top: 0 });
       const h1 = document.querySelector('#scr-' + screen + ' h1');
       if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
     }
