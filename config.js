@@ -18,6 +18,6 @@ const CONFIG = {
   // goatcounter: kod strony w GoatCounter (np. 'dobreczynie' dla https://dobreczynie.goatcounter.com).
   // Anonimowe statystyki bez ciasteczek: które ekrany i funkcje są używane, ile osób wraca w kolejnych tygodniach.
   // Puste pole = statystyki wyłączone.
-  goatcounter: '',
+  goatcounter: 'dobreczynie',
   appVersion: '1.0'
 };
