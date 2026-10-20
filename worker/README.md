@@ -29,10 +29,11 @@ Koszt: 0 zł (darmowy plan Cloudflare Workers: 100 000 zapytań dziennie).
 4. **Sekrety w GitHubie:** https://github.com/rafalmsolutions/dobre-czy-nie/settings/secrets/actions → **New repository secret**, cztery razy:
    - `CLOUDFLARE_API_TOKEN`: token z kroku 3;
    - `CLOUDFLARE_ACCOUNT_ID`: Account ID z kroku 2;
-   - `OFF_USER`: nazwa użytkownika konta aplikacji w Open Food Facts (nie e-mail). Na start konto z serwera testowego `world.openfoodfacts.net`;
+   - `OFF_USER`: nazwa użytkownika konta aplikacji w Open Food Facts (nie e-mail);
    - `OFF_PASS`: hasło do tego konta.
 5. **Uruchomienie:** https://github.com/rafalmsolutions/dobre-czy-nie/actions/workflows/worker.yml → **Run workflow**.
-6. Adres pośrednika znajdziesz w Cloudflare: **Workers & Pages → dcn-off-proxy** (np. `https://dcn-off-proxy.twoja-nazwa.workers.dev`). Ten adres trzeba wpisać w `config.js` (`offProxyUrl`). Wtedy w aplikacji włączy się dodawanie produktów.
+6. Sprawdzenie logowania bez zapisu w bazie: z aplikacji `POST /check` zwraca `{"ok":true}`, gdy login i hasło są poprawne.
+7. Adres pośrednika znajdziesz w Cloudflare: **Workers & Pages → dcn-off-proxy** (np. `https://dcn-off-proxy.twoja-nazwa.workers.dev`). Ten adres trzeba wpisać w `config.js` (`offProxyUrl`). Wtedy w aplikacji włączy się dodawanie produktów.
 
 Hasła i token są tylko w sekretach GitHuba i Cloudflare. Nie ma ich w kodzie ani w historii repozytorium.
 
@@ -64,7 +65,11 @@ Potrzebujesz komputera z Node.js (https://nodejs.org, wersja LTS).
 8. W aplikacji, w pliku `config.js`, wpisz ten adres w `offProxyUrl` i wrzuć aplikację na hosting.
 9. Dodaj w aplikacji testowy produkt z nieistniejącym kodem i sprawdź go na https://world.openfoodfacts.net.
 
-## Przejście na prawdziwą bazę
+## Serwer testowy (opcjonalnie)
+
+Serwer testowy `world.openfoodfacts.net` bywa niedostępny z przeglądarek (19–20.10.2026 nie dało się na nim założyć konta). Pośrednik działa na prawdziwej bazie. Aby wrócić do testowego: w `wrangler.toml` ustaw `OFF_BASE = "https://world.openfoodfacts.net"`, dodaj `OFF_BASIC = "off:off"` i podmień sekrety na konto testowe.
+
+## Przejście na prawdziwą bazę (stan obecny)
 
 Gdy test się uda:
 1. W `wrangler.toml` zmień `OFF_BASE` na `https://world.openfoodfacts.org` i usuń linię `OFF_BASIC`.
