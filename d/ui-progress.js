@@ -109,6 +109,7 @@
       <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
+        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setSound" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.sound !== false ? ' checked' : ''}><span><b>Dźwięki i wibracje</b><br><span class="small muted">Krótki dźwięk przy skanie, zgadywaniu i odkładaniu na półkę, melodia przy nowej odznace i poziomie.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label>
         ${A.statsAvailable() ? `<label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setStats" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.stats !== false ? ' checked' : ''}><span><b>Anonimowe statystyki</b><br><span class="small muted">Liczymy tylko, które funkcje są używane i ile osób wraca. Bez ciasteczek, profilu i kodów produktów.</span></span></label>` : ''}</fieldset>
       <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
@@ -173,6 +174,9 @@
     if (includePending && pending && !customProblem(pending, next.custom)) { next.custom.push(cleanCustom(pending)); draftCustom = next.custom.slice(); }
     A.profile = cleanProfile(next); A.saveProfile();
     A.settings.guess = A.$('setGuess').checked;
+    const soundWas = A.settings.sound !== false;
+    A.settings.sound = A.$('setSound').checked;
+    if (!soundWas && A.settings.sound) A.sound('badge');
     if (A.$('setStats')) A.settings.stats = A.$('setStats').checked;
     A.saveSettings();
     A.store.set('name', A.$('profName').value.replace(/[<>]/g, '').trim().slice(0, 30));

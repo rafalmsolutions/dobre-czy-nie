@@ -107,11 +107,47 @@ const App = {};
   };
   const EVENT_STATS = { product_checked: 'skan-znaleziony', guess_right: 'zgadnij-trafione', guess_wrong: 'zgadnij-pudlo', shelf_add: 'na-polke', swap_to_better: 'zamiana', list_completed: 'lista-kupiona', product_added: 'dodano-produkt', ingredients_added: 'uzupelniono-sklad', nutrition_added: 'uzupelniono-wartosci', photo_added: 'dodano-zdjecie', report_sent: 'zgloszenie', shelf_shared: 'polka-udostepniona', explanation_opened: 'wyjasnienie' };
 
+  /* ---------- Wersja D: dźwięki i wibracje ----------
+     Dźwięki są generowane w przeglądarce (Web Audio), bez plików. Wyłącza je przełącznik w profilu.
+     Przeglądarka pozwala grać dopiero po pierwszym dotknięciu ekranu, więc wtedy przygotowujemy dźwięk. */
+  let ac = null, master = null;
+  const audio = () => {
+    if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); master = ac.createGain(); master.gain.value = 0.35; master.connect(ac.destination); }
+    if (ac.state === 'suspended') ac.resume().catch(() => { });
+    return ac;
+  };
+  ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (A.settings.sound !== false) audio(); }, { once: true, passive: true }));
+  function tone(t, freq, dur, o = {}) {
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(freq, t);
+    if (o.glide) osc.frequency.exponentialRampToValueAtTime(o.glide, t + dur * 0.8);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || 0.2, t + (o.attack || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g); g.connect(master); osc.start(t); osc.stop(t + dur + 0.03);
+  }
+  const SOUNDS = {
+    scan: t => tone(t, 1568, 0.09, { vol: 0.25 }),
+    right: t => { tone(t, 784, 0.13, { type: 'triangle', vol: 0.3 }); tone(t + 0.09, 1175, 0.24, { type: 'triangle', vol: 0.3 }); },
+    wrong: t => { tone(t, 392, 0.16, { vol: 0.22 }); tone(t + 0.12, 330, 0.28, { vol: 0.2 }); },
+    shelf: t => tone(t, 520, 0.13, { vol: 0.3, glide: 880 }),
+    badge: t => { [1047, 1319, 1568, 2093].forEach((f, i) => tone(t + i * 0.085, f, 0.5, { type: 'triangle', vol: 0.22 })); tone(t + 0.34, 3136, 0.6, { vol: 0.05 }); },
+    gold: t => { SOUNDS.badge(t); [2637, 3136, 4186].forEach((f, i) => tone(t + 0.42 + i * 0.07, f, 0.5, { vol: 0.07 })); },
+    level: t => { [523, 659, 784].forEach((f, i) => tone(t + i * 0.11, f, 0.22, { type: 'square', vol: 0.06 })); [523, 659, 784, 1047].forEach(f => tone(t + 0.36, f, 1.1, { type: 'triangle', vol: 0.12 })); },
+    challenge: t => { [659, 784, 988, 1319].forEach((f, i) => tone(t + i * 0.1, f, 0.4, { type: 'triangle', vol: 0.2 })); }
+  };
+  const BUZZ = { scan: 40, right: [25, 40, 25], wrong: 60, badge: [30, 50, 30, 50, 80], gold: [30, 40, 30, 40, 30, 40, 120], level: [60, 60, 120], challenge: [40, 40, 80] };
+  A.sound = name => {
+    if (A.settings.sound === false || document.hidden) return;
+    try { const c = audio(); if (c && SOUNDS[name]) SOUNDS[name](c.currentTime + 0.02); } catch (e) { }
+    try { if (BUZZ[name] && navigator.vibrate) navigator.vibrate(BUZZ[name]); } catch (e) { }
+  };
+  const EVENT_SOUND = { guess_right: 'right', guess_wrong: 'wrong', shelf_add: 'shelf', swap_to_better: 'shelf' };
+
   /* ---------- Punkty, odznaki, gratulacje ---------- */
   A.award = (event, ctx = {}) => {
     if (EVENT_STATS[event]) A.track(EVENT_STATS[event]);
     const r = Game.award(A.game, A.cfg, event, Object.assign({ extra: A.extraMetrics() }, ctx));
     if (r.state !== A.game) { A.game = r.state; A.saveGame(); }
+    if (EVENT_SOUND[event]) A.sound(EVENT_SOUND[event]);
     if (r.gained > 0) A.plusFly(r.gained);
     if (r.events.length) A.celebrate(r.events);
     A.refreshHud();
@@ -152,11 +188,14 @@ const App = {};
       const a = ((A.cfg.achievements && A.cfg.achievements.achievements) || []).find(x => x.id === e.id) || {};
       ribbon = 'Nowa odznaka!'; head = e.name; sub = a.description || '';
       emblem = medalSvg(a.icon, a.category, true, 170, a.tier || 3, 'm-pop');
+      setTimeout(() => A.sound(a.tier === 3 ? 'gold' : 'badge'), 250);
       if (a.tier) { head = e.name + ' · ' + ['brąz', 'srebro', 'złoto'][a.tier - 1]; }
     } else if (e.type === 'level') {
       ribbon = 'Nowy poziom!'; head = e.name; sub = 'Poziom ' + e.level + '. Tak trzymaj!';
       emblem = shieldSvg(e.level, 150);
+      setTimeout(() => A.sound('level'), 250);
     } else {
+      setTimeout(() => A.sound('challenge'), 250);
       ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Nowe wyzwanie pojawi się w poniedziałek.';
       emblem = art('packet_strawberry', 150);
     }
@@ -562,7 +601,8 @@ const App = {};
     setTimeout(() => scanning && requestAnimationFrame(tick), detector ? 100 : 140);
   }
   function found(code) {
-    if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }
+    if (A.settings.sound === false && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }
+    A.sound('scan');
     A.closeScanner(true);
     A.openCode(code);
   }
