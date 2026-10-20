@@ -96,10 +96,10 @@ export default {
       const r = await fetch(`${base}/cgi/product_jqm2.pl`, { method: 'POST', body: fields, headers });
       upstream = r.status;
       const txt = await r.text();
-      try { saved = JSON.parse(txt); } catch (e) { saved = null; verbose = txt.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160); }
+      try { saved = JSON.parse(txt); } catch (e) { saved = null; verbose = txt.replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300); }
     } catch (e) { saved = null; verbose = String(e).slice(0, 160); }
     // Do diagnozy zwracamy kod i opis odpowiedzi Open Food Facts (bez haseł i danych logowania).
-    if (!saved || saved.status !== 1) return reply(502, { ok: false, error: 'off_save', upstream, verbose: (saved && saved.status_verbose ? String(saved.status_verbose) : verbose).slice(0, 160) });
+    if (!saved || saved.status !== 1) return reply(502, { ok: false, error: 'off_save', upstream, verbose: (saved && saved.status_verbose ? String(saved.status_verbose) : verbose).slice(0, 300) });
 
     // --- Zdjęcia: przód, skład, wartości odżywcze ---
     let images = 0;
