@@ -167,6 +167,12 @@ const App = {};
   A.closeDlg = d => { if (!d) return; if (d.close) d.close(); else d.removeAttribute('open'); };
   // Wersja D: bez maskotki (spokojniejszy wygląd dla dorosłych).
   A.mascot = () => '';
+  // Zdjęcia kategorii (img/cat/*.webp): najwęższa kategoria produktu, która jest na liście kategorii aplikacji.
+  const CAT_KEYS = new Set(SHOP_CATEGORIES.map(c => c.key));
+  const CAT_ALIAS = { 'en:hams': 'en:prepared-meats', 'en:cold-cuts': 'en:prepared-meats', 'en:frankfurters': 'en:sausages', 'en:hazelnut-spreads': 'en:sweet-spreads', 'en:plain-yogurts': 'en:yogurts', 'en:plant-based-milks': 'en:plant-based-milk-alternatives', 'en:mineral-waters': 'en:waters', 'en:chips': 'en:crisps' };
+  A.catKeyOf = cats => { const c = Array.isArray(cats) ? cats : []; for (let i = c.length - 1; i >= 0; i--) { if (CAT_KEYS.has(c[i])) return c[i]; if (CAT_ALIAS[c[i]] && CAT_KEYS.has(CAT_ALIAS[c[i]])) return CAT_ALIAS[c[i]]; } return ''; };
+  A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
+  A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories)) : '';
   // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };
 

@@ -94,11 +94,12 @@
 
   /* ---------- Widok produktu ---------- */
   function prodCard(p, pm) {
-    const img = A.safeImg(p.image);
+    const img = A.safeImg(p.image), dish = A.prodCatImg(p);
     const lvl = (pm && pm.pct != null && pm.level) || 'unknown';
     const nm = p.name || 'Produkt bez nazwy';
     return `<div class="d-hero" data-level="${esc(lvl)}"><span class="d-arc" aria-hidden="true"></span>
-      ${img ? `<button class="prod-img-btn d-plate" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>` : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 96)}</span>`}
+      ${dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480">${img ? `<button class="prod-img-btn d-pack" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie opakowania"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie opakowania"></button>` : ''}</span>`
+        : img ? `<button class="prod-img-btn d-plate" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>` : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 96)}</span>`}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1><p class="small muted mono">${esc(p.code)}</p></div></div>`;
   }
   function critRow(r) {
