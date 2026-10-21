@@ -1,4 +1,4 @@
-/* Dobre czy nie? – pośrednik do Open Food Facts (Cloudflare Worker).
+/* Lupka (dawniej „Dobre czy nie?”) – pośrednik do Open Food Facts (Cloudflare Worker).
 
    Po co:
    1. POST /product – dodawanie brakującego produktu. Aplikacja w przeglądarce nie może bezpiecznie trzymać hasła
@@ -17,7 +17,7 @@
 
 import { disc } from './disc.js';
 
-const APP_NAME = 'DobreCzyNie';
+const APP_NAME = 'Lupka';
 const MAX_PHOTO = 6 * 1024 * 1024;
 const PHOTOS = { front: 'front', ingredients: 'ingredients', nutrition: 'nutrition' };
 const RATE = { perHour: 40, hits: new Map() }; // ochrona przed zalewem (w obrębie jednej instancji)
@@ -125,7 +125,7 @@ export default {
       } catch (e) { current = null; }
       // Świeżo dodany produkt bywa przez kilka minut niewidoczny w odczycie; wtedy nie ma czego nadpisać.
       current = current || {};
-      const fields = { code, lang, lc: lang, cc: 'pl', comment: 'Uzupełnione w aplikacji Dobre czy nie?' };
+      const fields = { code, lang, lc: lang, cc: 'pl', comment: 'Uzupełnione w aplikacji Lupka' };
       const saved = [];
       if (ingredients && !String(current['ingredients_text_' + lang] || current.ingredients_text || '').trim()) { fields['ingredients_text_' + lang] = ingredients; saved.push('ingredients'); }
       const hasNut = current.nutriments && ['energy-kcal_100g', 'fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g'].some(k => current.nutriments[k] !== undefined);
@@ -198,7 +198,7 @@ export default {
     // --- Zapis produktu ---
     const fields = new FormData();
     const store = storeLabel(form.get('store'));
-    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Dobre czy nie?' }, store ? { add_stores: store } : {}, common)).forEach(([k, v]) => fields.append(k, v));
+    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Lupka' }, store ? { add_stores: store } : {}, common)).forEach(([k, v]) => fields.append(k, v));
     let saved, upstream = 0, verbose = '';
     try {
       const r = await fetch(`${base}/cgi/product_jqm2.pl`, { method: 'POST', body: fields, headers });

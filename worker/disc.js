@@ -1,4 +1,4 @@
-/* Dobre czy nie? – odkrywcy: potwierdzanie nowych produktów przez kolejne osoby (Cloudflare D1, baza „dcn-odkrywcy”).
+/* Lupka – odkrywcy: potwierdzanie nowych produktów przez kolejne osoby (Cloudflare D1, baza „dcn-odkrywcy”).
 
    POST /disc/submit  device, code, name, nick?, checks?  → nowy produkt dodany przez aplikację czeka na potwierdzenie
    GET  /disc/product?code&device                         → czy produkt czeka na potwierdzenie i czy to urządzenie może je dać
