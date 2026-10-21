@@ -129,7 +129,7 @@
     </form>
     <div class="card stack"><h2 style="font-size:1.1rem">Informacje</h2>
       ${A.CFG.contactEmail ? `<a class="btn btn-green btn-sm" id="feedbackBtn" href="${A.feedbackHref()}" style="align-self:flex-start">Wyślij uwagi o aplikacji</a>` : ''}
-      <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="privacy.html">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
+      <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="privacy.html?z=app">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
       <p class="small muted">Dane produktów: Open Food Facts i Open Beauty Facts (licencja ODbL). Wersja aplikacji ${esc(A.CFG.appVersion || '1.0')}.</p><p class="small muted" id="dataDate"></p>
       ${confirmWipe ? `<div class="stack"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, domownicy, półki, album, punkty, historię) i Twoje dane z serwera odkrywców (głosy, statystyki; dodane produkty zostaną bez pseudonimu)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small" type="button" data-act="wipe" style="align-self:flex-start">Usuń wszystkie moje dane</button>'}
     </div></div>`}`;

@@ -22,13 +22,25 @@
 </head>
 <body>
 <main>
-  <a class="back" href="./">← Wróć do aplikacji</a>
+  <a class="back" id="back" href="/">← Lupka</a>
+  <script>
+  // Skąd przyszedłeś: z aplikacji (?z=app) – „Wróć do aplikacji”, ze strony – „Wróć na stronę Lupki”. Z tej samej witryny wracamy w historii.
+  (() => {
+    const APP = './', SITE = '/strona/'; // po przenosinach: APP = '/app/', SITE = '/'
+    const z = new URLSearchParams(location.search).get('z'), a = document.getElementById('back');
+    const fromApp = z === 'app';
+    a.textContent = fromApp ? '← Wróć do aplikacji' : '← Wróć na stronę Lupki';
+    a.href = fromApp ? APP : SITE;
+    let same = false; try { same = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) { }
+    if (same && history.length > 1) a.addEventListener('click', e => { e.preventDefault(); history.back(); });
+  })();
+  </script>
   <h1>Polityka prywatności aplikacji „Lupka”</h1>
-  <p class="muted">Wersja z dnia <span class="todo">[data]</span>.</p>
+  <p class="muted">Wersja z dnia 21.10.2026.</p>
 
   <section>
     <h2>1. Kto odpowiada za Twoje dane</h2>
-    <p>Administratorem danych jest <span class="todo">[imię i nazwisko]</span>, <span class="todo">[adres do korespondencji]</span>, e-mail: <a href="mailto:rafalmsolutions@gmail.com">rafalmsolutions@gmail.com</a>.</p>
+    <p>Administratorem danych jest Rafał Mokrowiecki, e-mail: <a href="mailto:rafalmsolutions@gmail.com">rafalmsolutions@gmail.com</a>.</p>
   </section>
 
   <section>
