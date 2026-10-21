@@ -194,6 +194,7 @@
       ${bpm.personal ? billHtml(bpm, other ? fp.name : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     parts.push('<div id="discBox"></div>');
+    if (storeAskOk(prod)) parts.push(`<div class="panel stack store-ask" id="storeBox"><div class="row" style="justify-content:space-between;gap:8px"><b>Kupujesz to w:</b><span class="small muted">+2 pkt</span></div><div class="pchips">${A.myStores().map(k => `<button class="pchip" type="button" data-act="store-tag" data-k="${esc(k)}">${esc(A.storeLabel(k))}</button>`).join('')}<button class="linkbtn small" type="button" data-act="store-skip">Nie teraz</button></div><p class="small muted">Dopiszemy sklep do produktu w Open Food Facts. Pomaga innym znaleźć dobre produkty w ich sklepie.</p></div>`);
     const qc = prod.qchg && prod.qchg.length > 1 ? prod.qchg : null;
     if (qc) {
       const a = qc[qc.length - 2], z = qc[qc.length - 1], num = x => parseFloat(x[2]), mon = d => new Date(d + 'T12:00:00').toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' });
@@ -337,7 +338,8 @@
       // a dopasowanie musi być co najmniej dobre i wyższe niż obecnego produktu.
       const narrow = cats[0];
       const altSrc = narrow ? compareInCategory(mine.prod, mine.an, list.filter(x => (x.categories || []).includes(narrow)), A.profile).alternatives : cmp.alternatives;
-      const alts = altSrc.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct));
+      const alts = altSrc.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile), my: A.inMyStore(x.pr) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct))
+        .sort((a, b) => !!b.my - !!a.my); // najpierw z Twoich sklepów (kolejność wśród nich bez zmian)
       mine.alts = alts;
       // Domownicy: gdy produkt komuś nie pasuje, pokazujemy jeden produkt z tej kategorii, który pasuje wszystkim.
       if (mine.fam && mine.fam.tone !== 'ok' && A.familyAltPick && cur === mine) {
@@ -348,7 +350,7 @@
       if (alts.length) {
         const best = alts[0];
         A.setHistoryAlt(mine.prod.code, { code: best.pr.code, name: best.pr.name, image: A.safeImg(best.pr.image), pct: best.pm.pct, level: best.pm.level, label: best.pm.label });
-        out.push(`<h3 style="font-size:1rem">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score">${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik na półkę (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
+        out.push(`<h3 style="font-size:1rem">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score">${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik na półkę (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
       } else if (cmp.enough && mine.an.score != null) out.push(`<p class="small muted">${cmp.betterThan >= 70 ? 'To jeden z lepszych wyborów w tej kategorii.' : 'Nie znaleźliśmy wyraźnie lepszego zamiennika.'}</p>`);
       body().innerHTML = out.join('') || '<p class="small muted">Nie mamy jeszcze podobnych produktów do porównania.</p>';
     } catch (e) {
@@ -419,6 +421,7 @@
         parts.push(`<form class="stack" id="addForm" novalidate>
           <label for="addName"><b style="font-family:var(--f-display)">Nazwa produktu</b></label>
           <input class="field" id="addName" maxlength="80" autocomplete="off" placeholder="np. Jogurt naturalny 2%" required>
+          ${A.storePickHtml('addStore')}
           <div class="sec-head"><b style="font-family:var(--f-display);font-size:1.1rem">Zrób 3 zdjęcia</b><span class="small" style="font-weight:800;color:var(--green-d)" id="photoCount">0 z 3 gotowe</span></div>
           ${PHOTO_STEPS.map(([k, t, d], i) => `<div class="photo-step" id="ps-${k}"><span class="num">${i + 1}</span><span class="grow"><b style="display:block">${t}</b><span class="small muted">${d}</span></span><span id="pv-${k}"></span><span class="btn btn-blue btn-sm filebtn"><span id="pb-${k}">Zrób zdjęcie</span><input type="file" accept="image/*" capture="environment" data-photo="${k}" aria-label="Zdjęcie: ${t}"></span></div>`).join('')}
           <div class="disc-check" id="addCode" role="status" hidden></div>
@@ -479,7 +482,8 @@
     const missing = PHOTO_STEPS.filter(([k]) => !photos[k]).map(([, t]) => t.toLowerCase());
     if (missing.length) { msg.textContent = 'Brakuje zdjęcia: ' + missing.join(', ') + '.'; return; }
     const btn = A.$('addSend'); btn.disabled = true; btn.textContent = 'Wysyłam…'; msg.className = 'msg';
-    const rec = { id: code + '-' + Date.now(), code, name, lang: 'pl', uuid: A.appUuid(), at: Date.now(), checks: { barcode: bc.s }, photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
+    const stIn = document.querySelector('#addForm input[name=addStore]:checked');
+    const rec = { id: code + '-' + Date.now(), code, name, store: stIn && stIn.value ? stIn.value : '', lang: 'pl', uuid: A.appUuid(), at: Date.now(), checks: { barcode: bc.s }, photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
     const res = await A.sendAdd(rec);
     if (res === 'ok') addedSuccess(code, name);
     else if (res === 'queued') { msg.className = 'msg ok'; msg.textContent = 'Nie ma teraz połączenia. Zapisaliśmy produkt w telefonie i wyślemy go, gdy internet wróci. Nagrodę dostaniesz po wysłaniu.'; btn.textContent = 'Zapisane do wysłania'; }
@@ -491,7 +495,7 @@
     A.rememberAdded(code, name);
     const shots = { ingredients: photos.ingredients && photos.ingredients.blob, nutrition: photos.nutrition && photos.nutrition.blob };
     box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small">Produkt jest już w bazie Open Food Facts. Gdy potwierdzą go 2 kolejne osoby, dostaniesz złotą kartę i +50 pkt. Jeszcze 2 krótkie kroki, a od razu zobaczysz jego ocenę.</p><a class="small" href="#/odkrycia">Twoje odkrycia</a></div><div id="completeBox"></div>`;
-    A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, photos: shots, onDone: () => {
+    A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, photos: shots, storeDone: A.storeTagged(code), onDone: () => {
       const el = A.$('completeBox'); if (!el) return;
       el.innerHTML = `<div class="panel stack center" style="align-items:center">${A.mascot('wow', 70)}<b style="font-family:var(--f-display);font-size:1.15rem">Gotowe!</b><p class="small">Wszyscy zobaczą produkt w bazie zwykle w ciągu kilku minut. Ty możesz od razu sprawdzić jego ocenę.</p><button class="btn btn-gold btn-block" type="button" data-act="retry" data-code="${esc(code)}">Zobacz ocenę produktu</button><a class="small" href="#/postepy">Zobacz swoje odznaki</a></div>`;
     } });
@@ -504,7 +508,7 @@
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;
     const miss = missingParts(p, cur.snapshot), nmKnown = !miss.nut;
-    A.openComplete(el, { code: p.code, name: p.name, drink: !!p.drink, needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
+    A.openComplete(el, { code: p.code, name: p.name, drink: !!p.drink, storeDone: !!A.inMyStore(p) || A.storeTagged(p.code), needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
       const local = A.store.get('local', {})[p.code] || {};
       if (local.ingredients && !p.ingredients) p.ingredients = local.ingredients;
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
@@ -524,6 +528,7 @@
     const fd = new FormData();
     fd.append('code', rec.code); fd.append('product_name', rec.name); fd.append('lang', rec.lang); fd.append('app_uuid', rec.uuid);
     fd.append('app_version', A.CFG.appVersion || '1.0');
+    if (rec.store) fd.append('store', rec.store);
     Object.entries(rec.photos).forEach(([k, b]) => fd.append('photo_' + k, b, k + '.jpg'));
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
     try {
@@ -531,6 +536,7 @@
       let j = {}; try { j = await r.json(); } catch (e) { }
       if (r.ok && j.ok) {
         A.award('product_added', { code: rec.code });
+        if (rec.store) A.markStoreTagged(rec.code, rec.store);
         if (A.discSubmit) A.discSubmit(rec.code, rec.name, rec.checks || { barcode: 'none' });
         if (fromQueue) A.toast(`Wysłaliśmy zapisany produkt „${rec.name}”. Dziękujemy, odkrywco!`);
         return 'ok';
@@ -623,6 +629,29 @@
     A.award(right ? 'guess_right' : 'guess_wrong', { code: cur.prod.code });
     render();
     const b = document.querySelector('#scr-product .banner'); if (b) b.setAttribute('tabindex', '-1'), b.focus();
+  };
+  /* Sklep: pytamy tylko, gdy masz swoje sklepy, a baza nie zna przy tym produkcie żadnego z nich. Jedno stuknięcie. */
+  function storeAskOk(p) {
+    return A.myStores().length && A.CFG.offProxyUrl && p.code && p.source === 'off' && !cur.local && !A.inMyStore(p) && !A.storeTagged(p.code);
+  }
+  A.storeAction = async (act, el) => {
+    if (!cur || !cur.prod) return;
+    const p = cur.prod, box = A.$('storeBox');
+    if (act === 'store-skip') { A.markStoreTagged(p.code, ''); if (box) box.remove(); return; }
+    const k = el.dataset.k; if (!k || !box) return;
+    box.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    const fd = new FormData();
+    Object.entries({ code: p.code, store: k, lang: 'pl', app_uuid: A.appUuid(), app_version: A.CFG.appVersion || '1.0' }).forEach(([a, v]) => fd.append(a, v));
+    let j = {};
+    try { const r = await fetch(A.CFG.offProxyUrl.replace(/\/$/, '') + '/edit', { method: 'POST', body: fd }); j = await r.json().catch(() => ({})); } catch (e) { j = { error: navigator.onLine === false ? 'offline' : 'network' }; }
+    if (j.ok) {
+      A.markStoreTagged(p.code, k); p.stores = (p.stores || []).concat(A.storeLabel(k));
+      A.award('store_added', { code: p.code });
+      box.innerHTML = `<b>Dziękujemy!</b><p class="small">Dopisaliśmy „${esc(A.storeLabel(k))}” do produktu w Open Food Facts.</p>`;
+    } else {
+      box.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      const m = box.querySelector('.small.muted'); if (m) m.textContent = j.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.';
+    }
   };
   /* Stuknięcie w domownika: jego wyjaśnienie przy tym produkcie; zapamiętujemy go jako najważniejszą osobę. */
   A.famPick = id => { if (!cur || cur.missing) return; cur.famPick = id; A.setFocus(id); A.rerenderProduct(); };

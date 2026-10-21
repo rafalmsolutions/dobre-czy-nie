@@ -107,7 +107,8 @@
         if (s.st !== 'ok') return;
         min = Math.min(min, s.pm.pct);
       }
-      if (!best || min > best.min) best = { pr: x, min };
+      const my = A.inMyStore ? !!A.inMyStore(x) : false; // najpierw produkt z Twojego sklepu
+      if (!best || my > best.my || (my === best.my && min > best.min)) best = { pr: x, min, my };
     });
     return best;
   };
@@ -115,7 +116,7 @@
     if (!fv || !alt) return '';
     const n = fv.n, img = A.safeImg(alt.pr.image);
     return `<a class="fam-alt" href="#/p/${esc(alt.pr.code)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="fam-alt-ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>'}
-      <span class="grow"><small>${n === 2 ? 'PASUJE WAM OBOJGU' : 'PASUJE WSZYSTKIM'} W TEJ KATEGORII</small><b>${esc(alt.pr.name)}</b><span>${esc([alt.pr.brand, `${n} z ${n}` + (A.profile.noScores ? '' : ` · najsłabiej ${alt.min}%`)].filter(Boolean).join(' · '))}</span></span>
+      <span class="grow"><small>${n === 2 ? 'PASUJE WAM OBOJGU' : 'PASUJE WSZYSTKIM'} W TEJ KATEGORII</small><b>${esc(alt.pr.name)}</b><span>${esc([alt.pr.brand, alt.my ? 'jest w: ' + A.storeLabel(A.inMyStore(alt.pr)) : '', `${n} z ${n}` + (A.profile.noScores ? '' : ` · najsłabiej ${alt.min}%`)].filter(Boolean).join(' · '))}</span></span>
       <svg class="fam-alt-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>`;
   };
 })();

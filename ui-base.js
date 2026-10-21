@@ -45,7 +45,8 @@ const App = {};
   A.ALBUM_RULES = {
     card_common: { points: 2, oncePerBarcode: true }, card_rare: { points: 5, oncePerBarcode: true }, card_epic: { points: 15, oncePerBarcode: true },
     card_legend: { points: 50, oncePerBarcode: true }, card_holo: { points: 20, oncePerBarcode: true }, card_weekly: { points: 30, oncePerBarcode: true },
-    album_page: { points: 100, oncePerBarcode: true }
+    album_page: { points: 100, oncePerBarcode: true },
+    store_added: { points: 2, dailyCap: 20, oncePerBarcode: true } // sklep dopisany do produktu w Open Food Facts
   };
   A.cfg = A.store.get('cfg', { rules: {}, levels: {}, achievements: {}, challenges: {} });
   A.loadConfig = async () => {
@@ -496,6 +497,20 @@ const App = {};
     }).finally(() => { delete inflight[cat]; });
     return inflight[cat];
   };
+  /* Moje sklepy (Profil → Gdzie robisz zakupy): podnoszą wyżej produkty z tych sklepów i podpowiadają sklep przy dodawaniu. Bez nich nic się nie zmienia. */
+  A.myStores = () => { const v = A.store.get('d-stores', []); return (Array.isArray(v) ? v : []).filter(k => STORES.some(s => s.key === k)).slice(0, 6); };
+  A.setMyStores = keys => A.store.set('d-stores', keys.filter(k => STORES.some(s => s.key === k)).slice(0, 6));
+  A.storeLabel = key => (STORES.find(s => s.key === key) || {}).label || key;
+  // Produkty, przy których już dopisaliśmy sklep albo ktoś odpowiedział „Nie teraz” – nie pytamy drugi raz.
+  A.storeTagged = code => { const m = A.store.get('d-storetag', {}); return !!(m && Object.prototype.hasOwnProperty.call(m, code)); };
+  A.markStoreTagged = (code, key) => { const m = A.store.get('d-storetag', {}) || {}; m[code] = key || ''; const ks = Object.keys(m); if (ks.length > 500) delete m[ks[0]]; A.store.set('d-storetag', m); };
+  /* Wybór sklepu przy dodawaniu i uzupełnianiu: Twoje sklepy (pierwszy zaznaczony) + „inny”. Bez Twoich sklepów – nic. */
+  A.storePickHtml = (name, sel) => {
+    const my = A.myStores(); if (!my.length) return '';
+    const s = sel === undefined ? my[0] : sel;
+    return `<div class="store-pick" role="radiogroup" aria-label="Gdzie to kupujesz?"><span class="small" style="font-weight:800">Gdzie to kupujesz?</span>${my.map(k => `<label class="pchip"><input type="radio" name="${name}" value="${k}"${s === k ? ' checked' : ''}>${A.esc(A.storeLabel(k))}</label>`).join('')}<label class="pchip"><input type="radio" name="${name}" value=""${!s ? ' checked' : ''}>inny</label></div>`;
+  };
+  A.inMyStore = prod => A.myStores().find(k => A.storeOf(prod, k)) || null;
   A.storeOf = (prod, key) => (prod.stores || []).some(s => fold(s).replace(/\s+/g, '').includes(key));
 
   /* ---------- Historia ---------- */

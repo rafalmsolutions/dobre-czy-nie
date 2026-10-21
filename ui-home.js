@@ -173,8 +173,8 @@
   A.route('list', cat => {
     if (!SHOP_CATEGORIES.some(c => c.key === cat)) { A.go('#/'); return; }
     A.track('kategoria-' + cat.replace(/^en:/, ''));
-    const sel = A.store.get('shopStore', 'all');
-    renderList(cat, sel === 'all' || STORES.some(s => s.key === sel) ? sel : 'all');
+    const sel = A.store.get('shopStore', null);
+    renderList(cat, sel === 'all' || STORES.some(s => s.key === sel) ? sel : null); // null: wybierz sam (Twój sklep albo wszystkie)
   });
   const itemHtml = x => { const img = A.safeImg(x.pr.image); const st = x.pr.stores.slice(0, 2).map(A.storeName).join(', '); return `<div class="item" style="cursor:default"><a href="#/p/${esc(x.pr.code)}" class="row grow" style="text-decoration:none;color:inherit;min-width:0">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.pm.label].filter(Boolean).join(' · '))}</span>${st ? `<span class="t2">Sklep: ${esc(st)}</span>` : ''}</span><span class="pct ${A.pctClass(x.pm.level)} alt-score">${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-white iconbtn" type="button" data-act="shelf-add-code" data-code="${esc(x.pr.code)}" aria-label="Dodaj ${esc(x.pr.name)} na półkę"${Shelf.hasCode(A.shelves, x.pr.code) ? ' disabled' : ''}><svg><use href="#i-${Shelf.hasCode(A.shelves, x.pr.code) ? 'check' : 'plus'}"/></svg></button></div>`; };
   A.storeName = raw => { const f = fold(raw).replace(/\s+/g, ''); const k = STORES.find(x => f.includes(x.key)); return k ? k.label : String(raw).charAt(0).toUpperCase() + String(raw).slice(1); };
@@ -194,6 +194,7 @@
         .sort((a, b) => (b.pm.pct ?? -1) - (a.pm.pct ?? -1));
       const good = all.filter(x => x.pm.pct >= 50);
       const counts = {}; STORES.forEach(s => { counts[s.key] = good.filter(x => A.storeOf(x.pr, s.key)).length; });
+      if (storeKey == null) storeKey = A.myStores().find(k => counts[k] >= 3) || 'all';
       if (storeKey !== 'all' && !counts[storeKey]) storeKey = 'all';
       const shown = storeKey === 'all' ? good : good.filter(x => A.storeOf(x.pr, storeKey));
       const withStore = list.filter(pr => pr.stores.length).length;

@@ -14,6 +14,14 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Moje sklepy (21.10.2026, wersja 2.2.0)
+
+- Profil → „Gdzie robisz zakupy” (klucz `d-stores`, tylko w telefonie). Bez wybranych sklepów nic się nie zmienia.
+- Listy „Najlepsze”: domyślnie filtr na Twój sklep, jeśli ma co najmniej 3 dobre produkty; zamienniki i zamiennik dla rodziny najpierw z Twoich sklepów („jest w: Lidl”).
+- Sklep dopisywany do Open Food Facts bez osobnego kroku: przy dodawaniu produktu i przy uzupełnianiu składu/wartości (wybór w nagłówku, pierwszy z Twoich zaznaczony, „inny” = bez sklepu) oraz jednym stuknięciem po skanie „Kupujesz to w: …” (+2 pkt, tylko gdy baza nie zna przy produkcie żadnego z Twoich sklepów; „Nie teraz” = nie pytamy więcej, klucz `d-storetag`).
+- Pośrednik: pole `store` (lista znanych sieci w `STORE_NAMES`) zapisywane jako `add_stores` – dopisuje, nigdy nie usuwa innych sklepów.
+- Pobieranie danych ze stron sklepów: świadomie nie (prawo do baz danych, regulaminy sklepów, zasady Open Food Facts przyjmują tylko dane z opakowania).
+
 ## Poprawki po pierwszym teście (21.10.2026, wersja 2.1.0)
 
 - Po skanie od razu wynik dla Ciebie i rodziny: „Zgadnij” domyślnie wyłączone (włączenie w Profilu; jednorazowo wyłączone także u osób, które miały je zapisane, klucz `settings-v`).

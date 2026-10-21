@@ -23,6 +23,9 @@ const PHOTOS = { front: 'front', ingredients: 'ingredients', nutrition: 'nutriti
 const RATE = { perHour: 40, hits: new Map() }; // ochrona przed zalewem (w obrębie jednej instancji)
 const SEARCH = 'https://search.openfoodfacts.org/search';
 const CAT_TTL = 24 * 3600;
+/* Sklepy, które aplikacja może dopisać do produktu (pole „stores” w Open Food Facts, dopisywane przez add_stores – bez kasowania innych). */
+const STORE_NAMES = { biedronka: 'Biedronka', lidl: 'Lidl', aldi: 'Aldi', kaufland: 'Kaufland', auchan: 'Auchan', carrefour: 'Carrefour', netto: 'Netto', dino: 'Dino', stokrotka: 'Stokrotka', zabka: 'Żabka', lewiatan: 'Lewiatan', polomarket: 'Polomarket', intermarche: 'Intermarché', rossmann: 'Rossmann', hebe: 'Hebe', spar: 'Spar' };
+const storeLabel = v => STORE_NAMES[String(v || '').toLowerCase()] || '';
 const CAT_FIELDS = 'code,product_name,product_name_pl,brands,quantity,image_front_small_url,image_front_url,nutriscore_grade,nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,nutriments,categories_tags,categories,stores';
 const NUTRIMENTS = ['energy-kcal_100g', 'fat_100g', 'saturated-fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g', 'fiber_100g', 'carbohydrates_100g', 'alcohol_100g'];
 
@@ -109,8 +112,10 @@ export default {
       // Uzupełnienie składu i wartości odżywczych. Tylko brakujące pola: nie nadpisujemy danych, które ktoś już wpisał.
       const ingredients = cleanText(form.get('ingredients_text'), 5000);
       const nut = parseNutriments(form.get('nutriments'));
+      const store = storeLabel(form.get('store'));
       if (nut === 'bad') return reply(400, { ok: false, error: 'nutriments' });
-      if (!ingredients && !nut) return reply(400, { ok: false, error: 'empty' });
+      if (form.get('store') && !store) return reply(400, { ok: false, error: 'store' });
+      if (!ingredients && !nut && !store) return reply(400, { ok: false, error: 'empty' });
       if (ingredients && ingredients.length < 3) return reply(400, { ok: false, error: 'ingredients' });
       let current = null;
       try {
@@ -129,6 +134,7 @@ export default {
         Object.entries(nut).forEach(([k, v]) => { fields['nutriment_' + k] = String(v); fields['nutriment_' + k + '_unit'] = k === 'energy-kcal' ? 'kcal' : 'g'; });
         saved.push('nutrition');
       }
+      if (store) { fields.add_stores = store; saved.push('store'); } // dopisanie sklepu nie usuwa innych
       if (!saved.length) return reply(409, { ok: false, error: 'exists' });
       const fd = new FormData();
       Object.entries(Object.assign(fields, common)).forEach(([k, v]) => fd.append(k, v));
@@ -191,7 +197,8 @@ export default {
 
     // --- Zapis produktu ---
     const fields = new FormData();
-    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Dobre czy nie?' }, common)).forEach(([k, v]) => fields.append(k, v));
+    const store = storeLabel(form.get('store'));
+    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Dobre czy nie?' }, store ? { add_stores: store } : {}, common)).forEach(([k, v]) => fields.append(k, v));
     let saved, upstream = 0, verbose = '';
     try {
       const r = await fetch(`${base}/cgi/product_jqm2.pl`, { method: 'POST', body: fields, headers });

@@ -54,6 +54,7 @@
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
       case 'cel-ok': A.nextCelebration(); break;
       case 'rw-open': case 'rw-close': A.rewardAction(act); break;
+      case 'store-tag': case 'store-skip': A.storeAction(act, el); break;
       case 'reveal-flip': case 'reveal-close': case 'reveal-page': case 'reveal-album': A.revealAction(act, el); break;
       case 'share-page': A.sharePage(el.dataset.k); break;
       case 'gal-demo': A.galleryDemo(el); break;

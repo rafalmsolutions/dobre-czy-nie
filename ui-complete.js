@@ -81,12 +81,16 @@
   A.openComplete = (el, opts) => {
     if (!el || !proxy()) return;
     const st = Object.assign({ step: opts.needIngr ? 'ingr' : 'nut', saved: [], per: opts.drink ? 'ml' : 'g' }, opts);
+    // Sklep jedzie razem z pierwszym zapisem (bez osobnego kroku). Pomijamy, gdy produkt ma już Twój sklep albo sklep już dopisano.
+    st.store = !opts.storeDone && A.myStores().length ? A.myStores()[0] : null; st.storeAsk = !!st.store;
+    const storeField = () => st.store && st.storeAsk ? { store: st.store } : {};
+    const storeSaved = r => { if (st.storeAsk && (r.saved || []).includes('store')) { st.storeAsk = false; A.markStoreTagged(opts.code, st.store); A.award('store_added', { code: opts.code }); } };
     const perText = () => st.per === 'ml' ? 'na 100 ml' : 'na 100 g';
     const urls = {};
     ['ingredients', 'nutrition'].forEach(k => { if (st.photos && st.photos[k]) urls[k] = URL.createObjectURL(st.photos[k]); else if (st.images && A.safeImg(st.images[k])) urls[k] = A.safeImg(st.images[k]); });
     const total = (opts.needIngr ? 1 : 0) + (opts.needNut ? 1 : 0);
     const stepNo = () => (st.step === 'ingr' ? 1 : opts.needIngr ? 2 : 1);
-    const head = title => `<div class="sec-head"><b style="font-family:var(--f-display);font-size:1.15rem">${title}</b>${total > 1 ? `<span class="small muted">Krok ${stepNo()} z ${total}</span>` : ''}</div>`;
+    const head = title => `<div class="sec-head"><b style="font-family:var(--f-display);font-size:1.15rem">${title}</b>${total > 1 ? `<span class="small muted">Krok ${stepNo()} z ${total}</span>` : ''}</div>${st.storeAsk ? A.storePickHtml('cmpStore', st.store) : ''}`;
     const photo = k => urls[k] ? `<img src="${esc(urls[k])}" alt="Zdjęcie: ${k === 'ingredients' ? 'skład' : 'wartości odżywcze'}" class="complete-photo">` : '';
 
     function next() {
@@ -145,11 +149,11 @@
         if (text.length < 8) { msg.textContent = 'Wpisz skład z opakowania, przynajmniej kilka składników.'; A.$('cmpIngr').focus(); return; }
         if (A.ocrMatch(st.ocr, text) < 0.35) { msg.textContent = 'Wpisany skład bardzo różni się od tego, co widać na zdjęciu. Popraw tylko błędy odczytu i usuń to, co nie jest składem.'; A.$('cmpIngr').focus(); return; }
         b.disabled = true; b.textContent = 'Zapisuję…';
-        const r = await post('/edit', { code: opts.code, ingredients_text: text });
+        const r = await post('/edit', Object.assign({ code: opts.code, ingredients_text: text }, storeField()));
         if (r.ok || r.error === 'exists') {
-          saveLocal(opts.code, { ingredients: text.slice(0, 5000) });
-          if (r.ok) { st.saved.push('ingredients'); A.award('ingredients_added', { code: opts.code }); }
-          else A.toast('Ktoś już uzupełnił skład tego produktu. Dziękujemy!');
+          saveLocal(opts.code, { ingredients: text.slice(0, 5000) }); storeSaved(r);
+          if (r.ok && (r.saved || []).includes('ingredients')) { st.saved.push('ingredients'); A.award('ingredients_added', { code: opts.code }); }
+          else if (!(r.saved || []).includes('ingredients')) A.toast('Ktoś już uzupełnił skład tego produktu. Dziękujemy!');
           next();
         } else { b.disabled = false; b.textContent = 'Zapisz skład (+10 pkt)'; msg.textContent = r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.'; }
       }
@@ -159,17 +163,18 @@
         if (problem) { msg.textContent = problem; return; }
         const clean = Object.fromEntries(Object.entries(n).filter(([, v]) => v != null));
         b.disabled = true; b.textContent = 'Zapisuję…';
-        const r = await post('/edit', { code: opts.code, nutriments: JSON.stringify(clean) });
+        const r = await post('/edit', Object.assign({ code: opts.code, nutriments: JSON.stringify(clean) }, storeField()));
         if (r.ok || r.error === 'exists') {
           const nm = {}; Object.entries(clean).forEach(([k, v]) => { nm[NUT_KEY[k]] = v; });
-          saveLocal(opts.code, { nutriments: nm });
-          if (r.ok) { st.saved.push('nutrition'); A.award('nutrition_added', { code: opts.code }); }
-          else A.toast('Ktoś już uzupełnił wartości tego produktu. Dziękujemy!');
+          saveLocal(opts.code, { nutriments: nm }); storeSaved(r);
+          if (r.ok && (r.saved || []).includes('nutrition')) { st.saved.push('nutrition'); A.award('nutrition_added', { code: opts.code }); }
+          else if (!(r.saved || []).includes('nutrition')) A.toast('Ktoś już uzupełnił wartości tego produktu. Dziękujemy!');
           next();
         } else { b.disabled = false; b.textContent = 'Zapisz wartości (+10 pkt)'; msg.textContent = r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.'; }
       }
     };
     el.onchange = async e => {
+      if (e.target.name === 'cmpStore') { st.store = e.target.value || null; return; }
       const inp = e.target.closest('[data-complete-photo]'); if (!inp) return;
       const f = inp.files && inp.files[0]; inp.value = ''; if (!f) return;
       el.innerHTML = `<div class="panel stack">${head('Sprawdź skład')}<p class="small muted">Wysyłam zdjęcie i odczytuję skład…</p><div class="sk" style="height:90px"></div></div>`;

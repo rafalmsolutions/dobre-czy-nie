@@ -116,6 +116,7 @@
         <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p></fieldset>
       ${fp ? `<div class="card stack">${confirmDel ? `<b class="small">Usunąć profil „${esc(fp.name)}”?</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="fam-del-yes">Usuń</button><button class="btn btn-white btn-sm" type="button" data-act="fam-del-no">Zostaw</button></div>` : '<button class="linkbtn small" type="button" data-act="fam-del" style="align-self:flex-start">Usuń tę osobę</button>'}</div>
       <button class="btn btn-green btn-block" type="submit">Gotowe</button></form></div>` : ''}${fp ? '' : `
+      <fieldset class="card"><legend>Gdzie robisz zakupy</legend><p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam.</p><div class="pchips">${STORES.map(s => chip('mystore', s.key, s.label, A.myStores().includes(s.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
@@ -205,6 +206,7 @@
       return;
     }
     A.profile = cleanProfile(next); A.saveProfile();
+    A.setMyStores([...f.querySelectorAll('input[name="mystore"]:checked')].map(i => i.value));
     A.settings.guess = A.$('setGuess').checked;
     const soundWas = A.settings.sound !== false;
     A.settings.sound = A.$('setSound').checked;

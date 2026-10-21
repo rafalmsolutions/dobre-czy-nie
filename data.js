@@ -414,7 +414,12 @@ const STORES = [
   { key: 'dino', label: 'Dino' },
   { key: 'stokrotka', label: 'Stokrotka' },
   { key: 'zabka', label: 'Żabka' },
-  { key: 'lewiatan', label: 'Lewiatan' }
+  { key: 'lewiatan', label: 'Lewiatan' },
+  { key: 'polomarket', label: 'Polomarket' },
+  { key: 'intermarche', label: 'Intermarché' },
+  { key: 'spar', label: 'Spar' },
+  { key: 'rossmann', label: 'Rossmann' },
+  { key: 'hebe', label: 'Hebe' }
 ];
 /* Kategorie list „Najlepsze dla Ciebie”. Tagi kategorii Open Food Facts; liczby produktów w Polsce sprawdzone 19.10.2026
    (od ok. 60 do ok. 700 na kategorię). Grupy i ikony pokazuje ekran „Wszystkie kategorie”. */

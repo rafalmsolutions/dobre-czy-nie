@@ -60,6 +60,8 @@ r = await run(form({ photo_nutrition: null })); ok(r.j.error === 'photo_missing'
 r = await run(form({ photo_front: new Blob(['<script>alert(1)</script>'.repeat(10)], { type: 'image/jpeg' }) })); ok(r.j.error === 'photo_type', 'nie-obraz udający jpg');
 r = await run(form({ photo_front: jpg(7 * 1024 * 1024) })); ok(r.j.error === 'photo_size' || r.status === 413, 'za duże zdjęcie');
 r = await run(form({ lang: '"><x' })); ok(r.status === 200 && calls.find(c => c.url.includes('jqm2')).body.lang === 'pl', 'zły język → pl');
+r = await run(form({ store: 'zabka' })); ok(r.status === 200 && calls.find(c => c.url.includes('jqm2')).body.add_stores === 'Żabka', 'nowy produkt: sklep dopisany');
+r = await run(form()); ok(!('add_stores' in calls.find(c => c.url.includes('jqm2')).body), 'nowy produkt bez sklepu: bez pola');
 exists = true; r = await run(form()); ok(r.status === 409 && !calls.some(c => c.url.includes('jqm2')), 'istniejący produkt nie jest nadpisywany'); exists = false;
 saveFail = true; r = await run(form()); ok(r.status === 502 && !calls.some(c => c.url.includes('image_upload')), 'błąd zapisu: 502 bez wysyłki zdjęć'); saveFail = false;
 r = await run(form(), { env: Object.assign({}, env, { OFF_PASS: '' }) }); ok(r.status === 500 && r.j.error === 'not_configured', 'brak hasła w ustawieniach');
@@ -106,6 +108,12 @@ r = await run(ef({}), { path: '/edit' }); ok(r.status === 400 && r.j.error === '
 existing = { ingredients_text_pl: 'już jest', nutriments: { 'energy-kcal_100g': 50 } };
 r = await run(ef({ ingredients_text: 'nowy skład', nutriments: JSON.stringify({ 'energy-kcal': 63 }) }), { path: '/edit' });
 ok(r.status === 409 && !calls.some(c => c.url.includes('jqm2')), 'nie nadpisujemy istniejących danych');
+existing = { ingredients_text_pl: '', nutriments: {} };
+// Sklep: dopisywany (add_stores), nigdy nie zastępuje innych; tylko ze znanej listy
+existing = { ingredients_text_pl: 'już jest', nutriments: { 'energy-kcal_100g': 50 } };
+r = await run(ef({ store: 'lidl' }), { path: '/edit' }); save2 = calls.find(c => c.url.includes('jqm2'));
+ok(r.status === 200 && r.j.saved.join() === 'store' && save2.body.add_stores === 'Lidl' && !('stores' in save2.body), 'sklep dopisany przez add_stores');
+r = await run(ef({ store: 'Sklep <b>X</b>' }), { path: '/edit' }); ok(r.status === 400 && r.j.error === 'store', 'nieznany sklep odrzucony');
 existing = { ingredients_text_pl: '', nutriments: {} };
 r = await run(ef({ field: 'ingredients' }), { path: '/image' }); ok(r.status === 400, 'zdjęcie: brak pliku');
 const fi = ef({ field: 'ingredients' }); fi.append('photo', jpg(500), 'i.jpg');
