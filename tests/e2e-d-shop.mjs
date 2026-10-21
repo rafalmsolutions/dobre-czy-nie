@@ -25,7 +25,6 @@ ok(await page.evaluate(() => document.activeElement && document.activeElement.da
 
 await page.goto('http://localhost:8790/index.html#/p/' + C.nutella); await page.waitForTimeout(1600); await closeCel();
 let circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id));
-console.log('DBG', circ, await page.evaluate(() => [App.shopOff, document.querySelector('#scr-product .d-hero').outerHTML.slice(-900)]));
 ok(circ.length === 2 && !circ.includes('f2'), 'produkt: kółka tylko włączonych osób ' + circ.join(','));
 ok(/Nie liczymy: Ola/.test(await page.innerText('#famOff').catch(() => '')), 'produkt: informacja, kogo nie liczymy');
 
@@ -38,12 +37,10 @@ ok(/Przynajmniej jedna osoba/.test(await page.innerText('body')), 'komunikat: kt
 await page.goto('http://localhost:8790/index.html#/p/' + C.nutella); await page.waitForTimeout(1600); await closeCel();
 const ans = await page.innerText('#scr-product .fam-ans').catch(() => '');
 circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id));
-console.log('DBG', circ, await page.evaluate(() => [App.shopOff, document.querySelector('#scr-product .d-hero').outerHTML.slice(-900)]));
 ok(/Nie dla: Kuba/.test(ans) && circ.join() === 'f1', 'tylko Kuba: wynik dla Kuby, jedno kółko (' + ans.replace(/\n/g, ' | ') + ')');
 ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA: KUBA'), 'tylko Kuba: rachunek dla Kuby');
 ok(/Ciebie/.test(await page.innerText('#famOff')) && /Ola/.test(await page.innerText('#famOff')), 'nie liczymy: Ciebie i Oli');
 const pd = await page.$eval('#scr-product .d-plate', e => getComputedStyle(e).getPropertyValue('--pdeg').trim()).catch(() => '');
-const kp = await page.evaluate(() => { const f = App.familyView ? null : null; return null; });
 ok(/deg$/.test(pd), 'obręcz = wynik Kuby (' + pd + ')');
 
 // Tylko ja: zwykły widok jednej osoby, z informacją kogo nie liczymy.
@@ -56,7 +53,7 @@ ok(await page.locator('#scr-product .fam-circles .fam-c').count() === 3 && await
 
 // Lista: przy wyłączonej Oli wybór osób bez Oli, „Wszyscy wybrani”.
 await page.evaluate(() => App.setShopOn('f2', false));
-await page.goto('http://localhost:8790/index.html#/lista/en:hazelnut-spreads'); await page.waitForTimeout(2500);
+await page.goto('http://localhost:8790/index.html#/lista/en:sweet-spreads'); await page.waitForTimeout(2500);
 const who = await page.$$eval('#scr-list .list-who [data-act=list-who]', l => l.map(x => x.dataset.who + ':' + x.innerText.trim()));
 ok(who.length === 3 && !who.some(x => x.startsWith('f2')) && /^all:Wszyscy wybrani/.test(who[0]), 'lista: wybór bez wyłączonej osoby ' + who.join(' | '));
 ok(/Nie liczymy: Ola/.test(await page.innerText('#scr-list').catch(() => '')), 'lista: informacja, kogo nie liczymy');
