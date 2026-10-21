@@ -719,3 +719,7 @@ body.has-cmpbar .toast{bottom:calc(var(--nav-h) + 86px + env(safe-area-inset-bot
 @media (min-width:900px){.cmp-plate{width:150px}.cmp-name{font-size:17px}.cmp-row{font-size:14px}}
 #scr-search .list .item .thumb{width:52px;height:52px;border-radius:50%;object-fit:contain;padding:6px;background:#fff;box-shadow:0 0 0 4px #8A8C91;box-sizing:border-box}
 #scr-search .list .item .thumb.has-score{width:60px;height:60px;margin:-4px;padding:6px;border:4px solid transparent;box-shadow:none;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(var(--sc) var(--pdeg),#8A8C91 0) border-box;box-sizing:border-box}
+/* 100% nie mieści się w kwadracie wyniku – trzy cyfry mniejszą czcionką. */
+.d-badge b{white-space:nowrap}
+.d-verdict .d-badge b.p3{font-size:21px}
+@media (min-width:900px){#scr-product .d-verdict .d-badge b.p3{font-size:29px}}
