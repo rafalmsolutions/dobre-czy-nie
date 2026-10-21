@@ -14,6 +14,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Ekran ładowania i profile rodziny na ekranie głównym (21.10.2026, wersja 2.3.1)
+
+- Ekran ładowania (`#boot`) to warstwa na wierzchu; zostaje, aż animacja znaku się skończy (ok. 1,75 s od otwarcia), potem płynnie znika (`A.bootDone`).
+  Bez czekania: stuknięcie, „ogranicz animacje” w systemie i testy automatyczne (`navigator.webdriver`).
+- „Dla Ciebie”: z domownikami sekcja „Profile rodziny” pokazuje każdą osobę (Ty, domownicy) z tym, czego pilnuje i czego nie je, i „Zmień” otwierające profil tej osoby (`A.editProfileOf`). Bez domowników jak dotąd „Twój profil”.
+- Test: `tests/e2e-d-home.mjs`.
+
 ## Lupka: nazwa, znak i jeden kolor dopasowania (21.10.2026, wersja 2.3.0)
 
 - Nazwa aplikacji: **Lupka**, hasło „Przyjrzyj się. Wybierz lepiej.” (EN: „Look closer. Pick better.”). Repozytorium bez zmian; od 21.10.2026 adres https://lupka.app/.

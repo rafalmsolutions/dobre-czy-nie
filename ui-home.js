@@ -92,14 +92,14 @@
   // Czy osoba ustawiła coś, co zmienia ocenę (cel inny niż „Po prostu zdrowiej” albo ograniczenie)?
   A.hasProfile = () => A.profile.watch.length > 0 || ['allergens', 'diet', 'avoid', 'custom'].some(g => A.profile[g].length);
   A.pctClass = lvl => ({ great: 'great', good: 'good', poor: 'poor', bad: 'bad' }[lvl] || 'unknown');
-  A.profileChips = () => {
+  A.profileChips = (p = A.profile) => {
     const out = [];
-    A.profile.watch.forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(`<span class="chip d-chip">${A.dIcon(w.icon, 16)}${esc(w.label)}</span>`); });
-    ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => {
+    p.watch.forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(`<span class="chip d-chip">${A.dIcon(w.icon, 16)}${esc(w.label)}</span>`); });
+    ['allergens', 'diet', 'avoid'].forEach(g => p[g].forEach(k => {
       const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (!o) return;
       out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}${g === 'diet' ? esc(o.label) : 'Nie jem: ' + esc(o.label.toLowerCase())}</span>`);
     }));
-    A.profile.custom.forEach(c => out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}Nie jem: ${esc(c)}</span>`));
+    p.custom.forEach(c => out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}Nie jem: ${esc(c)}</span>`));
     return out;
   };
   A.route('home', () => {
@@ -125,8 +125,10 @@
         <h2 style="font-size:1.4rem;max-width:260px;position:relative">${esc(ch.title)}</h2>
         <div class="slots" aria-label="Postęp ${ch.have} z ${ch.target}">${slots}</div>
         <div class="chips" style="position:relative">${A.rewardChips(ch.reward)}</div></div>` : ''}
-      <section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Twój profil</h2><a href="#/profil">Zmień</a></div>
-        ${chips.length ? `<div class="chips">${chips.join('')}</div>` : `<div class="empty">Ustaw cel i to, czego unikasz, a od razu zobaczysz, czy produkt pasuje do Ciebie. <a href="#/start">Ustaw profil</a></div>`}</section>
+      ${A.family && A.family.length ? `<section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Profile rodziny</h2><a href="#/profil">Zmień</a></div>
+        <div class="card stack fam-home">${A.familyRows().map(r => { const c = A.profileChips(r.p); return `<div class="fam-home-row"><div class="fam-home-h"><b>${esc(r.id === 'me' ? (r.name === 'Ja' ? 'Ty' : r.name + ' (Ty)') : r.name)}</b><button type="button" class="linkbtn small" data-act="prof-of" data-id="${esc(r.id)}">Zmień</button></div>${c.length ? `<div class="chips">${c.join('')}</div>` : '<span class="small muted">Nic nie zaznaczono: ogólna ocena składu.</span>'}</div>`; }).join('')}</div></section>`
+      : `<section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Twój profil</h2><a href="#/profil">Zmień</a></div>
+        ${chips.length ? `<div class="chips">${chips.join('')}</div>` : `<div class="empty">Ustaw cel i to, czego unikasz, a od razu zobaczysz, czy produkt pasuje do Ciebie. <a href="#/start">Ustaw profil</a></div>`}</section>`}
       <section class="stack" aria-labelledby="hBest"><div class="sec-head"><h2 id="hBest" style="font-size:1.25rem">${A.hasProfile() ? 'Najlepsze dla Ciebie' : 'Najlepsze w sklepie'}</h2><a href="#/najlepsze">Wszystkie</a></div>
         <div class="tiles">${HOME_TILES.map(t => `<a class="tile" href="#/lista/${t.cat}" ><img class="d-tile-img" src="${A.catImg(t.cat)}" alt="" width="96" height="96"><b>${esc(t.label)}</b><span>${A.hasProfile() ? 'dobre dla Ciebie' : 'z najlepszą oceną'}</span></a>`).join('')}<a class="tile" href="#/najlepsze"><span class="d-tile-stack" aria-hidden="true"><img src="img/cat/cheeses.webp" alt=""><img src="img/cat/pastas.webp" alt=""><img src="img/cat/nuts.webp" alt=""></span><b>Wszystkie kategorie</b><span>${SHOP_CATEGORIES.length} kategorii</span></a></div></section>
       ${swap ? `<section class="stack" aria-labelledby="hSwap"><h2 id="hSwap" style="font-size:1.25rem">Zamień na lepsze</h2>

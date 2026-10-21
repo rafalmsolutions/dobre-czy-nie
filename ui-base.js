@@ -340,6 +340,17 @@ const App = {};
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };
 
   /* ---------- Nawigacja ---------- */
+  /* Ekran ładowania z animowanym znakiem: zostaje, aż animacja się skończy (ok. 1,7 s od otwarcia), potem znika.
+     Bez czekania: przy „ogranicz animacje”, w testach automatycznych i po stuknięciu. */
+  A.bootDone = boot => {
+    boot.dataset.hold = '1';
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const gone = () => { if (!boot.isConnected) return; boot.classList.add('out'); setTimeout(() => boot.remove(), 260); };
+    const left = 1750 - (window.performance ? performance.now() : 0);
+    if (reduce || navigator.webdriver || left <= 0) { boot.remove(); return; }
+    boot.addEventListener('click', gone, { once: true });
+    setTimeout(gone, left);
+  };
   A.routes = {};
   A.route = (name, fn) => { A.routes[name] = fn; };
   A.go = hash => { if (location.hash === hash) A.render(); else location.hash = hash; };
@@ -364,7 +375,7 @@ const App = {};
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
-    const boot = A.$('boot'); if (boot) boot.remove();
+    const boot = A.$('boot'); if (boot && !boot.dataset.hold) A.bootDone(boot);
     if (changed) A.trackView(screen);
     if (A.routes[screen]) A.routes[screen](arg);
     if (changed) {

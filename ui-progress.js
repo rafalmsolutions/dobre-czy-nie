@@ -77,6 +77,7 @@
   /* ---------- Profil i ustawienia ---------- */
   let draftCustom = [], confirmWipe = false, editing = 'me', confirmDel = false;
   const person = () => editing === 'me' ? null : A.family.find(f => f.id === editing) || null;
+  A.editProfileOf = id => { editing = id === 'me' || A.family.some(f => f.id === id) ? id : 'me'; A.go('#/profil'); };
   A.route('profile', () => { if (!person()) editing = 'me'; draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile(); });
   function familyTabs() {
     const tabs = [{ id: 'me', name: A.userName() || 'Ja' }].concat(A.family);

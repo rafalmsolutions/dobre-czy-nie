@@ -614,3 +614,12 @@ button.pchip{font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
 /* Małe talerze na liście „Ostatnio sprawdzone”: obręcz = wynik, jak duży talerz. */
 #scr-home .list .item .thumb.has-score{width:78px;height:78px;margin:-5px;border:5px solid transparent;
   background:linear-gradient(#fff,#fff) padding-box,conic-gradient(var(--sc) var(--pdeg),#8A8C91 0) border-box;box-shadow:0 8px 14px rgba(0,0,0,.16)}
+/* Ekran ładowania jako warstwa na wierzchu, znika płynnie po animacji. */
+.boot{position:fixed;inset:0;z-index:200;min-height:0;background:var(--bg);transition:opacity .25s ease}
+.boot.out{opacity:0;pointer-events:none}
+/* „Profile rodziny” na ekranie głównym: każda osoba z tym, czego pilnuje i czego nie je. */
+.fam-home{gap:14px}
+.fam-home-row{display:flex;flex-direction:column;gap:8px}
+.fam-home-row+.fam-home-row{padding-top:12px;border-top:1px solid var(--line)}
+.fam-home-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fam-home-h b{font-family:var(--f-display);font-size:16px}
