@@ -7,7 +7,7 @@ compatibility_date = "2026-06-01"
 # Prawdziwa baza Open Food Facts. Serwer testowy (https://world.openfoodfacts.net) wymaga dodatkowo OFF_BASIC = "off:off".
 OFF_BASE = "https://world.openfoodfacts.org"
 # Adres(y) Twojej aplikacji, oddzielone przecinkami. Bez tego pośrednik odrzuci każde zapytanie.
-ALLOWED_ORIGINS = "https://rafalmsolutions.github.io"
+ALLOWED_ORIGINS = "https://lupka.app,https://www.lupka.app,https://rafalmsolutions.github.io"
 CONTACT_EMAIL = "rafalmsolutions@gmail.com"
 
 # OFF_USER i OFF_PASS NIE wpisuj tutaj. Dodaj je jako sekrety:

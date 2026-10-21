@@ -49,7 +49,7 @@ Potrzebujesz komputera z Node.js (https://nodejs.org, wersja LTS).
    npx wrangler login
    ```
    Otworzy się przeglądarka. Zaloguj się do Cloudflare i zezwól.
-4. W pliku `wrangler.toml` w `ALLOWED_ORIGINS` jest już adres aplikacji: `https://rafalmsolutions.github.io`. Zmień go tylko, jeśli przeniesiesz aplikację gdzie indziej.
+4. W pliku `wrangler.toml` w `ALLOWED_ORIGINS` są adresy aplikacji: `https://lupka.app` (docelowy, od 21.10.2026), `https://www.lupka.app` i dawny `https://rafalmsolutions.github.io` (na czas przeprowadzki).
 5. Dodaj sekrety (wpisujesz je w terminalu, nigdzie nie są zapisywane w plikach):
    ```
    npx wrangler secret put OFF_USER
