@@ -126,14 +126,19 @@
     const lvl = (pm && pm.pct != null && pm.level) || 'unknown';
     const nm = p.name || 'Produkt bez nazwy';
     // Zdjęcie produktu z bazy ma pierwszeństwo; miska kategorii jest wtedy małym znaczkiem w rogu z nazwą kategorii.
-    const main = img ? `<button class="prod-img-btn d-plate" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
+    // Obręcz talerza pokazuje wynik (jak znak Lupki). Z domownikami: najsłabszy wynik w rodzinie; bez liczb w profilu: sama szara obręcz.
+    const fam = pm && cur.fam ? cur.fam : null;
+    const known = fam ? fam.rows.filter(r => r.st !== 'unk' && r.pm && r.pm.pct != null) : [];
+    const ringPct = A.profile.noScores || !pm ? null : fam ? (fam.tone === 'unk' || !known.length ? null : Math.min(...known.map(r => r.pm.pct))) : pm.pct;
+    const ring = ringPct != null ? ` has-score" style="--sc:${A.scoreColor(ringPct)};--pdeg:${Math.max(4, Math.round(ringPct * 3.6))}deg` : '';
+    const main = img ? `<button class="prod-img-btn d-plate${ring}" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
-      : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
+      : `<span class="d-plate d-plate-art${ring}">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
     const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
     // Domownicy: obok zdjęcia odpowiedź dla całej rodziny, pod spodem kółka osób (najpierw te z problemem).
     const fv = pm && cur.fam ? cur.fam : null;
-    const verdict = fv ? A.familyAnswerHtml(fv) : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
-    return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"><span class="d-arc" aria-hidden="true"></span>
+    const verdict = fv ? A.familyAnswerHtml(fv) : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
+    return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
       <div class="d-hside">${chip}${verdict}</div>${fv ? A.familyCirclesHtml(fv) : ''}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
@@ -350,7 +355,7 @@
       if (alts.length) {
         const best = alts[0];
         A.setHistoryAlt(mine.prod.code, { code: best.pr.code, name: best.pr.name, image: A.safeImg(best.pr.image), pct: best.pm.pct, level: best.pm.level, label: best.pm.label });
-        out.push(`<h3 style="font-size:1rem">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score">${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik na półkę (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
+        out.push(`<h3 style="font-size:1rem">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik na półkę (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
       } else if (cmp.enough && mine.an.score != null) out.push(`<p class="small muted">${cmp.betterThan >= 70 ? 'To jeden z lepszych wyborów w tej kategorii.' : 'Nie znaleźliśmy wyraźnie lepszego zamiennika.'}</p>`);
       body().innerHTML = out.join('') || '<p class="small muted">Nie mamy jeszcze podobnych produktów do porównania.</p>';
     } catch (e) {
@@ -429,7 +434,7 @@
           <button class="btn btn-grey btn-block" type="submit" id="addSend">Jeszcze 3 zdjęcia do nagrody</button>
           <p class="small muted center">Zdjęcia trafią do otwartej bazy Open Food Facts i będą dostępne dla wszystkich na licencji CC BY-SA. Fotografuj samo opakowanie, bez osób.</p></form>`);
       } else {
-        parts.push(`<div class="card stack"><b style="font-family:var(--f-display)">Dodaj produkt w 2 minuty</b><ol class="small" style="margin:0;padding-left:20px;display:grid;gap:4px"><li>Zainstaluj darmową aplikację Open Food Facts. To otwarta baza, z której korzysta „Dobre czy nie?”.</li><li>Zeskanuj w niej ten sam kod: <span class="mono">${esc(code)}</span>.</li><li>Zrób 3 zdjęcia: przód, skład i tabelę wartości odżywczych.</li></ol>
+        parts.push(`<div class="card stack"><b style="font-family:var(--f-display)">Dodaj produkt w 2 minuty</b><ol class="small" style="margin:0;padding-left:20px;display:grid;gap:4px"><li>Zainstaluj darmową aplikację Open Food Facts. To otwarta baza, z której korzysta Lupka.</li><li>Zeskanuj w niej ten sam kod: <span class="mono">${esc(code)}</span>.</li><li>Zrób 3 zdjęcia: przód, skład i tabelę wartości odżywczych.</li></ol>
           <div class="actions"><a class="btn btn-green btn-sm" href="https://play.google.com/store/apps/details?id=org.openfoodfacts.scanner" target="_blank" rel="noopener">Android: Open Food Facts</a><a class="btn btn-white btn-sm" href="https://world.openfoodfacts.org/open-food-facts-mobile-app" target="_blank" rel="noopener">iPhone i inne</a></div>
           <p class="small muted">Dodawanie prosto z tej aplikacji, z nagrodą odkrywcy, uruchomimy wkrótce.</p></div>`);
       }
@@ -666,8 +671,8 @@
   A.shareProduct = async () => {
     if (!cur || !cur.prod || cur.missing) return;
     const url = location.origin + location.pathname + '#/p/' + cur.prod.code;
-    const text = A.profile.noScores ? `${cur.prod.name || 'Produkt'} w aplikacji Dobre czy nie?` : `${cur.prod.name || 'Produkt'}: ${grade(cur.an.score).label.toLowerCase()} (${cur.an.score ?? '–'}/100) w aplikacji Dobre czy nie?`;
-    if (navigator.share) { try { await navigator.share({ title: 'Dobre czy nie?', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    const text = A.profile.noScores ? `${cur.prod.name || 'Produkt'} w aplikacji Lupka` : `${cur.prod.name || 'Produkt'}: ${grade(cur.an.score).label.toLowerCase()} (${cur.an.score ?? '–'}/100) w aplikacji Dobre czy nie?`;
+    if (navigator.share) { try { await navigator.share({ title: 'Lupka', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
     try { await navigator.clipboard.writeText(text + ' ' + url); A.toast('Skopiowano link do wyniku.'); } catch (e) { A.toast(url); }
   };
   A.onExplain = d => {
@@ -692,7 +697,7 @@
     A.openDlg('reportDlg');
   };
   A.reportCurrent = () => { if (cur && cur.prod && !cur.missing) A.openReport({ code: cur.prod.code, name: cur.prod.name, source: cur.prod.source, local: cur.prod.source === 'local' }); };
-  const reportText = r => `Zgłoszenie z aplikacji Dobre czy nie?\nKod: ${r.code}\nProdukt: ${r.name || '-'}\nProblem: ${r.reasonLabel}\nOpis: ${r.comment || '-'}\nE-mail do odpowiedzi: ${r.email || '-'}\nWersja metody: ${r.method}, aplikacja: ${r.app}\nData: ${r.at}`;
+  const reportText = r => `Zgłoszenie z aplikacji Lupka\nKod: ${r.code}\nProdukt: ${r.name || '-'}\nProblem: ${r.reasonLabel}\nOpis: ${r.comment || '-'}\nE-mail do odpowiedzi: ${r.email || '-'}\nWersja metody: ${r.method}, aplikacja: ${r.app}\nData: ${r.at}`;
   async function postReport(r) {
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 10000);
     try { const res = await fetch(A.CFG.reportEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(r), signal: ctrl.signal }); return res.ok; }

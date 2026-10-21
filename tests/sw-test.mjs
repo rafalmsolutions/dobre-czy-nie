@@ -17,7 +17,7 @@ await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(80
 // 2. Główny adres: nowa aplikacja (album, domownicy, odkrywcy).
 await p.goto(B); await p.waitForTimeout(1500);
 ok(await p.evaluate(() => typeof App !== 'undefined' && typeof App.albumAdd === 'function' && typeof App.familyView === 'function' && typeof App.discSubmit === 'function'), 'główny adres: nowa aplikacja');
-ok(await p.evaluate(() => document.title) === 'Dobre czy nie?', 'tytuł bez „wersja D”');
+ok(await p.evaluate(() => document.title) === 'Lupka', 'tytuł: Lupka');
 await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(1500);
 const regs = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname).sort());
 ok(regs.includes('/') && regs.includes('/archiwum/'), 'dwa service workery: ' + regs.join(', '));

@@ -581,3 +581,36 @@ body.no-nav .rwbar{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .store-pick .pchip{min-height:36px;padding:6px 12px;font-size:13px;font-weight:700}
 .store-ask .pchips{align-items:center}
 button.pchip{font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
+
+/* ---------- Lupka (od 2.3.0): znak, ekran ładowania, talerz z wynikiem ---------- */
+.d-word{display:inline-flex;align-items:center;gap:7px;font-size:21px;letter-spacing:-.025em}
+.d-word svg{flex:0 0 auto}
+.boot{gap:12px}
+.boot b{font-family:var(--f-display);font-weight:800;font-size:2.6rem;line-height:1;letter-spacing:-.025em;margin-top:6px}
+.boot span{font-weight:700;color:var(--ink)}
+@media (prefers-reduced-motion: no-preference){
+  .boot .lp-ring{transform-origin:42px 42px;animation:lpSpin 1.3s cubic-bezier(.2,.8,.2,1) both}
+  .boot .lp-seg{animation:lpDraw .55s calc(.15s + var(--i) * .22s) ease-out both}
+  .boot .lp-handle{transform-origin:66px 66px;animation:lpHandle .5s 1.05s cubic-bezier(.3,1.6,.5,1) both}
+  .boot b,.boot span{animation:lpUp 1.7s ease-out both}
+}
+@keyframes lpSpin{from{transform:rotate(-150deg)}}
+@keyframes lpDraw{from{stroke-dasharray:0 100;opacity:0}1%{opacity:1}}
+@keyframes lpHandle{from{transform:scale(0);opacity:0}}
+@keyframes lpUp{0%,45%{opacity:0;transform:translateY(14px)}}
+/* Obręcz talerza = wynik: pełny łuk od góry do wyniku; kolor płynnie od czerwonego (0%) przez żółty do zielonego (100%), reszta to szare obramowanie talerza. */
+@property --pdeg{syntax:'<angle>';inherits:false;initial-value:0deg}
+.d-hero .d-plate.has-score{box-sizing:content-box;border:12px solid transparent;margin:-6px -12px -6px -6px;
+  background:linear-gradient(#fff,#fff) padding-box,conic-gradient(var(--sc) var(--pdeg),#8A8C91 0) border-box;box-shadow:0 16px 24px rgba(0,0,0,.18)}
+@media (min-width:960px){#scr-product .d-hero .d-plate.has-score{margin:-2px}}
+@media (prefers-reduced-motion: no-preference){.d-hero .d-plate.has-score{animation:lpPlate .9s cubic-bezier(.3,.7,.3,1) both}}
+@keyframes lpPlate{from{--pdeg:0deg}}
+/* Jeden kolor dopasowania w całej aplikacji (A.scoreColor): kwadrat z wynikiem, obręcz talerza, procenty na listach i półkach,
+   pierścienie domowników; łuk w tle to ten sam kolor rozjaśniony, napis pod wynikiem – przyciemniony, żeby był czytelny. */
+.d-hero[style*="--sc"] .d-arc{border-color:color-mix(in srgb,var(--sc) 32%,#E8E9EB)}
+.d-hero[style*="--sc"] .mlabel{color:color-mix(in srgb,var(--sc) 62%,#2B2C30)}
+.d-hero[style*="--sc"] .fam-ans{background:color-mix(in srgb,var(--sc) 22%,#FFFFFF);color:color-mix(in srgb,var(--sc) 35%,#2B2C30)}
+.pctl-bar{background:linear-gradient(90deg,#E5533D,#EE8139 25%,#F2B43C 50%,#D9C13A 62%,#A3C23F 75%,#62B14B 88%,#2E9E55)}
+/* Małe talerze na liście „Ostatnio sprawdzone”: obręcz = wynik, jak duży talerz. */
+#scr-home .list .item .thumb.has-score{width:78px;height:78px;margin:-5px;border:5px solid transparent;
+  background:linear-gradient(#fff,#fff) padding-box,conic-gradient(var(--sc) var(--pdeg),#8A8C91 0) border-box;box-shadow:0 8px 14px rgba(0,0,0,.16)}

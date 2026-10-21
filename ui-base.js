@@ -106,7 +106,7 @@ const App = {};
     const v = (A.CFG.appVersion || '2.0'), scr = `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`;
     const ua = /Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'komputer';
     const body = `Co było przydatne:\n\n\nCo przeszkadzało albo nie działało:\n\n\nCzego brakuje:\n\n\n---\nWersja ${v}, ${ua}, ekran ${scr}`;
-    return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Dobre czy nie? ' + v)}&body=${encodeURIComponent(body)}`;
+    return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Lupka ' + v)}&body=${encodeURIComponent(body)}`;
   };
   A.trackView = screen => hit('/d/' + screen, false);
   A.trackWeek = () => {
@@ -322,6 +322,19 @@ const App = {};
     caffeine: 'M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M9 3c0 1.5 1 1.5 1 3M12.5 3c0 1.5 1 1.5 1 3',
     ban: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM5.6 5.6l12.8 12.8'
   };
+  /* Kolor wyniku 0–100 (obręcz talerza, jak znak Lupki): czerwony → żółty → zielony, przystanki dobrane tak, żeby środek nie był oliwkowy. */
+  const SCORE_STOPS = [[0, '#E5533D'], [25, '#EE8139'], [50, '#F2B43C'], [62, '#D9C13A'], [75, '#A3C23F'], [88, '#62B14B'], [100, '#2E9E55']];
+  A.scoreColor = pct => {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0)), hx = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+    for (let i = 1; i < SCORE_STOPS.length; i++) if (p <= SCORE_STOPS[i][0]) {
+      const [p0, c0] = SCORE_STOPS[i - 1], [p1, c1] = SCORE_STOPS[i], t = (p - p0) / (p1 - p0);
+      return '#' + hx(c0).map((x, j) => Math.round(x + (hx(c1)[j] - x) * t).toString(16).padStart(2, '0')).join('');
+    }
+    return SCORE_STOPS[SCORE_STOPS.length - 1][1];
+  };
+  A.pctText = pct => pct == null || pct === '' ? '' : `color:color-mix(in srgb,${A.scoreColor(pct)} 62%,#2B2C30)`;
+  A.ringStyle = pct => pct == null || pct === '' ? '' : ` has-score" style="--sc:${A.scoreColor(pct)};--pdeg:${Math.max(4, Math.round(pct * 3.6))}deg`;
+  A.pctStyle = pct => pct == null || pct === '' ? '' : ` style="background:${A.scoreColor(pct)}"`;
   A.dIcon = (name, size) => D_ICONS[name] ? `<svg class="d-ic" width="${size || 22}" height="${size || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${D_ICONS[name]}"/></svg>` : '';
   // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
   A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };

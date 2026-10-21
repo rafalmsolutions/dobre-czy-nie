@@ -1,4 +1,4 @@
-# Dobre czy nie? – sprawdź skład w 2 sekundy
+# Lupka (dawniej „Dobre czy nie?”) – przyjrzyj się, wybierz lepiej
 
 Aplikacja webowa (PWA): skanujesz kod kreskowy i od razu widzisz, czy produkt pasuje do Ciebie i Twojej rodziny.
 Od 21.10.2026 główną aplikacją jest dawna wersja D „Wystawa”: jasnoszare tło, produkt na okrągłym „talerzu”, nazwa w dwóch grubościach,
@@ -13,6 +13,17 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Statystyki GoatCounter: ekrany nowej aplikacji mają ścieżki `/d/…`, zdarzenia przedrostek `d-` (ciągłość z testów wersji D); archiwum `/archiwum/…` i `arch-`.
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
+
+## Lupka: nazwa, znak i jeden kolor dopasowania (21.10.2026, wersja 2.3.0)
+
+- Nazwa aplikacji: **Lupka**, hasło „Przyjrzyj się. Wybierz lepiej.” (EN: „Look closer. Pick better.”). Adres i repozytorium bez zmian; docelowa domena: lupka.app.
+  Tytuł, manifest, polityka prywatności, teksty udostępniania i zgłoszeń, lista zakupów. Klucze pamięci (`dcn-…`) bez zmian, więc dane użytkowników zostają.
+- Znak F2: lupa z obręczą z trzech łuków z przerwami (zielony, czerwony, żółty), napis Montserrat 800. Symbol `#i-lupka` w `index.html` (górny pasek),
+  ikony `icon.svg`, `icon-180/192/512.png`, `icon-maskable-512.png`. Ekran ładowania: łuki się rysują i obracają, wyskakuje rączka, potem napis i hasło (bez ruchu przy „ogranicz animacje”).
+- Wynik na talerzu: obręcz talerza (12 px) wypełnia się od góry do procentu, reszta to szare obramowanie; przy domownikach najsłabszy wynik w rodzinie; przy „bez liczb” sama szara obręcz.
+- Jeden kolor dopasowania w całej aplikacji: `A.scoreColor(pct)` (czerwony 0% → żółty 50% → zielony 100%, przystanki dobrane tak, żeby środek nie był oliwkowy).
+  Używają go: obręcz talerza, kwadrat z wynikiem, procenty na listach, półkach i w zamiennikach, małe talerze w „Ostatnio sprawdzone” (obręcz = wynik), pierścienie domowników,
+  łuk w tle (rozjaśniony) i napisy pod wynikiem (przyciemnione, żeby były czytelne). Pomocnicze: `A.pctStyle`, `A.pctText`, `A.ringStyle`.
 
 ## Moje sklepy (21.10.2026, wersja 2.2.0)
 

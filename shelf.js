@@ -156,7 +156,7 @@ const Shelf = (() => {
       lines.push('');
     });
     if (lines.length === 2) lines.push('Wszystko kupione.');
-    lines.push('Lista z aplikacji „Dobre czy nie?”');
+    lines.push('Lista z aplikacji Lupka');
     return lines.join('\n').trim();
   }
   function breakfastGood(st) {

@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#E8E9EB">
-<meta name="description" content="Dobre czy nie? Sprawdź skład w 2 sekundy: czy produkt pasuje do Ciebie i Twojej rodziny.">
-<title>Dobre czy nie?</title>
+<meta name="description" content="Lupka. Przyjrzyj się, wybierz lepiej: zeskanuj produkt i w 2 sekundy zobacz, czy pasuje do Ciebie i Twojej rodziny.">
+<title>Lupka</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
@@ -22,6 +22,7 @@
 </head>
 <body class="no-nav theme-d">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-lupka" viewBox="0 0 100 100"><path d="M68 68L86 86" stroke="#2B2C30" stroke-width="12" stroke-linecap="round"/><circle cx="42" cy="42" r="22" fill="#FFFFFF"/><path d="M50.65 15.37A28 28 0 0 1 37.14 69.57" fill="none" stroke="#2E9E55" stroke-width="12" stroke-linecap="round"/><path d="M21.86 61.45A28 28 0 0 1 14.61 36.18" fill="none" stroke="#E5533D" stroke-width="12" stroke-linecap="round"/><path d="M22.55 21.86A28 28 0 0 1 32.42 15.69" fill="none" stroke="#F2B43C" stroke-width="12" stroke-linecap="round"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-torch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l-2 6v12a2 2 0 0 1-2 2 2 2 0 0 1-2-2V8z"/><path d="M12 12v2"/></symbol>
@@ -41,7 +42,7 @@
 </svg>
 
 <main id="app">
-  <div class="boot" id="boot" aria-hidden="true"><img src="icon.svg" width="72" height="72" alt=""><b><span class="w-light">dobre </span>czy nie?</b><span>Sprawdź skład w 2 sekundy</span></div>
+  <div class="boot" id="boot" aria-hidden="true"><svg class="lp-mark" width="110" height="110" viewBox="0 0 100 100"><path class="lp-handle" d="M68 68L86 86" stroke="#2B2C30" stroke-width="12" stroke-linecap="round"/><circle cx="42" cy="42" r="22" fill="#FFFFFF"/><g class="lp-ring"><path class="lp-seg" style="--i:0" pathLength="100" stroke-dasharray="100 100" d="M50.65 15.37A28 28 0 0 1 37.14 69.57" fill="none" stroke="#2E9E55" stroke-width="12" stroke-linecap="round"/><path class="lp-seg" style="--i:1" pathLength="100" stroke-dasharray="100 100" d="M21.86 61.45A28 28 0 0 1 14.61 36.18" fill="none" stroke="#E5533D" stroke-width="12" stroke-linecap="round"/><path class="lp-seg" style="--i:2" pathLength="100" stroke-dasharray="100 100" d="M22.55 21.86A28 28 0 0 1 32.42 15.69" fill="none" stroke="#F2B43C" stroke-width="12" stroke-linecap="round"/></g></svg><b>lupka</b><span>Przyjrzyj się. Wybierz lepiej.</span></div>
   <section class="screen" id="scr-start" aria-labelledby="startTitle"></section>
   <section class="screen" id="scr-home" aria-label="Dla Ciebie"></section>
   <section class="screen" id="scr-product" aria-label="Produkt"></section>

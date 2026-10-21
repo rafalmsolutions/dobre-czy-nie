@@ -179,9 +179,9 @@
   };
   A.sharePage = key => {
     const page = A.pageInfo(key) || { label: '' };
-    const text = `Ukończyłem stronę „${page.label}” w albumie Dobre czy nie? Każde miejsce to inny produkt do znalezienia.`;
+    const text = `Ukończyłem stronę „${page.label}” w albumie Lupki. Każde miejsce to inny produkt do znalezienia.`;
     const url = location.origin + location.pathname;
-    if (navigator.share) navigator.share({ title: 'Dobre czy nie?', text, url }).catch(() => { });
+    if (navigator.share) navigator.share({ title: 'Lupka', text, url }).catch(() => { });
     else if (navigator.clipboard) navigator.clipboard.writeText(text + ' ' + url).then(() => A.toast('Skopiowano. Wklej, gdzie chcesz.'), () => { });
   };
   /* Skan bez nowego miejsca albo niezgodny z profilem: krótka informacja zamiast okna. */

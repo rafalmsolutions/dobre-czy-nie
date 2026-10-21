@@ -12,7 +12,7 @@
       const who = i.fam.t === 'ok' ? 'wszyscy' : i.fam.h.replace(/^[^:]*:\s*/, '');
       return `<span class="famchip" data-t="${esc(i.fam.t)}" title="${esc(i.fam.h)}" aria-label="${esc(i.fam.h)}"><b aria-hidden="true">${FAM_IC[i.fam.t]}</b><span aria-hidden="true">${esc(who)}</span></span>`;
     }
-    return i.pct != null ? `<span class="pct ${i.pct >= 75 ? 'great' : i.pct >= 50 ? 'good' : i.pct >= 25 ? 'poor' : 'bad'} alt-score" aria-label="Dopasowanie dla Ciebie ${i.pct}%">${i.pct}%</span>` : '';
+    return i.pct != null ? `<span class="pct ${i.pct >= 75 ? 'great' : i.pct >= 50 ? 'good' : i.pct >= 25 ? 'poor' : 'bad'} alt-score"${A.pctStyle(i.pct)} aria-label="Dopasowanie dla Ciebie ${i.pct}%">${i.pct}%</span>` : '';
   }
   function itemHtml(i) {
     const q = Shelf.fmtQty(i);
