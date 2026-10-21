@@ -57,7 +57,7 @@
       case 'share-page': A.sharePage(el.dataset.k); break;
       case 'gal-demo': A.galleryDemo(el); break;
       case 'disc-vote': A.discVote(el); break;
-      case 'fam-focus': A.setFocus(el.dataset.id); if (A.rerenderProduct) A.rerenderProduct(); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
+      case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;

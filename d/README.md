@@ -62,7 +62,11 @@ Adres: https://rafalmsolutions.github.io/dobre-czy-nie/d/
 - **Polowanie** (`album.js`): każda strona ma 10 miejsc z warunkami (podkategorie z polską nazwą, Nutri-Score, NOVA, bez dodatków, bez oleju palmowego, wegańskie, bio, fair trade, mało cukru/soli/tłuszczu, dużo białka/błonnika). Rzadkość miejsca = udział pasujących wśród popularnych produktów kategorii zgodnych z profilem: zwykłe ≥ 1/3, rzadkie ≥ 1/12, epickie ≥ 1/50, legendarne rzadziej. Jedno tajne miejsce (rzadkie/epickie), podpowiedź po 5 skanach. Produkt trafia na najtrudniejsze wolne miejsce, do którego pasuje. Lista miejsc jest zapamiętywana (`d-album.pages`); po zmianie profilu wolne miejsca dobieramy od nowa.
 - **Zgodność z profilem:** kartę daje tylko produkt bez „Nie jem” i bez „dużo” tego, czego pilnujesz. Strony wykluczone dietą/alergią (np. nabiał przy diecie wegańskiej) są ukryte.
 - **Plakaty:** `d/img/gal/*.webp`, wpis w `GALLERY` (`ui-album.js`); miejsce nr i odsłania fragment `ORDER[i]`.
-- **Profile rodziny** (`family.js`): do 4 domowników z własnym „Nie jem” i „Pilnuję” (klucz `d-family`); przy produkcie sekcja „Dla domowników”. Album liczy się według profilu „Ja”.
+- **Profile rodziny** (`family.js`): do 4 domowników z własnym „Nie jem” i „Pilnuję” (klucz `d-family`); Album liczy się według profilu „Ja”.
+  Przy produkcie (od 1.8.0): obok zdjęcia odpowiedź dla całej rodziny („Nie dla: Kuba”, „Uwaga: Ola”, „Nie wiemy dla: …”, „Pasuje wszystkim / Wam obojgu”), kolor wstęgi = ta odpowiedź.
+  Pod zdjęciem kółka domowników: najpierw osoby z problemem, pierścień = dopasowanie (pusty przy „nie pasuje” i „nie wiemy”), znak ✓ ! ✕ ?, dwie litery przy powtarzających się inicjałach.
+  Wyjaśnienie na start dla pierwszej osoby z problemem, a gdy pasuje wszystkim, dla ostatnio wybranej (`d-focus`). Szary stan „nie wiemy”, gdy ktoś ma alergię, a baza nie ma składu.
+  Gdy produkt komuś nie pasuje: jeden produkt z tej samej kategorii, który pasuje wszystkim (`A.familyAltPick`).
 - **Odkrywcy** (`disc.js`, pośrednik `worker/disc.js`, baza Cloudflare D1 `dcn-odkrywcy`, schemat `worker/schema.sql`):
   - przy dodawaniu: kod ze zdjęcia = kod ze skanu (inny kod blokuje wysyłkę), nazwa bez wulgaryzmów, skład zgodny z odczytem zdjęcia, kalorie zgodne z makroskładnikami;
   - +10 pkt od razu, +50 po 2 potwierdzeniach (+100 za produkt z listy „Poszukiwane”), +1 za każdą osobę, która sprawdzi produkt (do 100);

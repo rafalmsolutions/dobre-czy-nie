@@ -130,11 +130,12 @@
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
       : `<span class="d-plate d-plate-art">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
     const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
-    const fam = pm && A.familyHeroHtml ? A.familyHeroHtml(p, cur.an) : '';
-    const verdict = fam ? fam : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
-    return `<div class="d-hero" data-level="${esc(lvl)}"><span class="d-arc" aria-hidden="true"></span>
+    // Domownicy: obok zdjęcia odpowiedź dla całej rodziny, pod spodem kółka osób (najpierw te z problemem).
+    const fv = pm && cur.fam ? cur.fam : null;
+    const verdict = fv ? A.familyAnswerHtml(fv) : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}" role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
+    return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
-      <div class="d-hside">${chip}${verdict}</div>
+      <div class="d-hside">${chip}${verdict}</div>${fv ? A.familyCirclesHtml(fv) : ''}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
@@ -158,6 +159,7 @@
   function render() {
     const { prod, an, pm } = cur;
     const added = cur.local && prod.added;
+    cur.fam = cur.guess !== null && A.familyView ? A.familyView(prod, an, cur.famPick) : null;
     const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt'), prodCard(prod, cur.guess === null ? null : pm)];
     if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
@@ -178,15 +180,15 @@
     const lvl = pm.level;
     const ringColor = { great: '#2E9A3E', good: '#7CBF3A', poor: '#F0B021', bad: '#D9412B' }[lvl] || '#C9CFD6';
     parts.push('<div class="d-side">');
-    const fp = A.focusPerson ? A.focusPerson() : null, other = fp && fp.id !== 'me';
-    const bpm = other ? personalMatch(prod, an, fp.p) : pm;
+    if (cur.fam && cur.fam.tone !== 'ok') parts.push(`<div id="famAlt">${cur.famAltHtml || ''}</div>`);
+    const fp = cur.fam ? cur.fam.focus : null, other = fp && fp.id !== 'me';
+    const bpm = other ? fp.pm : pm;
     parts.push(`<div class="panel stack${bpm.personal ? '' : ' general'}" id="matchBox">
       <span class="small muted" style="font-weight:800;letter-spacing:.06em">${other ? 'DLACZEGO DLA: ' + esc(fp.name.toUpperCase()) : bpm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
       ${other && !bpm.personal ? `<p class="small">${esc(fp.name)} nie ma jeszcze ustawień profilu, więc to ogólna ocena składu. <a href="#/profil">Ustaw</a></p>` : ''}
       ${bpm.personal ? billHtml(bpm, other ? fp.name : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     parts.push('<div id="discBox"></div>');
-    // Domownicy są przy zdjęciu (A.familyHeroHtml), więc osobnej sekcji niżej już nie ma.
     const qc = prod.qchg && prod.qchg.length > 1 ? prod.qchg : null;
     if (qc) {
       const a = qc[qc.length - 2], z = qc[qc.length - 1], num = x => parseFloat(x[2]), mon = d => new Date(d + 'T12:00:00').toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' });
@@ -332,6 +334,12 @@
       const altSrc = narrow ? compareInCategory(mine.prod, mine.an, list.filter(x => (x.categories || []).includes(narrow)), A.profile).alternatives : cmp.alternatives;
       const alts = altSrc.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct));
       mine.alts = alts;
+      // Domownicy: gdy produkt komuś nie pasuje, pokazujemy jeden produkt z tej kategorii, który pasuje wszystkim.
+      if (mine.fam && mine.fam.tone !== 'ok' && A.familyAltPick && cur === mine) {
+        const pick = A.familyAltPick(mine.prod, narrow ? list.filter(x => (x.categories || []).includes(narrow)) : list) || (narrow ? A.familyAltPick(mine.prod, list) : null);
+        mine.famAltHtml = A.familyAltHtml(mine.fam, pick);
+        const slot = A.$('famAlt'); if (slot) slot.innerHTML = mine.famAltHtml;
+      }
       if (alts.length) {
         const best = alts[0];
         A.setHistoryAlt(mine.prod.code, { code: best.pr.code, name: best.pr.name, image: A.safeImg(best.pr.image), pct: best.pm.pct, level: best.pm.level, label: best.pm.label });
@@ -610,6 +618,8 @@
     render();
     const b = document.querySelector('#scr-product .banner'); if (b) b.setAttribute('tabindex', '-1'), b.focus();
   };
+  /* Stuknięcie w domownika: jego wyjaśnienie przy tym produkcie; zapamiętujemy go jako najważniejszą osobę. */
+  A.famPick = id => { if (!cur || cur.missing) return; cur.famPick = id; A.setFocus(id); A.rerenderProduct(); };
   A.rerenderProduct = () => {
     if (!cur || cur.missing) return;
     cur.pm = personalMatch(cur.prod, cur.an, A.profile);

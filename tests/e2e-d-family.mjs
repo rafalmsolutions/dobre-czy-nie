@@ -1,9 +1,11 @@
 // Profile rodziny (wersja D): dodanie domownika, osobny werdykt przy produkcie, usunięcie. Uruchom: node e2e-d-family.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
-import { setup, C } from './lib.mjs';
+import { setup, C, SEARCH } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/workers\.dev\/category/, r => r.fulfill({ json: { products: [] } }));
+// Kategoria kremów: produkty z testów plus jeden bez orzechów i z małą ilością cukru (pasuje obojgu).
+const SUN = { code: '5900000001063', product_name_pl: 'Krem słonecznikowy z kakao', brands: 'Testowa', nutriscore_grade: 'b', nova_group: 3, additives_tags: [], allergens_tags: [], ingredients_text_pl: 'pestki słonecznika 70%, kakao 10%, olej słonecznikowy', nutriments: { sugars_100g: 4, salt_100g: 0.1, fat_100g: 40, 'saturated-fat_100g': 4 }, categories_hierarchy: ['en:spreads', 'en:sweet-spreads', 'en:hazelnut-spreads'], ingredients_analysis_tags: ['en:palm-oil-free', 'en:vegan'] };
+await ctx.route(/workers\.dev\/category/, r => { const u = new URL(r.request().url()); const t = u.searchParams.get('tag') || u.searchParams.get('categories_tags') || ''; return r.fulfill({ json: { products: /hazelnut|sweet-spreads/.test(u.href) ? (SEARCH['en:hazelnut-spreads'] || []).concat([SUN]) : [] } }); });
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 const closeCel = async () => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) return; await page.click('#celebrate [data-act=cel-ok]'); await page.waitForTimeout(120); } };
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['sugar'] })); });
@@ -22,15 +24,32 @@ await page.click('[data-act=fam-pick][data-id=me]'); await page.waitForTimeout(3
 ok(await page.locator('input[name=allergens][value=nuts]').isChecked() === false, 'przełączenie na „Ja” pokazuje mój profil');
 await page.goto('http://localhost:8790/d/index.html#/p/' + C.nutella); await page.waitForTimeout(1800); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]').catch(() => { });
-const fam = await page.innerText('#scr-product .fam-hero').catch(() => '');
-ok(fam.includes('Kuba') && /nie pasuje/i.test(fam), 'przy zdjęciu od razu wszyscy domownicy: ' + fam.replace(/\n/g, ' | '));
-ok(await page.locator('#scr-product .d-hside .fam-hrow').count() === 2, 'werdykty obok zdjęcia (bez przewijania)');
+const ans = await page.innerText('#scr-product .d-hside .fam-ans').catch(() => '');
+ok(/Nie dla: Kuba/.test(ans) && /orzech/i.test(ans), 'obok zdjęcia odpowiedź dla rodziny: ' + ans.replace(/\n/g, ' | '));
+const circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id + ':' + x.dataset.st + ':' + x.innerText.replace(/\n/g, ' ')));
+ok(circ.length === 2 && circ[0].startsWith('f') && circ[0].includes(':bad:'), 'kółka pod zdjęciem, najpierw osoba z problemem: ' + circ.join(' | '));
+ok(await page.$eval('#scr-product .fam-c[data-st=bad] .fam-ring', e => getComputedStyle(e).getPropertyValue('--deg').trim()) === '0deg', '„nie pasuje”: pusty pierścień');
+ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA: KUBA'), 'na start wyjaśnienie dla osoby z problemem');
+ok(await page.locator('#scr-product .d-hero[data-level=bad]').count() === 1, 'kolor wstęgi = odpowiedź dla rodziny');
+await page.waitForTimeout(1500);
+const alt = await page.innerText('#famAlt').catch(() => '');
+ok(/PASUJE WAM OBOJGU W TEJ KATEGORII/.test(alt), 'zamiennik dla wszystkich: ' + alt.replace(/\n/g, ' | '));
 await page.locator('#scr-product .d-hero').screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-hero.png' });
+await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-product.png' });
+await page.click('[data-act=fam-focus][data-id=me]'); await page.waitForTimeout(300);
+ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA CIEBIE'), 'stuknięcie „Ja”: moje wyjaśnienie');
+ok(await page.evaluate(() => App.store.get('d-focus', '') === 'me'), 'wybór najważniejszej osoby zapamiętany');
 await page.click('[data-act=fam-focus][data-id]:not([data-id=me])'); await page.waitForTimeout(300);
 ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA: KUBA'), 'stuknięcie osoby: wyjaśnienie dla niej');
-ok(await page.evaluate(() => App.store.get('d-focus', 'me') !== 'me'), 'wybór najważniejszej osoby zapamiętany');
-await page.click('[data-act=fam-focus][data-id=me]'); await page.waitForTimeout(300);
-ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA CIEBIE'), 'powrót do mojego wyjaśnienia');
+// Produkt, który pasuje obojgu: na start wyjaśnienie dla najważniejszej osoby, zielona odpowiedź.
+await page.evaluate(() => App.setFocus('me'));
+await page.goto('http://localhost:8790/d/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();
+if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]').catch(() => { });
+const ans2 = await page.innerText('#scr-product .fam-ans').catch(() => '');
+ok(/Pasuje Wam obojgu/.test(ans2) && (await page.innerText('#matchBox')).includes('DLACZEGO DLA CIEBIE') && await page.locator('#famAlt').count() === 0, 'pasuje obojgu: ' + ans2.replace(/\n/g, ' | '));
+// Te same inicjały: dwie litery.
+const lab = await page.evaluate(() => { App.family.push({ id: 'fx', name: 'Kasia', p: cleanProfile({}) }); const pr = normalizeProduct({ code: '5900000000017', product_name: 'Test', nutriscore_grade: 'a', nova_group: 1, ingredients_text: 'woda', additives_tags: [], allergens_tags: [], nutriments: { sugars_100g: 1 } }, 'off'); const v = App.familyView(pr, analyze(pr)); App.family.pop(); return v.rows.map(r => r.label); });
+ok(lab.includes('Ku') && lab.includes('Ka'), 'te same inicjały: dwie litery ' + lab.join(','));
 await page.goto('http://localhost:8790/d/index.html#/profil'); await page.waitForTimeout(500);
 await page.click('.fam-tab:has-text("Kuba")'); await page.waitForTimeout(200);
 await page.click('[data-act=fam-del]', { force: true }); await page.click('[data-act=fam-del-yes]', { force: true }); await page.waitForTimeout(300);
