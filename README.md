@@ -14,6 +14,19 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Szybsze zdjęcia, spójne wyniki na listach, lista dla rodziny (21.10.2026, wersja 2.3.2)
+
+- **Zdjęcia produktów** idą przez pośrednika (`/img/images/products/…` w `worker/off-proxy.js`): serwer zdjęć OFF odpowiadał 1–12 s na zdjęcie i nie pozwalał ich zapamiętać.
+  Pośrednik trzyma kopię w pamięci Cloudflare 30 dni (tylko ścieżki zdjęć produktów, tylko z naszych stron), telefon w `sw.js` (pamięć `dcn-img`, do 400 zdjęć, najpierw kopia).
+  Zdjęcie, które się nie wczyta, zamienia się na szarą lupę zamiast pękniętego obrazka. Adres zamienia `A.safeImg`.
+- **Ten sam wynik na liście i po otwarciu produktu:** wyszukiwarka OFF (źródło list) bywa niepełna (np. gulasz bez wartości odżywczych → brak kary za sól → 70% zamiast 60%).
+  Lista po narysowaniu dociąga pełne dane do 40 produktów z czołówki tymi samymi drogami co ekran produktu (`A.lookup`), pamięta je 7 dni (`d-pdet`, do 120) i przelicza się. Zamienniki na ekranie produktu korzystają z tych samych danych.
+- **Ocet spirytusowy, winny, jabłkowy itp. to nie alkohol** (`noVinegar` w `core.js`); spirytus, wino itd. nadal tak.
+- **Lista dla rodziny:** z domownikami nad listą wybór „Cała rodzina / Ty / imiona”. „Cała rodzina” (domyślnie) = wynik osoby, której produkt pasuje najsłabiej;
+  produkt, który komuś nie pasuje albo przy którym nie wiemy (alergia bez składu), nie trafia na listę dobrych. Wybór zapamiętany (`d-listwho`).
+- Procenty na liście w jednej kolumnie; długie nazwy produktów nie łamią się w środku słowa (`A.fitTitle` zmniejsza czcionkę).
+- Testy: `tests/e2e-d-list.mjs`, nowe przypadki w `tests/unit-d.cjs` i `tests/worker-test.mjs`.
+
 ## Ekran ładowania i profile rodziny na ekranie głównym (21.10.2026, wersja 2.3.1)
 
 - Ekran ładowania (`#boot`) to warstwa na wierzchu; zostaje, aż animacja znaku się skończy (ok. 1,75 s od otwarcia), potem płynnie znika (`A.bootDone`).

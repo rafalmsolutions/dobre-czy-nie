@@ -5,6 +5,14 @@
   let depth = 0; // ile razy nawigowaliśmy w tej sesji (dla przycisku „Wróć”)
   let nameTimer;
 
+  /* ---------- Zdjęcia, które się nie wczytały: zamiast pękniętego obrazka szara lupa ---------- */
+  const NOIMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#F1F2F3"/><circle cx="45" cy="45" r="17" fill="none" stroke="#C9CBD0" stroke-width="7"/><path d="M57 57l12 12" stroke="#C9CBD0" stroke-width="7" stroke-linecap="round"/></svg>');
+  document.addEventListener('error', e => {
+    const img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.dataset.noimg) return;
+    img.dataset.noimg = '1'; img.classList.add('noimg'); img.src = NOIMG;
+  }, true);
+
   /* ---------- Kliknięcia ---------- */
   const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
@@ -63,6 +71,7 @@
       case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
+      case 'list-who': A.listWhoSet(el.dataset.cat, el.dataset.store, el.dataset.who); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;
       case 'ach-cat': case 'ach-pick': A.achAction(act, el); break;
       default:

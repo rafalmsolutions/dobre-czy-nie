@@ -68,5 +68,13 @@ ok(ach.every(a => a.description && a.icon && a.metric && a.reward && a.reward.po
 const q = D.normalizeProduct({ code: '5900000000017', product_name: 'X', qchg: [['2026-10-20', '360 g', '360 g'], ['2026-11-03', '340 g', '340 g'], 'zle', ['a']] }, 'off');
 ok(q.qchg && q.qchg.length === 2 && q.qchg[1][2] === '340 g', 'gramatura: historia odczytana, złe wpisy pominięte');
 ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg === null, 'gramatura: brak historii = null');
+// Ocet spirytusowy / winny to nie alkohol (21.10.2026, gulasz Krakus).
+{
+  const gul = P({ ingredients_text_pl: 'mięso wieprzowe (30%), sos: woda, mąka pszenna (gluten), musztarda (woda, gorczyca, ocet spirytusowy, cukier, sól), przyprawy' });
+  ok(M(gul, { avoid: ['alcohol'] }).status !== 'fail', 'ocet spirytusowy nie jest alkoholem');
+  ok(M(P({ ingredients_text_pl: 'ogórki, woda, ocet winny, sól' }), { avoid: ['alcohol'] }).status !== 'fail', 'ocet winny nie jest alkoholem');
+  ok(M(P({ ingredients_text_pl: 'śliwki, cukier, spirytus 5%' }), { avoid: ['alcohol'] }).status === 'fail', 'spirytus nadal jest alkoholem');
+  ok(M(P({ ingredients_text_pl: 'czekolada, wino 3%, ocet spirytusowy' }), { avoid: ['alcohol'] }).status === 'fail', 'wino obok octu nadal jest alkoholem');
+}
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

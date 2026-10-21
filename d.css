@@ -172,7 +172,7 @@ dialog{background:#F7F7F8}
 .d-plate-art{cursor:default}
 .d-title{display:flex;flex-direction:column;gap:6px;min-width:0;width:100%}
 .d-meta{font-size:13px;font-weight:800}
-.d-title h1{font-family:var(--f-display);text-transform:uppercase;font-size:clamp(34px,11vw,52px);line-height:.98;letter-spacing:-.02em;overflow-wrap:anywhere}
+.d-title h1{font-family:var(--f-display);text-transform:uppercase;font-size:clamp(34px,11vw,52px);line-height:.98;letter-spacing:-.02em;overflow-wrap:normal;word-break:normal;min-width:0}
 .d-title h1 span{display:block}
 .d-title h1.d-long{font-size:clamp(26px,7.6vw,38px)}
 /* Kwadrat oceny w kolorze werdyktu */
@@ -623,3 +623,10 @@ button.pchip{font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
 .fam-home-row+.fam-home-row{padding-top:12px;border-top:1px solid var(--line)}
 .fam-home-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .fam-home-h b{font-family:var(--f-display);font-size:16px}
+/* Zdjęcie, które się nie wczytało: szara lupa zamiast pękniętego obrazka. */
+img.noimg{object-fit:cover}
+/* Lista produktów: procenty w jednej kolumnie (stała szerokość), wybór osoby nad listą. */
+#scr-list .item .pct{min-width:58px;width:58px;padding-left:0;padding-right:0;text-align:center;box-sizing:border-box}
+.list-who{margin-bottom:2px}
+#scr-list .item .grow{min-width:0;overflow-wrap:break-word}
+#scr-list .item > .iconbtn{flex:0 0 auto}

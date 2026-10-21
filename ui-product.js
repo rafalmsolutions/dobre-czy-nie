@@ -12,7 +12,7 @@
   });
   A.currentProduct = () => cur;
 
-  function screen(html) { A.$('scr-product').innerHTML = `<div class="wrap">${html}</div>`; }
+  function screen(html) { A.$('scr-product').innerHTML = `<div class="wrap">${html}</div>`; A.fitTitle(A.$('scr-product').querySelector('.d-title h1')); }
   const topbar = (title) => `<div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><span class="grow small muted" style="font-weight:800">${esc(title)}</span>${A.hudPill()}</div>`;
 
   async function openProduct(code) {
@@ -326,6 +326,7 @@
         if (list.filter(x => x.code !== mine.prod.code).length >= 8) break;
       }
       if (cur !== mine || !body()) return;
+      if (A.withDetail) list = list.map(A.withDetail); // pełne dane produktów, które już znamy (te same wyniki co na liście i po otwarciu)
       const cmp = compareInCategory(mine.prod, mine.an, list, A.profile);
       // Nazwy kategorii w bazie bywają po angielsku albo francusku, więc podajemy polską nazwę z naszej listy, jeśli pasuje.
       const shop = (mine.prod.categories || []).slice().reverse().map(c => SHOP_CATEGORIES.find(x => x.key === c)).find(Boolean);

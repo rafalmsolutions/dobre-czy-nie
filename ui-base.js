@@ -6,8 +6,14 @@ const App = {};
   A.$ = id => document.getElementById(id);
   A.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   A.CFG = typeof CONFIG === 'object' && CONFIG ? CONFIG : {};
-  // Obrazki tylko z https (adresy z bazy mogą być dowolne).
-  A.safeImg = u => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u) ? u : '');
+  // Obrazki tylko z https (adresy z bazy mogą być dowolne). Zdjęcia produktów z Open Food Facts idą przez nasz pośrednik,
+  // który trzyma ich kopię w pamięci Cloudflare (serwer zdjęć OFF bywa bardzo wolny); telefon też je zapamiętuje (sw.js).
+  const OFF_IMG = /^https:\/\/images\.openfoodfacts\.org(\/images\/products\/[0-9/]{1,40}\/[A-Za-z0-9_.-]{1,80}\.(?:jpg|jpeg|png|webp))$/;
+  A.safeImg = u => {
+    if (typeof u !== 'string' || !/^https:\/\/[^\s"'<>]+$/.test(u)) return '';
+    const m = u.match(OFF_IMG), proxy = (A.CFG.offProxyUrl || '').replace(/\/$/, '');
+    return m && proxy && !m[1].includes('..') ? proxy + '/img' + m[1] : u;
+  };
 
   /* ---------- Pamięć w telefonie ---------- */
   A.store = {
@@ -350,6 +356,19 @@ const App = {};
     if (reduce || navigator.webdriver || left <= 0) { boot.remove(); return; }
     boot.addEventListener('click', gone, { once: true });
     setTimeout(gone, left);
+  };
+  /* Nazwa produktu dużymi literami: zamiast łamać słowo w środku („WIEPRZOW / Y”) zmniejszamy czcionkę, aż najdłuższe słowo się zmieści.
+     Ponownie po wczytaniu czcionek (Montserrat jest szerszy niż czcionka zastępcza). */
+  A.fitTitle = h => {
+    if (!h) return;
+    const fit = () => {
+      if (!h.isConnected) return;
+      h.style.fontSize = '';
+      let size = parseFloat(getComputedStyle(h).fontSize) || 40, n = 0;
+      while (h.scrollWidth > h.clientWidth + 1 && size > 18 && n++ < 30) { size = Math.floor(size * 0.93); h.style.fontSize = size + 'px'; }
+    };
+    fit();
+    if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(fit);
   };
   A.routes = {};
   A.route = (name, fn) => { A.routes[name] = fn; };

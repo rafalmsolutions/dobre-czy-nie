@@ -30,7 +30,7 @@ const CAT_FIELDS = 'code,product_name,product_name_pl,brands,quantity,image_fron
 const NUTRIMENTS = ['energy-kcal_100g', 'fat_100g', 'saturated-fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g', 'fiber_100g', 'carbohydrates_100g', 'alcohol_100g'];
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
     const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
     const okOrigin = allowed.includes(origin);
@@ -40,6 +40,28 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: okOrigin ? 204 : 403, headers: cors });
     if (url.pathname === '/health') return reply(200, { ok: true });
+    // Zdjęcia produktów: serwer zdjęć Open Food Facts bywa bardzo wolny (kilka sekund na zdjęcie) i nie pozwala ich zapamiętać.
+    // Pośrednik trzyma kopię w pamięci Cloudflare na 30 dni (adresy zdjęć zmieniają się przy każdej nowej wersji, więc kopia się nie starzeje).
+    if (url.pathname.startsWith('/img/')) {
+      if (request.method !== 'GET' && request.method !== 'HEAD') return reply(405, { ok: false, error: 'method' });
+      const path = url.pathname.slice(4);
+      if (!/^\/images\/products\/[0-9/]{1,40}\/[A-Za-z0-9_.-]{1,80}\.(jpg|jpeg|png|webp)$/.test(path) || path.includes('..')) return reply(400, { ok: false, error: 'path' });
+      const ref = request.headers.get('Referer') || '';
+      if (ref && !allowed.some(o => ref === o || ref.startsWith(o + '/'))) return new Response('forbidden', { status: 403 });
+      const store = typeof caches !== 'undefined' ? caches.default : null;
+      const key = new Request('https://lupka-img.cache' + path);
+      const hit = store ? await store.match(key) : null;
+      if (hit) { const h = new Headers(hit.headers); h.set('X-Lupka-Img', 'hit'); return new Response(hit.body, { status: 200, headers: h }); }
+      let r;
+      try { r = await fetch('https://images.openfoodfacts.org' + path, { headers: { 'User-Agent': `${APP_NAME}/1.0 (${env.CONTACT_EMAIL || 'rafalmsolutions@gmail.com'})` }, cf: { cacheTtl: 2592000, cacheEverything: true } }); }
+      catch (e) { return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } }); }
+      if (!r.ok) return new Response(null, { status: r.status === 404 ? 404 : 502, headers: { 'Cache-Control': r.status === 404 ? 'public, max-age=3600' : 'no-store' } });
+      const type = r.headers.get('Content-Type') || '';
+      if (!/^image\//.test(type)) return new Response(null, { status: 502, headers: { 'Cache-Control': 'no-store' } });
+      const resp = new Response(r.body, { status: 200, headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=2592000, immutable', 'Access-Control-Allow-Origin': '*', 'X-Lupka-Img': 'miss' } });
+      if (store) { const put = store.put(key, resp.clone()); if (ctx && ctx.waitUntil) ctx.waitUntil(put); else await put; }
+      return resp;
+    }
     // Sprawdzenie, czy login i hasło konta aplikacji są poprawne (bez zapisywania czegokolwiek w bazie).
     if (url.pathname === '/check') {
       if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });

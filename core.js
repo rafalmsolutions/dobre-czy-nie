@@ -357,6 +357,10 @@ function hasWords(clean, spec) {
   if ((spec.phrases || []).some(w => clean.includes(w))) return true;
   return false;
 }
+/* Ocet spirytusowy, winny itp. to nie alkohol (alkohol przefermentował w kwas octowy): przed szukaniem alkoholu usuwamy te nazwy. */
+const VINEGAR_RE = / (ocet|octu|octem|occie|octowy|octowa) (spirytusow|winn|z win|z wina|jablkow|z jablek|balsamiczn|ryzow|malinow|sherry|z sherry)[a-z]* /g;
+const noVinegar = clean => clean.replace(VINEGAR_RE, ' ').replace(/ (spirit|wine|rice|cider) vinegar /g, ' ');
+const hasAlcohol = (clean, nm) => (nm && nm.alcohol != null && nm.alcohol > 0.5) || hasWords(noVinegar(clean), WORDS.alcohol);
 const wordText = s => ' ' + fold(s).replace(/[^a-z0-9%]+/g, ' ').trim() + ' ';
 
 /* Wynik: status 'ok' | 'fail' | 'unknown' | 'none', listy powodów. Nigdy nie mówimy „bezpieczne”. */
@@ -470,7 +474,7 @@ function matchProfile(prod, an, profile) {
         if (lvl('fat', nm.fat) === 'high') reasons.push('dużo tłuszczu');
         if (hasWords(mainText, WORDS.lightdiet)) reasons.push('składniki ciężkostrawne lub ostre');
         if (codes.has('E290')) reasons.push('napój gazowany');
-        if ((nm.alcohol != null && nm.alcohol > 0.5) || hasWords(mainText, WORDS.alcohol)) reasons.push('alkohol');
+        if (hasAlcohol(mainText, nm)) reasons.push('alkohol');
         if (reasons.length) return fail(L, reasons.join(', '));
         if (!hasIng && nm.fat == null) return unknown(L);
       }
@@ -488,7 +492,7 @@ function matchProfile(prod, an, profile) {
       }
       if (k === 'hydrogenated') { if (hasWords(mainText, WORDS.hydrogenated)) fail('Tłuszcz utwardzony', 'zawiera'); else if (!hasIng) unknown('Tłuszcz utwardzony'); return; }
       if (k === 'ultra') { const nv = Number(prod.nova); if (nv === 4) fail('Wysoko przetworzone', 'NOVA 4'); else if (!(nv >= 1 && nv <= 3)) unknown('Wysoko przetworzone'); return; }
-      if (k === 'alcohol') { const a = prod.nutriments && prod.nutriments.alcohol; if ((a != null && a > 0.5) || hasWords(mainText, WORDS.alcohol)) fail('Alkohol', 'zawiera'); else if (!hasIng) unknown('Alkohol'); return; }
+      if (k === 'alcohol') { if (hasAlcohol(mainText, prod.nutriments)) fail('Alkohol', 'zawiera'); else if (!hasIng) unknown('Alkohol'); return; }
       if (k === 'caffeine') { if (hasWords(mainText, WORDS.caffeine)) fail('Kofeina', 'zawiera kawę, herbatę lub kofeinę'); else if (!hasIng) unknown('Kofeina'); return; }
       if (k === 'pork') { if (hasWords(mainText, WORDS.pork)) fail('Wieprzowina', 'zawiera'); else if (!hasIng) unknown('Wieprzowina'); return; }
       if (k === 'palm') {

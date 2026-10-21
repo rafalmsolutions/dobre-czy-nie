@@ -16,6 +16,7 @@ globalThis.fetch = async (url, init = {}) => {
       { code: '5900000000001', product_name: '<b>Bez składu</b>', nova_group: 'x' }
     ] }));
   }
+  if (String(url).startsWith('https://images.openfoodfacts.org/')) return String(url).includes('brak') ? new Response('nie ma', { status: 404 }) : new Response(new Uint8Array([0xFF, 0xD8, 0xFF]), { headers: { 'Content-Type': 'image/jpeg' } });
   if (String(url).includes('product_image_upload')) return new Response(JSON.stringify({ status: 'status ok', imgid: 1 }));
   return new Response('?', { status: 500 });
 };
@@ -121,4 +122,19 @@ r = await run(fi, { path: '/image' }); ok(r.status === 200 && calls.some(c => c.
 const fx = ef({ field: 'selfie' }); fx.append('photo', jpg(500), 'i.jpg');
 r = await run(fx, { path: '/image' }); ok(r.status === 400 && r.j.error === 'field', 'zdjęcie: złe pole');
 r = await run(ef({}), { path: '/edit', origin: 'https://zly.test' }); ok(r.status === 403, 'edycja z obcej strony: 403');
+// Zdjęcia produktów przez pośrednika (kopia w pamięci Cloudflare).
+{
+  const img = (path, ref) => worker.fetch(new Request('https://proxy.test/img' + path, { headers: ref ? { Referer: ref } : {} }), env, {});
+  calls = [];
+  let ir = await img('/images/products/590/082/000/0233/front_pl.18.200.jpg', 'https://app.test/');
+  ok(ir.status === 200 && ir.headers.get('Content-Type') === 'image/jpeg', 'zdjęcie: 200 i typ obrazka');
+  ok(/max-age=2592000/.test(ir.headers.get('Cache-Control') || ''), 'zdjęcie: zapamiętane na 30 dni');
+  ok(calls.some(c => c.url === 'https://images.openfoodfacts.org/images/products/590/082/000/0233/front_pl.18.200.jpg'), 'zdjęcie: pobrane z serwera zdjęć OFF');
+  ir = await img('/images/products/590/082/000/0233/front_pl.18.200.jpg'); ok(ir.status === 200, 'zdjęcie: bez Referer też działa');
+  ir = await img('/images/products/590/082/000/0233/front_pl.18.200.jpg', 'https://obca.test/strona'); ok(ir.status === 403, 'zdjęcie: obca strona 403');
+  ir = await img('/images/products/../../etc/passwd.jpg'); ok(ir.status === 400, 'zdjęcie: zła ścieżka 400');
+  ir = await img('/cgi/session.pl'); ok(ir.status === 400, 'zdjęcie: tylko zdjęcia produktów');
+  ir = await img('/images/products/590/brak/front.jpg'); ok(ir.status === 400 || ir.status === 404, 'zdjęcie: brak zdjęcia');
+  ir = await img('/images/products/590/082/000/0234/brak.jpg'); ok(ir.status === 404, 'zdjęcie: 404 z OFF przekazane');
+}
 console.log(`Pośrednik: ${pass} OK, ${fail} błędów`); process.exit(fail ? 1 : 0);
