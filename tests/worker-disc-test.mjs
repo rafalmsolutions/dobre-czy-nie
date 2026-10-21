@@ -81,6 +81,12 @@ r = await call('/disc/submit', { device: dev(1), code: '5900000000000', name: 'a
 r = await call('/disc/vote', { device: dev(9), code: A, vote: 'maybe' }); ok(r.status === 400, 'zły głos');
 r = await call(`/disc/product?code=${A}&device=${dev(2)}`, null, { origin: 'https://zly.test' }); ok(r.status === 403, 'obca strona: 403');
 r = await call(`/disc/product?code=${A}&device=${dev(2)}`, null, { env: { ALLOWED_ORIGINS: 'https://app.test' } }); ok(r.status === 503, 'bez bazy: 503');
+// prawo do usunięcia danych
+r = await call('/disc/forget', { device: dev(1) });
+ok(r.j.ok && sqlite.prepare("SELECT COUNT(*) n FROM subs WHERE device = ?").get(dev(1)).n === 0 && sqlite.prepare("SELECT COUNT(*) n FROM devices WHERE device = ?").get(dev(1)).n === 0, 'usunięcie danych: brak powiązań z urządzeniem');
+ok(sqlite.prepare("SELECT COUNT(*) n FROM subs WHERE device = 'usuniete' AND nick = ''").get().n >= 1, 'usunięcie danych: produkty zostają bez pseudonimu');
+r = await call('/disc/forget', { device: dev(2) }); ok(sqlite.prepare("SELECT COUNT(*) n FROM votes WHERE device = ?").get(dev(2)).n === 0, 'usunięcie danych: głosy usunięte');
+ok(sqlite.prepare("SELECT COUNT(*) n FROM subs WHERE status != 'pending' AND iph IS NOT NULL").get().n === 0, 'po rozstrzygnięciu bez skrótu IP');
 const leaked = sqlite.prepare('SELECT iph FROM subs').all().every(x => !/^\d+\.\d+/.test(x.iph));
 ok(leaked, 'adres IP tylko jako skrót');
 console.log(`worker-disc: ${pass} passed, ${fail} failed`);

@@ -5,6 +5,7 @@ import { setup, C } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 await ctx.route(/workers\.dev\/category/, r => r.fulfill({ json: { products: [] } }));
+let forgot = 0; await ctx.route(/workers\.dev\/disc\/forget/, r => { forgot++; return r.fulfill({ json: { ok: true } }); });
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 const shots = new URL('./shots/', import.meta.url).pathname;
 // Użytkownik, który kiedyś zapisał „Zgadnij” włączone – po poprawce i tak domyślnie wyłączone.
@@ -45,5 +46,11 @@ await page.click('#scr-progress .coll-tabs a[href="#/album"]'); await page.waitF
 ok(await page.locator('#scr-album .coll-tabs a[aria-current]').innerText().then(t => /Karty/.test(t)), 'karty: ten sam przełącznik');
 await page.screenshot({ path: shots + 'collection.png' });
 
+// 5. „Usuń wszystkie moje dane” kasuje też dane na serwerze odkrywców
+await page.goto('http://localhost:8790/index.html#/profil'); await page.waitForTimeout(600);
+await page.$eval('[data-act=wipe]', e => e.click()); await page.waitForTimeout(300);
+await page.$eval('[data-act=wipe-yes]', e => e.click()); await page.waitForTimeout(2000);
+ok(forgot === 1, 'usunięcie danych: zapytanie /disc/forget do serwera');
+ok(await page.evaluate(() => !localStorage.getItem('dcn-d-family') && !localStorage.getItem('dcn-d-profile')), 'usunięcie danych: telefon wyczyszczony');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

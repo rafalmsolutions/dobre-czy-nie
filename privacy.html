@@ -35,11 +35,13 @@
     <h2>2. Jakie dane przetwarzamy</h2>
     <p>Aplikacja nie ma kont. Większość danych zostaje <b>wyłącznie w Twoim telefonie</b>:</p>
     <ul>
-      <li>Twoje imię (jeśli je podasz), cele, diety, alergie i składniki, których unikasz;</li>
-      <li>historia sprawdzonych produktów, półki zakupowe, punkty i odznaki.</li>
+      <li>Twoje imię (jeśli je podasz), cele, to, czego pilnujesz, diety, alergie i składniki, których nie jesz;</li>
+      <li>profile domowników (imiona, które wpiszesz, ich alergie, diety i to, czego pilnują);</li>
+      <li>historia sprawdzonych produktów, półki zakupowe z ilościami, album kart, punkty i odznaki.</li>
     </ul>
-    <p>Nie wysyłamy tych danych do nas ani nikomu innemu. Informacje o alergiach i dietach mogą dotyczyć zdrowia, dlatego zostają tylko w telefonie.</p>
-    <p>Wszystkie te dane usuniesz w aplikacji: <b>Profil → Usuń wszystkie moje dane</b>. Znikną też po wyczyszczeniu danych aplikacji albo jej odinstalowaniu.</p>
+    <p>Nie wysyłamy tych danych do nas ani nikomu innemu. Informacje o alergiach i dietach Twoich i domowników mogą dotyczyć zdrowia, dlatego zostają tylko w telefonie. Dodając domownika, upewnij się, że ta osoba (albo jej rodzic) się na to zgadza.</p>
+    <p>Na serwer trafiają tylko dane potrzebne do potwierdzania nowych produktów (punkt 4).</p>
+    <p>Wszystkie te dane usuniesz w aplikacji: <b>Profil → Usuń wszystkie moje dane</b>. Ten przycisk kasuje też Twoje dane na serwerze z punktu 4. Dane w telefonie znikną również po wyczyszczeniu danych aplikacji albo jej odinstalowaniu.</p>
   </section>
 
   <section>
@@ -54,33 +56,49 @@
   </section>
 
   <section>
+    <h2>4. Odkrywcy: potwierdzanie nowych produktów</h2>
+    <p>Gdy dodasz produkt, którego nie ma w bazie, inne osoby mogą potwierdzić, że taki produkt istnieje. Do tego nasz serwer (Cloudflare Workers z bazą Cloudflare D1, region Europa Wschodnia; Cloudflare, Inc. działa jako nasz podmiot przetwarzający) zapisuje:</p>
+    <ul>
+      <li><b>losowy identyfikator aplikacji</b> – ten sam, który trafia do Open Food Facts; nie zawiera imienia, e-maila ani numeru telefonu;</li>
+      <li><b>dodane produkty</b>: kod kreskowy, nazwę, datę, wynik sprawdzenia zdjęcia (czy kod na zdjęciu zgadza się ze skanem) i status potwierdzenia;</li>
+      <li><b>pseudonim</b>, jeśli go podasz na ekranie „Twoje odkrycia” – widzą go osoby, które potwierdzają Twoje produkty;</li>
+      <li><b>Twoje odpowiedzi</b> „tak / nie / nie mam pewności” przy cudzych produktach i to, że dany produkt otworzyłeś (liczymy osoby, które go sprawdziły);</li>
+      <li><b>kody produktów, których nie znaleźliśmy w bazie</b> (do listy „Poszukiwane”);</li>
+      <li>liczbę potwierdzonych i odrzuconych produktów (stopień „zaufany odkrywca”) oraz dzienne liczniki do limitów;</li>
+      <li><b>skrót adresu IP</b> (jednokierunkowy, z tajnym dodatkiem; nie da się z niego odczytać adresu), żeby głos z tego samego adresu co autor nie potwierdzał produktu.</li>
+    </ul>
+    <p>Jak długo: skrót adresu IP usuwamy, gdy produkt zostanie potwierdzony albo odrzucony; dzienne liczniki po 30 dniach. Pozostałe dane trzymamy, dopóki działa funkcja odkrywców, albo do czasu, gdy je usuniesz. Po usunięciu (Profil → Usuń wszystkie moje dane) kasujemy Twoje odpowiedzi, odwiedziny, liczniki i stopień, a dodane przez Ciebie produkty zostają w bazie bez powiązania z Tobą i bez pseudonimu – i tak są już publiczne w Open Food Facts.</p>
+    <p>Podstawa: nasz prawnie uzasadniony interes (art. 6 ust. 1 lit. f RODO) – rzetelna baza produktów i ochrona przed fałszywymi wpisami. Nie wysyłamy tam Twojego profilu, domowników ani historii.</p>
+  </section>
+
+  <section>
     <h2>Hosting</h2>
     <p>Aplikacja i kopia bazy produktów są publikowane w serwisie GitHub Pages (GitHub, Inc.). Przy otwarciu aplikacji GitHub widzi Twój adres IP, jak przy każdej stronie internetowej. Nie wysyłamy tam Twojego profilu ani historii.</p>
   </section>
 
   <section>
-    <h2>4. Aparat</h2>
-    <p>Aplikacja używa aparatu tylko do odczytu kodu kreskowego i do zdjęć opakowań, gdy sam je robisz. Obraz z podglądu nie jest zapisywany ani wysyłany. Odczyt tekstu ze zdjęcia składu odbywa się w Twoim telefonie.</p>
+    <h2>5. Aparat</h2>
+    <p>Aplikacja używa aparatu tylko do odczytu kodu kreskowego i do zdjęć opakowań, gdy sam je robisz. Obraz z podglądu nie jest zapisywany ani wysyłany. Kod kreskowy ze zdjęcia odczytujemy w Twoim telefonie. Tekst ze zdjęcia składu odczytuje Open Food Facts na zdjęciu, które już do niego wysłałeś.</p>
   </section>
 
   <section>
-    <h2>5. Statystyki i ciasteczka</h2>
+    <h2>6. Statystyki i ciasteczka</h2>
     <p>Aplikacja nie używa ciasteczek ani reklam. Liczymy anonimowo, które ekrany i funkcje są używane (np. „sprawdzono produkt”, „dodano na półkę”) oraz ile osób wraca w kolejnych tygodniach, przez usługę GoatCounter. Nie wysyłamy profilu, imienia, kodów produktów ani żadnego identyfikatora osoby. GoatCounter nie zapisuje adresu IP i trzyma dane na serwerach w UE (Finlandia, Niemcy). Statystyki wyłączysz w Profilu (Ustawienia → Anonimowe statystyki). Respektujemy też ustawienie „Nie śledź” w przeglądarce.</p>
     <p> Czcionki pobieramy z Google Fonts, a moduły skanera i odczytu tekstu z publicznych serwerów CDN (jsDelivr, unpkg). Te serwery widzą Twój adres IP jak przy otwarciu zwykłej strony.</p>
   </section>
 
   <section>
-    <h2>6. Zgłoszenia błędów</h2>
+    <h2>7. Zgłoszenia błędów</h2>
     <p>Jeśli wyślesz zgłoszenie błędu, otwiera się Twoja poczta z gotową wiadomością. Otrzymamy jej treść i Twój adres e-mail. Używamy go tylko do odpowiedzi i usuwamy wiadomość po 12 miesiącach.</p>
   </section>
 
   <section>
-    <h2>7. Twoje prawa</h2>
+    <h2>8. Twoje prawa</h2>
     <p>Masz prawo do dostępu do danych, ich poprawiania, usunięcia, ograniczenia przetwarzania i sprzeciwu. Możesz też złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych (<a href="https://uodo.gov.pl" target="_blank" rel="noopener">uodo.gov.pl</a>). Napisz do nas: <a href="mailto:rafalmsolutions@gmail.com">rafalmsolutions@gmail.com</a>.</p>
   </section>
 
   <section>
-    <h2>8. Zmiany</h2>
+    <h2>9. Zmiany</h2>
     <p>O zmianach tej polityki poinformujemy w aplikacji.</p>
   </section>
   <p class="muted">Ocena produktów ma charakter informacyjny i nie jest poradą medyczną.</p>

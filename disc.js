@@ -18,6 +18,8 @@
   const VIEW_MAX = 100;
   const proxy = () => (A.CFG.offProxyUrl || '').replace(/\/$/, '');
   A.discOn = () => !!proxy();
+  /* „Usuń wszystkie moje dane”: na serwerze kasujemy głosy, odwiedziny i liczniki tego urządzenia; dodane produkty zostają bez powiązania z nim. */
+  A.discForget = () => Promise.race([api('/disc/forget', { device: A.appUuid() }), new Promise(r => setTimeout(() => r(null), 4000))]);
   const load = () => { const d = A.store.get('d-disc', null); return d && typeof d === 'object' && d.items ? d : { items: {}, trusted: false, confirmed: 0, rejected: 0, nick: '' }; };
   A.disc = load();
   const save = () => A.store.set('d-disc', A.disc);

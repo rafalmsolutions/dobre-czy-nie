@@ -6,6 +6,9 @@
    GET  /disc/mine?device                                 → moje odkrycia: status, ile osób je sprawdziło, czy jestem zaufany
    POST /disc/miss    device, code                        → ktoś zeskanował kod, którego nie ma w bazie
    GET  /disc/wanted                                      → „Poszukiwane”: kody, których szukało najwięcej osób
+   POST /disc/forget  device                              → usunięcie danych urządzenia (głosy, odwiedziny, statystyki);
+                                                            dodane produkty zostają bez powiązania z urządzeniem i bez pseudonimu
+   Prywatność: skrót adresu IP trzymamy tylko do rozstrzygnięcia (potwierdzony/odrzucony), dzienne liczniki – 30 dni.
 
    Zasady: 2 potwierdzenia „tak” → produkt potwierdzony; 2 × „nie” → odrzucony. Głos z tego samego adresu IP co autor się nie liczy.
    Stopnie (seria = potwierdzone od ostatniego odrzucenia; odrzucenie zeruje serię):
@@ -39,11 +42,18 @@ async function trustOf(db, device) {
 }
 const confirmDevice = (db, device) => db.prepare('INSERT INTO devices (device, confirmed, streak) VALUES (?, 1, 1) ON CONFLICT(device) DO UPDATE SET confirmed = confirmed + 1, streak = streak + 1').bind(device).run();
 async function settle(db, code, status, author) {
-  await db.prepare('UPDATE subs SET status = ? WHERE code = ?').bind(status, code).run();
+  await db.prepare('UPDATE subs SET status = ?, iph = NULL WHERE code = ?').bind(status, code).run(); // skrót IP już niepotrzebny
   if (status === 'confirmed') await confirmDevice(db, author);
   else await db.prepare('INSERT INTO devices (device, rejected, streak) VALUES (?, 1, 0) ON CONFLICT(device) DO UPDATE SET rejected = rejected + 1, streak = 0').bind(author).run();
   const wrong = status === 'confirmed' ? 'no' : 'yes';
   await db.prepare('INSERT INTO devices (device, disagree) SELECT device, 1 FROM votes WHERE code = ? AND vote = ? AND counted = 1 ON CONFLICT(device) DO UPDATE SET disagree = disagree + 1').bind(code, wrong).run();
+  await db.prepare('UPDATE votes SET iph = NULL WHERE code = ?').bind(code).run();
+}
+const DAY_MS = 864e5;
+/* Sprzątanie: dzienne liczniki starsze niż 30 dni (uruchamiane przy części zapytań, bez osobnego harmonogramu). */
+async function tidy(db) {
+  const old = new Date(Date.now() - 30 * DAY_MS).toISOString().slice(0, 10);
+  await db.prepare('DELETE FROM daily WHERE day < ?').bind(old).run();
 }
 
 export async function disc(request, env, url, reply) {
@@ -63,6 +73,13 @@ export async function disc(request, env, url, reply) {
     return reply(200, { ok: true, items: (r.results || []).map(x => ({ code: x.code, n: x.n })) });
   }
   if (!needDevice()) return reply(400, { ok: false, error: 'device' });
+  if (Math.random() < 0.02) await tidy(db).catch(() => { });
+
+  if (path === '/forget' && request.method === 'POST') {
+    for (const t of ['votes', 'views', 'miss_dev', 'daily', 'devices']) await db.prepare(`DELETE FROM ${t} WHERE device = ?`).bind(device).run();
+    await db.prepare("UPDATE subs SET device = 'usuniete', nick = '', iph = NULL WHERE device = ?").bind(device).run();
+    return reply(200, { ok: true });
+  }
 
   if (path === '/mine' && request.method === 'GET') {
     const r = await db.prepare('SELECT code, name, status, views, wanted, at FROM subs WHERE device = ? ORDER BY at DESC LIMIT 200').bind(device).all();
@@ -102,7 +119,7 @@ export async function disc(request, env, url, reply) {
     const spot = t.trusted && barcode === 'match' && Math.random() < SPOT; // wyrywkowa kontrola także u zaufanych
     const status = t.trusted && barcode === 'match' && !spot ? 'confirmed' : 'pending';
     await db.prepare('INSERT INTO subs (code, device, nick, name, at, status, checks, iph, wanted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(code, device, clean(get('nick'), 24), name, Date.now(), status, JSON.stringify({ barcode }), await ipHash(ip, env.DISC_SALT), wanted).run();
+      .bind(code, device, clean(get('nick'), 24), name, Date.now(), status, JSON.stringify({ barcode }), status === 'pending' ? await ipHash(ip, env.DISC_SALT) : null, wanted).run();
     if (status === 'confirmed') await confirmDevice(db, device);
     return reply(200, { ok: true, status, trusted: t.trusted, level: t.level, spot, wanted: !!wanted });
   }
