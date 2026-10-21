@@ -358,45 +358,28 @@ const CUSTOM_SYNONYMS = {
 };
 const CUSTOM_MAX = 20;
 
-/* Wersja D: cele to tylko skróty. Każdy cel zaznacza pozycje na liście „Pilnuję” (WATCH), a liczy się wyłącznie ta lista.
-   Dzięki temu cukier, sól czy tłuszcze ustawia się w jednym miejscu i zawsze liczy tak samo. */
+/* Cele żywieniowe. Progi „źródło”/„wysoka zawartość” zgodne z rozporządzeniem UE 1924/2006 o oświadczeniach żywieniowych. */
 const GOALS = [
-  { key: 'sugar', label: 'Mniej cukru (także przy cukrzycy)', watch: ['sugar'] },
-  { key: 'heart', label: 'Serce i cholesterol', watch: ['satfat', 'salt'] },
-  { key: 'pressure', label: 'Ciśnienie', watch: ['salt'] },
-  { key: 'weight', label: 'Waga', watch: ['kcal', 'sugar'] },
-  { key: 'muscle', label: 'Mięśnie', watch: ['protein'] },
-  { key: 'digestion', label: 'Trawienie', watch: ['fiber'] },
-  { key: 'clean', label: 'Mniej przetworzonej żywności', watch: ['processing'] },
-  { key: 'healthy', label: 'Po prostu zdrowiej', watch: [], general: true }
+  { key: 'weight', label: 'Schudnąć lub utrzymać wagę' },
+  { key: 'muscle', label: 'Zbudować mięśnie' },
+  { key: 'cholesterol', label: 'Obniżyć cholesterol' },
+  { key: 'pressure', label: 'Obniżyć ciśnienie' },
+  { key: 'digestion', label: 'Lepsze trawienie (błonnik)' },
+  { key: 'iron', label: 'Więcej żelaza' },
+  { key: 'sugar', label: 'Mniej cukru, stabilna energia' },
+  { key: 'healthy', label: 'Po prostu zdrowiej', general: true }
 ];
+/* Krótkie nazwy celów na kafelkach ekranu startowego. */
 const GOAL_TILES = {
-  sugar: { label: 'Mniej cukru', hint: 'także przy cukrzycy', icon: 'sugar' },
-  heart: { label: 'Serce', hint: 'cholesterol, tłuszcze', icon: 'heart' },
-  pressure: { label: 'Ciśnienie', hint: 'mniej soli', icon: 'pressure' },
-  weight: { label: 'Waga', hint: 'kalorie i cukier', icon: 'weight' },
-  muscle: { label: 'Mięśnie', hint: 'więcej białka', icon: 'protein' },
-  digestion: { label: 'Trawienie', hint: 'więcej błonnika', icon: 'fiber' },
-  clean: { label: 'Mniej przetworzone', hint: 'mniej dodatków', icon: 'processing' },
-  healthy: { label: 'Po prostu zdrowiej', hint: 'bez konkretnego celu', icon: 'healthy' }
+  weight: { label: 'Schudnąć', hint: 'mniej kalorii, więcej sytości', icon: 'goal_weight', bg: '#FFE3DE' },
+  muscle: { label: 'Więcej białka', hint: 'budowa mięśni', icon: 'goal_muscle', bg: '#E0EEFF' },
+  cholesterol: { label: 'Zdrowe serce', hint: 'niższy cholesterol', icon: 'goal_heart', bg: '#FFE3DE' },
+  pressure: { label: 'Mniej soli', hint: 'niższe ciśnienie', icon: 'goal_salt', bg: '#ECE6FF' },
+  digestion: { label: 'Lepsze trawienie', hint: 'więcej błonnika', icon: 'goal_fiber', bg: '#FFF3CC' },
+  iron: { label: 'Więcej żelaza', hint: 'mniej zmęczenia', icon: 'goal_iron', bg: '#DDF5E8' },
+  sugar: { label: 'Mniej cukru', hint: 'stabilna energia', icon: 'goal_sugar', bg: '#FFF3CC' },
+  healthy: { label: 'Po prostu zdrowiej', hint: 'bez konkretnego celu', icon: 'goal_healthy', bg: '#ECE6FF' }
 };
-/* „Pilnuję”: jedna zasada liczenia dla każdej pozycji.
-   limit: mało +5, średnio −10 (najwyżej 74%), dużo −25 (najwyżej 45%), brak danych: najwyżej 70%.
-   contains: zawiera −25 (najwyżej 45%), nie zawiera 0, nie wiadomo: najwyżej 70%.
-   more: dużo +10, źródło +5, mało 0. */
-const WATCH = [
-  { key: 'sugar', label: 'Cukier', kind: 'limit', icon: 'sugar' },
-  { key: 'salt', label: 'Sól', kind: 'limit', icon: 'salt' },
-  { key: 'satfat', label: 'Tłuszcze nasycone', kind: 'limit', icon: 'fat' },
-  { key: 'kcal', label: 'Kalorie', kind: 'limit', icon: 'kcal' },
-  { key: 'processing', label: 'Przetworzenie i dodatki', kind: 'limit', icon: 'processing' },
-  { key: 'palm', label: 'Olej palmowy', kind: 'contains', icon: 'palm' },
-  { key: 'sweeteners', label: 'Słodziki', kind: 'contains', icon: 'sweetener' },
-  { key: 'caffeine', label: 'Kofeina', kind: 'contains', icon: 'caffeine' },
-  { key: 'protein', label: 'Białko (więcej)', kind: 'more', icon: 'protein' },
-  { key: 'fiber', label: 'Błonnik (więcej)', kind: 'more', icon: 'fiber' }
-];
-const WATCH_MAX = 6;
 const GOALS_MAX = 3;
 const IRON_FOOD_WORDS = { prefix: ['watrob', 'wolow', 'soczewic', 'ciecierzyc', 'fasol', 'szpinak', 'kasza gryczana', 'kaszy gryczanej', 'pestki dyni', 'amarantus', 'komos', 'quinoa', 'natka pietruszki'] };
 const CHOLESTEROL_PLUS_WORDS = { prefix: ['owsian', 'owies', 'beta glukan', 'betaglukan', 'sterol', 'stanol'] };
@@ -495,18 +478,3 @@ const HOME_TILES = [
   { cat: 'en:breads', label: 'Pieczywo', icon: 'prod_bread', bg: '#FFE3DE' },
   { cat: 'en:breakfast-cereals', label: 'Płatki', icon: 'prod_bowl', bg: '#DDF5E8' }
 ];
-
-/* Wersja D: „Nie jem” to tylko twarde wykluczenia. Reszta dawnych „unikam” i diet jest na liście „Pilnuję”. */
-PROFILE_OPTIONS.diet = PROFILE_OPTIONS.diet.filter(o => ['vegan', 'vegetarian', 'glutenfree', 'lactose'].includes(o.key));
-PROFILE_OPTIONS.avoid = PROFILE_OPTIONS.avoid.filter(o => ['pork', 'alcohol'].includes(o.key));
-
-/* Wersja D: dodatkowe kategorie ze zdjęciami (strony albumu i listy „Najlepsze”). */
-SHOP_GROUPS.splice(3, 0, { key: 'fresh', label: 'Owoce, warzywa i świeże', icon: 'dept_produce' });
-SHOP_CATEGORIES.push(
-  { key: 'en:creams', label: 'Śmietana', group: 'dairy' },
-  { key: 'en:eggs', label: 'Jajka', group: 'dairy' },
-  { key: 'en:fresh-meats', label: 'Mięso', group: 'meat' },
-  { key: 'en:fresh-fruits', label: 'Owoce', group: 'fresh' },
-  { key: 'en:fresh-vegetables', label: 'Warzywa', group: 'fresh' },
-  { key: 'en:beers', label: 'Piwo', group: 'drinks' }
-);

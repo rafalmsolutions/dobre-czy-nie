@@ -3,47 +3,37 @@
 (() => {
   const A = App, esc = A.esc;
 
-  /* ---------- Start: 3 kroki (wersja D: cele to skróty do listy „Pilnuję”) ---------- */
-  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
+  /* ---------- Start: 3 kroki ---------- */
+  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'palm'], ['avoid', 'sweeteners'], ['avoid', 'sugar'], ['avoid', 'ultra']];
   let step = 1, draft = null, msg = '';
   A.route('start', () => {
-    if (!draft) draft = { goals: A.profile.goals.slice(), watch: A.profile.watch.slice(), picks: {}, name: A.userName() };
+    if (!draft) draft = { goals: A.profile.goals.slice(), picks: {}, name: A.userName() };
     if (!Object.keys(draft.picks).length) ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => { draft.picks[g + ':' + k] = true; }));
     renderStart();
   });
   function opt(g, k) { return PROFILE_OPTIONS[g].find(o => o.key === k); }
-  // Włączenie celu dodaje jego pozycje do „Pilnuję”; wyłączenie zdejmuje te, których nie potrzebuje inny wybrany cel.
-  A.toggleGoalWatch = (watch, goals, key, on) => {
-    const g = GOALS.find(x => x.key === key); if (!g) return watch;
-    const keep = new Set(watchFromGoals(goals.filter(k => k !== key)));
-    let out = watch.slice();
-    if (on) g.watch.forEach(w => { if (!out.includes(w)) out.push(w); });
-    else out = out.filter(w => !g.watch.includes(w) || keep.has(w));
-    return WATCH.map(w => w.key).filter(k => out.includes(k)).slice(0, WATCH_MAX);
-  };
-  A.goalTile = (g, on, act) => { const t = GOAL_TILES[g.key]; return `<button class="goal-tile d-goal" type="button" data-act="${act}" data-k="${g.key}" aria-pressed="${on}"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span><span class="d-goal-ic">${A.dIcon(t.icon, 24)}</span><b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; };
-  A.watchLine = watch => watch.length ? `<p class="small d-watchline"><b>Będę pilnować:</b> ${watch.map(k => esc((WATCH.find(w => w.key === k) || {}).label || k).toLowerCase()).join(', ')}.</p>` : '';
   function renderStart() {
     const el = A.$('scr-start');
     const bar = `<div class="steps-bar" aria-label="Krok ${step} z 3">${[1, 2, 3].map(i => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}<span class="small muted" style="margin-left:6px;font-weight:800">Krok ${step} z 3</span></div>`;
     let body = '';
     if (step === 1) {
-      body = `<p class="small muted">Pomożemy Ci wybierać produkty, które pasują właśnie do Ciebie.</p>
-        <div><h1 id="startTitle" style="font-size:1.8rem">Jaki masz cel?</h1><p class="small muted">Wybierz do ${GOALS_MAX}. Cel zaznacza, czego mamy pilnować w produktach. Zmienisz to w profilu.</p></div>
-        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, draft.goals.includes(g.key), 'goal')).join('')}</div>
-        ${A.watchLine(draft.watch)}
+      body = `<div class="row" style="align-items:flex-end">${A.mascot('hello', 64)}<div class="bubble">Cześć! Jestem Ziarenko. Pomogę Ci kupować to, co jest dobre właśnie dla Ciebie.</div></div>
+        <div><h1 id="startTitle" style="font-size:1.8rem">Jaki masz cel?</h1><p class="small muted">Wybierz do ${GOALS_MAX}. Zmienisz je w każdej chwili.</p></div>
+        <div class="goal-grid">${GOALS.map(g => { const t = GOAL_TILES[g.key]; const on = draft.goals.includes(g.key); return `<button class="goal-tile" type="button" data-act="goal" data-k="${g.key}" aria-pressed="${on}" style="background:radial-gradient(circle at 30% 25%,#fff 0%,${t.bg} 65%)"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span>${art(t.icon, 42)}<b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; }).join('')}</div>
         <p class="msg" role="status" id="startMsg">${esc(msg)}</p>`;
     } else if (step === 2) {
-      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Czego nie jesz?</h1><p class="small muted">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać. Pełna lista alergenów i własne składniki są w profilu.</p></div>
+      body = `<div class="row" style="align-items:flex-end">${A.mascot('think', 60)}<div class="bubble">Czego nie jesz albo czego unikasz? Sprawdzę to przy każdym produkcie.</div></div>
+        <div><h1 id="startTitle" style="font-size:1.8rem">Czego unikasz?</h1><p class="small muted">Możesz nic nie zaznaczać. Pełną listę (alergeny, diety, własne składniki) znajdziesz w profilu.</p></div>
         <div class="pchips">${QUICK_AVOID.map(([g, k]) => `<label class="pchip"><input type="checkbox" data-pick="${g}:${k}"${draft.picks[g + ':' + k] ? ' checked' : ''}>${esc(opt(g, k).label)}</label>`).join('')}</div>
         <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Zawsze sprawdź etykietę.</p>`;
     } else {
-      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Jak masz na imię?</h1><p class="small muted">Nieobowiązkowe. Imię zostaje tylko w tym telefonie.</p></div>
+      body = `<div class="row" style="align-items:flex-end">${A.mascot('wink', 60)}<div class="bubble">Ostatnia rzecz. Jak mam się do Ciebie zwracać?</div></div>
+        <div><h1 id="startTitle" style="font-size:1.8rem">Jak masz na imię?</h1><p class="small muted">Nieobowiązkowe. Imię zostaje tylko w tym telefonie.</p></div>
         <input class="field" id="startName" maxlength="30" autocomplete="given-name" placeholder="np. Ania" value="${esc(draft.name)}" aria-label="Twoje imię">
-        <div class="panel stack"><b style="font-family:var(--f-display)">Jak liczymy dopasowanie?</b><ul class="why">
-          <li class="why-plus"><span class="why-ic">1</span><span>Zaczynamy od oceny składu produktu, takiej samej dla wszystkich.</span></li>
-          <li class="why-plus"><span class="why-ic">2</span><span>Każda rzecz, której pilnujesz, dodaje albo odejmuje punkty. Zawsze pokażemy ile i dlaczego.</span></li>
-          <li class="why-plus"><span class="why-ic">3</span><span>Jeśli produkt zawiera coś, czego nie jesz, oznaczymy go „Nie pasuje”.</span></li></ul></div>`;
+        <div class="panel stack"><b style="font-family:var(--f-display)">Jak to działa?</b><ul class="why">
+          <li class="why-plus"><span class="why-ic">1</span><span>Skanujesz produkt i od razu widzisz, czy pasuje do Ciebie.</span></li>
+          <li class="why-plus"><span class="why-ic">2</span><span>Zgadujesz „dobre czy nie”, zbierasz punkty i odznaki.</span></li>
+          <li class="why-plus"><span class="why-ic">3</span><span>Odkładasz dobre produkty na półki, czyli listy zakupów.</span></li></ul></div>`;
     }
     el.innerHTML = `<div class="wrap" style="gap:12px">${bar}${body}
       <div class="stack" style="margin-top:auto;gap:6px">
@@ -52,7 +42,7 @@
       </div></div>`;
   }
   function saveStart(finish) {
-    const p = Object.assign({}, A.profile, { goals: draft.goals.slice(), watch: draft.watch.slice() });
+    const p = Object.assign({}, A.profile, { goals: draft.goals.slice() });
     ['allergens', 'diet', 'avoid'].forEach(g => {
       const quick = QUICK_AVOID.filter(q => q[0] === g).map(q => q[1]);
       p[g] = A.profile[g].filter(k => !quick.includes(k)).concat(quick.filter(k => draft.picks[g + ':' + k]));
@@ -69,9 +59,9 @@
   A.startAction = (act, el) => {
     if (act === 'goal') {
       const k = el.dataset.k, i = draft.goals.indexOf(k);
-      if (i >= 0) { draft.goals.splice(i, 1); draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, false); msg = ''; }
+      if (i >= 0) { draft.goals.splice(i, 1); msg = ''; }
       else if (draft.goals.length >= GOALS_MAX) msg = `Możesz wybrać najwyżej ${GOALS_MAX} cele. Odznacz któryś, żeby dodać nowy.`;
-      else { draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, true); draft.goals.push(k); msg = ''; }
+      else { draft.goals.push(k); msg = ''; }
       renderStart();
       const again = A.$('scr-start').querySelector(`[data-k="${k}"]`); if (again) again.focus();
     } else if (act === 'start-next') {
@@ -90,16 +80,17 @@
 
   /* ---------- Dla Ciebie ---------- */
   // Czy osoba ustawiła coś, co zmienia ocenę (cel inny niż „Po prostu zdrowiej” albo ograniczenie)?
-  A.hasProfile = () => A.profile.watch.length > 0 || ['allergens', 'diet', 'avoid', 'custom'].some(g => A.profile[g].length);
+  A.hasProfile = () => A.profile.goals.some(g => { const x = GOALS.find(y => y.key === g); return x && !x.general; }) || ['allergens', 'diet', 'avoid', 'custom'].some(g => A.profile[g].length);
   A.pctClass = lvl => ({ great: 'great', good: 'good', poor: 'poor', bad: 'bad' }[lvl] || 'unknown');
   A.profileChips = () => {
     const out = [];
-    A.profile.watch.forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(`<span class="chip d-chip">${A.dIcon(w.icon, 16)}${esc(w.label)}</span>`); });
+    A.profile.goals.forEach(k => { const t = GOAL_TILES[k]; if (t) out.push(`<span class="chip"><span class="ci">${art(t.icon, 24)}</span>${esc(t.label)}</span>`); });
     ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => {
       const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (!o) return;
-      out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}${g === 'diet' ? esc(o.label) : 'Nie jem: ' + esc(o.label.toLowerCase())}</span>`);
+      const icon = k === 'palm' ? 'avoid_palm' : 'avoid_generic';
+      out.push(g === 'diet' ? `<span class="chip plain">${esc(o.label)}</span>` : `<span class="chip avoid"><span class="ci">${art(icon, 24)}</span>Bez: ${esc(o.label.toLowerCase())}</span>`);
     }));
-    A.profile.custom.forEach(c => out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}Nie jem: ${esc(c)}</span>`));
+    A.profile.custom.forEach(c => out.push(`<span class="chip avoid"><span class="ci">${art('avoid_generic', 24)}</span>Bez: ${esc(c)}</span>`));
     return out;
   };
   A.route('home', () => {
@@ -113,11 +104,7 @@
     const swap = hist.find(h => h.alt && h.pct != null && h.pct < 50 && !Shelf.hasCode(A.shelves, h.alt.code));
     const slots = ch ? Array.from({ length: Math.min(ch.target, 7) }, (_, i) => i < ch.have ? '<span class="slot done"><svg width="20" height="20" style="color:#7A4A1F"><use href="#i-check"/></svg></span>' : `<span class="slot todo">${i + 1}</span>`).join('') : '';
     A.$('scr-home').innerHTML = `<div class="wrap">
-      <div class="d-head"><span class="d-word"><span class="w-light">dobre </span><b>czy nie?</b></span>${A.hudPill()}</div>
-      <div class="d-scanhero"><span class="d-arc d-arc-home" aria-hidden="true"></span>
-        <button class="d-scanbtn" type="button" data-act="scan"><svg aria-hidden="true"><use href="#i-scan"/></svg><span>Skanuj</span></button>
-        <div class="d-hello"><p>${name ? 'Cześć, ' + esc(name) : 'Cześć'}</p><h1><span class="w-light">Sprawdź skład</span> <span class="w-bold">w 2 sek.</span></h1></div></div>
-      ${(() => { const wk = A.weekCard(), st = A.albumStats(); return `<a class="al-week${wk.done ? ' done' : ''}" href="#/album">${wk.img ? `<img src="${esc(wk.img)}" alt="">` : ''}<span class="grow"><span class="al-week-k">${wk.done ? 'TWÓJ ALBUM' : 'POLOWANIE TYGODNIA'}</span><b>${wk.done ? `${st.cards} ${plural(st.cards, 'karta', 'karty', 'kart')}, ${st.pages} ${plural(st.pages, 'pełna strona', 'pełne strony', 'pełnych stron')}` : 'Wolne miejsce na stronie: ' + esc(wk.label.toLowerCase())}</b><span>${wk.done ? 'Polowanie tygodnia zaliczone ✓ · zobacz album' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')} · złota ramka i +30 pkt`}</span></span><span aria-hidden="true">›</span></a>`; })()}
+      <div class="hello">${A.mascot('hello', 58)}<div class="grow"><h1>${name ? 'Cześć, ' + esc(name) + '!' : 'Cześć!'}</h1><p class="small muted">Co dziś wrzucasz do koszyka?</p></div>${A.hudPill()}</div>
       <a class="panel level-card" href="#/postepy"><span>${shieldSvg(lv.level, 54)}</span><span class="grow stack" style="gap:6px"><span class="row" style="justify-content:space-between"><b style="font-family:var(--f-display);font-size:1.1rem">${esc(lv.name)}</b><span class="small" style="font-weight:800;color:var(--green-d)">Poziom ${lv.level}</span></span>
         <span class="xp"><i style="width:${pct}%"></i></span><span class="small muted">${nextPts ? `${nextPts - A.game.points} pkt do poziomu ${lv.level + 1}: ${esc(lv.next.name)}` : 'Najwyższy poziom. Brawo!'}</span></span></a>
       ${ch ? `<div class="hero-green stack" id="challenge">
@@ -128,7 +115,7 @@
       <section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Twój profil</h2><a href="#/profil">Zmień</a></div>
         ${chips.length ? `<div class="chips">${chips.join('')}</div>` : `<div class="empty">Ustaw cel i to, czego unikasz, a od razu zobaczysz, czy produkt pasuje do Ciebie. <a href="#/start">Ustaw profil</a></div>`}</section>
       <section class="stack" aria-labelledby="hBest"><div class="sec-head"><h2 id="hBest" style="font-size:1.25rem">${A.hasProfile() ? 'Najlepsze dla Ciebie' : 'Najlepsze w sklepie'}</h2><a href="#/najlepsze">Wszystkie</a></div>
-        <div class="tiles">${HOME_TILES.map(t => `<a class="tile" href="#/lista/${t.cat}" ><img class="d-tile-img" src="${A.catImg(t.cat)}" alt="" width="96" height="96"><b>${esc(t.label)}</b><span>${A.hasProfile() ? 'dobre dla Ciebie' : 'z najlepszą oceną'}</span></a>`).join('')}<a class="tile" href="#/najlepsze"><span class="d-tile-stack" aria-hidden="true"><img src="img/cat/cheeses.webp" alt=""><img src="img/cat/pastas.webp" alt=""><img src="img/cat/nuts.webp" alt=""></span><b>Wszystkie kategorie</b><span>${SHOP_CATEGORIES.length} kategorii</span></a></div></section>
+        <div class="tiles">${HOME_TILES.map(t => `<a class="tile" href="#/lista/${t.cat}" style="background:radial-gradient(circle at 30% 25%,#fff 0%,${t.bg} 65%)">${art(t.icon, 54)}<b>${esc(t.label)}</b><span>${A.hasProfile() ? 'dobre dla Ciebie' : 'z najlepszą oceną'}</span></a>`).join('')}<a class="tile" href="#/najlepsze" style="background:radial-gradient(circle at 30% 25%,#fff 0%,#EDE4FF 65%)">${art('dept_pantry', 54)}<b>Wszystkie kategorie</b><span>${SHOP_CATEGORIES.length} kategorii</span></a></div></section>
       ${swap ? `<section class="stack" aria-labelledby="hSwap"><h2 id="hSwap" style="font-size:1.25rem">Zamień na lepsze</h2>
         <div class="card stack" id="swapCard">
           <a class="swap-row" href="#/p/${swap.code}" style="text-decoration:none;color:inherit"><span class="swap-thumb">${swap.image ? `<img src="${esc(swap.image)}" alt="">` : art('prod_cup_berry', 50)}<span class="pct ${A.pctClass(swap.level)}">${swap.pct}${A.hasProfile() ? '%' : ''}</span></span><span class="grow"><b style="display:block">${esc(swap.name)}</b><span class="small" style="color:var(--poor);font-weight:700">${A.hasProfile() ? 'Słabe dopasowanie do Ciebie' : esc(grade(swap.pct).label)}</span></span></a>
@@ -136,7 +123,7 @@
           <a class="swap-row" href="#/p/${esc(swap.alt.code)}" style="text-decoration:none;color:inherit"><span class="swap-thumb">${swap.alt.image ? `<img src="${esc(swap.alt.image)}" alt="">` : art('prod_cup', 50)}${swap.alt.pct != null ? `<span class="pct ${A.pctClass(swap.alt.level)}">${swap.alt.pct}%</span>` : ''}</span><span class="grow"><b style="display:block">${esc(swap.alt.name)}</b><span class="small" style="color:var(--great);font-weight:700">${esc(swap.alt.label || 'Lepszy wybór')}</span></span></a>
           <button class="btn btn-green btn-block" type="button" data-act="swap" data-from="${esc(swap.code)}">Zamień i dodaj na półkę (+15 pkt)</button></div></section>` : ''}
       <section class="stack" aria-labelledby="hHist"><div class="sec-head"><h2 id="hHist" style="font-size:1.25rem">Ostatnio sprawdzone</h2>${hist.length ? '<button class="linkbtn small" type="button" data-act="clear-history">Wyczyść</button>' : ''}</div>
-        ${hist.length ? `<div class="list">${hist.slice(0, 8).map(h => { const ci = h.kind === 'cosmetic' ? '' : A.catImg(A.catKeyOf(h.categories) || A.catKeyByName(h.name)); return `<a class="item" href="#/p/${esc(h.code)}">${h.image ? `<img class="thumb" src="${esc(h.image)}" alt="" loading="lazy">` : ci ? `<img class="thumb dish" src="${ci}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_other', 34)}</span>`}<span class="grow"><span class="t1">${esc(h.name)}</span><span class="t2">${esc([h.brand, h.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · '))}</span></span>${h.pct != null ? `<span class="pct ${A.pctClass(h.level)}">${h.pct}%</span>` : '<span class="pct none">–</span>'}</a>`; }).join('')}</div>`
+        ${hist.length ? `<div class="list">${hist.slice(0, 8).map(h => `<a class="item" href="#/p/${esc(h.code)}">${h.image ? `<img class="thumb" src="${esc(h.image)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_other', 34)}</span>`}<span class="grow"><span class="t1">${esc(h.name)}</span><span class="t2">${esc([h.brand, h.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · '))}</span></span>${h.pct != null ? `<span class="pct ${A.pctClass(h.level)}">${h.pct}%</span>` : '<span class="pct none">–</span>'}</a>`).join('')}</div>`
         : `<div class="empty stack" style="align-items:center">${A.mascot('smile', 64)}<span>Tu pojawią się sprawdzone produkty. Zeskanuj coś z kuchni albo łazienki.</span><button class="btn btn-green" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj produkt</button></div>`}</section>
       <section class="glass stack" aria-labelledby="hCode"><h2 id="hCode" style="font-size:1.05rem">Nie masz aparatu pod ręką?</h2>
         <form class="inline-form" id="homeForm" novalidate><input class="field" id="homeCode" inputmode="numeric" autocomplete="off" maxlength="40" placeholder="cyfry spod kodu kreskowego" aria-label="Kod kreskowy"><button class="btn btn-green btn-sm" type="submit">Sprawdź</button></form>
@@ -153,8 +140,8 @@
       <p class="small muted">${A.hasProfile() ? 'W każdej kategorii pokażemy produkty, które najlepiej pasują do Twoich celów i ograniczeń.' : 'W każdej kategorii pokażemy produkty z najlepszą oceną składu. Ustaw cele w profilu, a lista dopasuje się do Ciebie.'}</p>
       <input class="field" id="catSearch" type="search" autocomplete="off" placeholder="Szukaj kategorii, np. sery" aria-label="Szukaj kategorii">
       <p class="small muted" id="catNone" hidden>Nie mamy takiej kategorii. Spróbuj innego słowa.</p>
-      ${SHOP_GROUPS.map(g => `<section class="stack cat-group" style="gap:8px" aria-label="${esc(g.label)}"><div class="dept-h">${esc(g.label)}</div>
-        <div class="cat-grid">${SHOP_CATEGORIES.filter(c => c.group === g.key).map(c => `<a class="cat-link" href="#/lista/${c.key}" data-name="${esc(fold(c.label))}"><img class="d-cat-img" src="${A.catImg(c.key)}" alt="" width="44" height="44" loading="lazy"><span class="grow">${esc(c.label)}</span><span class="arr" aria-hidden="true">›</span></a>`).join('')}</div></section>`).join('')}
+      ${SHOP_GROUPS.map(g => `<section class="stack cat-group" style="gap:8px" aria-label="${esc(g.label)}"><div class="dept-h"><span class="di">${art(g.icon, 30)}</span>${esc(g.label)}</div>
+        <div class="cat-grid">${SHOP_CATEGORIES.filter(c => c.group === g.key).map(c => `<a class="cat-link" href="#/lista/${c.key}" data-name="${esc(fold(c.label))}">${esc(c.label)}<span class="arr" aria-hidden="true">›</span></a>`).join('')}</div></section>`).join('')}
     </div>`;
   });
   A.filterCats = q => {
@@ -182,7 +169,6 @@
     const cName = (SHOP_CATEGORIES.find(c => c.key === cat) || {}).label || 'Produkty';
     const el = A.$('scr-list');
     el.innerHTML = `<div class="wrap"><div class="topbar"><a class="btn btn-white iconbtn" href="#/najlepsze" aria-label="Wszystkie kategorie"><svg><use href="#i-back"/></svg></a><h1 class="grow">${esc(cName)}</h1>${A.hudPill()}</div>
-      <div class="d-listhero" aria-hidden="true"><span class="d-arc d-arc-list"></span><img src="${A.catImg(cat)}" alt="" width="480" height="480"></div>
       <div id="listBody" class="stack" aria-live="polite"><p class="small muted" id="listWait">Szukam produktów…</p><div class="sk" style="height:58px"></div><div class="sk" style="height:58px"></div><div class="sk" style="height:58px"></div></div></div>`;
     const token = {}; listToken = token;
     try {

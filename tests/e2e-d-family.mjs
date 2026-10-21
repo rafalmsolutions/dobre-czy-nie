@@ -9,7 +9,7 @@ await ctx.route(/workers\.dev\/category/, r => { const u = new URL(r.request().u
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 const closeCel = async () => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) return; await page.click('#celebrate [data-act=cel-ok]'); await page.waitForTimeout(120); } };
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['sugar'] })); });
-await page.goto('http://localhost:8790/d/index.html#/profil'); await page.waitForTimeout(800); await closeCel();
+await page.goto('http://localhost:8790/index.html#/profil'); await page.waitForTimeout(800); await closeCel();
 ok(await page.locator('[data-act=fam-add]').count() === 1, 'profil: przycisk „Dodaj osobę”');
 await page.click('[data-act=fam-add]'); await page.waitForTimeout(300);
 ok(await page.evaluate(() => App.family.length === 1), 'dodano domownika');
@@ -22,7 +22,7 @@ ok(await page.locator('#scr-profile input[name=cosmetic]').count() === 0, 'domow
 await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-profile.png', fullPage: true });
 await page.click('[data-act=fam-pick][data-id=me]'); await page.waitForTimeout(300);
 ok(await page.locator('input[name=allergens][value=nuts]').isChecked() === false, 'przełączenie na „Ja” pokazuje mój profil');
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.nutella); await page.waitForTimeout(1800); await closeCel();
+await page.goto('http://localhost:8790/index.html#/p/' + C.nutella); await page.waitForTimeout(1800); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]').catch(() => { });
 const ans = await page.innerText('#scr-product .d-hside .fam-ans').catch(() => '');
 ok(/Nie dla: Kuba/.test(ans) && /orzech/i.test(ans), 'obok zdjęcia odpowiedź dla rodziny: ' + ans.replace(/\n/g, ' | '));
@@ -43,18 +43,18 @@ await page.click('[data-act=fam-focus][data-id]:not([data-id=me])'); await page.
 ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA: KUBA'), 'stuknięcie osoby: wyjaśnienie dla niej');
 // Produkt, który pasuje obojgu: na start wyjaśnienie dla najważniejszej osoby, zielona odpowiedź.
 await page.evaluate(() => App.setFocus('me'));
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]').catch(() => { });
 const ans2 = await page.innerText('#scr-product .fam-ans').catch(() => '');
 ok(/Pasuje Wam obojgu/.test(ans2) && (await page.innerText('#matchBox')).includes('DLACZEGO DLA CIEBIE') && await page.locator('#famAlt').count() === 0, 'pasuje obojgu: ' + ans2.replace(/\n/g, ' | '));
 // Te same inicjały: dwie litery.
 const lab = await page.evaluate(() => { App.family.push({ id: 'fx', name: 'Kasia', p: cleanProfile({}) }); const pr = normalizeProduct({ code: '5900000000017', product_name: 'Test', nutriscore_grade: 'a', nova_group: 1, ingredients_text: 'woda', additives_tags: [], allergens_tags: [], nutriments: { sugars_100g: 1 } }, 'off'); const v = App.familyView(pr, analyze(pr)); App.family.pop(); return v.rows.map(r => r.label); });
 ok(lab.includes('Ku') && lab.includes('Ka'), 'te same inicjały: dwie litery ' + lab.join(','));
-await page.goto('http://localhost:8790/d/index.html#/profil'); await page.waitForTimeout(500);
+await page.goto('http://localhost:8790/index.html#/profil'); await page.waitForTimeout(500);
 await page.click('.fam-tab:has-text("Kuba")'); await page.waitForTimeout(200);
 await page.click('[data-act=fam-del]', { force: true }); await page.click('[data-act=fam-del-yes]', { force: true }); await page.waitForTimeout(300);
 ok(await page.evaluate(() => App.family.length === 0), 'usunięcie domownika');
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.oil); await page.waitForTimeout(1500);
+await page.goto('http://localhost:8790/index.html#/p/' + C.oil); await page.waitForTimeout(1500);
 ok(await page.locator('#scr-product .fam-hero').count() === 0 && await page.locator('#scr-product .d-badge').count() === 1, 'bez domowników: jeden kwadrat oceny jak dotąd');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

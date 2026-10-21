@@ -4,22 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#2E9A3E">
-<meta name="description" content="Dobre czy nie? Sprawdź skład w 2 sekundy. Osobiste dopasowanie produktów do Twoich celów, półki zakupowe i Ziarenko, które cieszy się z Twoich mądrych wyborów.">
-<title>Dobre czy nie? – sprawdź skład w 2 sekundy</title>
+<meta name="theme-color" content="#E8E9EB">
+<meta name="description" content="Dobre czy nie? Sprawdź skład w 2 sekundy: czy produkt pasuje do Ciebie i Twojej rodziny.">
+<title>Dobre czy nie?</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://world.openfoodfacts.org" crossorigin>
 <link rel="preconnect" href="https://images.openfoodfacts.org">
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;800;900&family=Mulish:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;800;900&family=Mulish:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;800;900&family=Mulish:wght@400;500;600;700;800&display=swap"></noscript>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="d.css">
 </head>
-<body class="no-nav">
+<body class="no-nav theme-d">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -29,6 +30,7 @@
   <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M14 8v8M17 8v8"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-shelf" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5" fill="none"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="13" height="17" rx="2"/><path d="M8 7.5h5M8 11h5"/><path d="M17 6.5l3 1-3.2 12.5"/></symbol>
   <symbol id="i-medal" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14l-1.5 7 5-3 5 3-1.5-7" fill="none"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 15.6 6.6 18.5l1.2-6L3.3 8.3l6.1-.7z" fill="#FFC93C" stroke="#C27700" stroke-width="1.2" stroke-linejoin="round"/></symbol>
@@ -39,7 +41,7 @@
 </svg>
 
 <main id="app">
-  <div class="boot" id="boot" aria-hidden="true"><img src="icons/icon.svg" width="72" height="72" alt=""><b>Dobre czy nie?</b><span>Sprawdź skład w 2 sekundy</span></div>
+  <div class="boot" id="boot" aria-hidden="true"><img src="icon.svg" width="72" height="72" alt=""><b><span class="w-light">dobre </span>czy nie?</b><span>Sprawdź skład w 2 sekundy</span></div>
   <section class="screen" id="scr-start" aria-labelledby="startTitle"></section>
   <section class="screen" id="scr-home" aria-label="Dla Ciebie"></section>
   <section class="screen" id="scr-product" aria-label="Produkt"></section>
@@ -48,13 +50,16 @@
   <section class="screen" id="scr-cats" aria-label="Wszystkie kategorie"></section>
   <section class="screen" id="scr-list" aria-label="Najlepsze dla Ciebie"></section>
   <section class="screen" id="scr-profile" aria-label="Profil"></section>
+  <section class="screen" id="scr-album" aria-label="Album odkryć"></section>
+  <section class="screen" id="scr-albumpage" aria-label="Strona albumu"></section>
+  <section class="screen" id="scr-discoveries" aria-label="Twoje odkrycia"></section>
 </main>
 
 <nav class="tabbar" aria-label="Główne menu">
   <a class="tab" href="#/" data-tab="home"><svg><use href="#i-home"/></svg>Dla Ciebie</a>
   <a class="tab" href="#/polki" data-tab="shelves"><svg><use href="#i-shelf"/></svg>Półki</a>
   <button class="tab-scan" type="button" data-act="scan" aria-label="Skanuj produkt"><svg><use href="#i-scan"/></svg></button>
-  <a class="tab" href="#/postepy" data-tab="progress"><svg><use href="#i-medal"/></svg>Postępy</a>
+  <a class="tab" href="#/album" data-tab="album"><svg><use href="#i-album"/></svg>Album</a>
   <a class="tab" href="#/profil" data-tab="profile"><svg><use href="#i-user"/></svg>Profil</a>
 </nav>
 
@@ -79,6 +84,7 @@
   </div>
 </div>
 
+<div class="reveal" id="reveal" hidden role="dialog" aria-modal="true" aria-label="Nowa karta do albumu"></div>
 <div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true" aria-labelledby="celHead"></div>
 
 <dialog id="howDlg" aria-labelledby="howTitle">
@@ -86,7 +92,13 @@
     <div class="sec-head"><h2 id="howTitle">Jak oceniamy produkty</h2><button class="btn btn-white iconbtn" type="button" data-act="close-dlg" aria-label="Zamknij"><svg><use href="#i-x"/></svg></button></div>
     <p>Każdy produkt dostaje werdykt i ocenę od 0 do 100. Metoda jest jawna i taka sama dla wszystkich marek. Nie bierzemy pieniędzy od producentów.</p>
     <h3>Osobiste dopasowanie</h3>
-    <ul><li>Bez celów i ograniczeń widzisz ogólną ocenę składu, taką samą dla wszystkich. Procent „dla Ciebie” pojawia się, gdy ustawisz cele albo to, czego unikasz.</li><li>Procent „dla Ciebie” to ocena produktu poprawiona o Twoje cele: +8 za każdy cel, który produkt wspiera, −12 za każdy, który wspiera słabiej.</li><li>Cele „mniej soli”, „mniej cukru” i „cholesterol” ustalają też granicę: gdy produkt ma dużo soli, cukru albo tłuszczów nasyconych (powyżej progów z etykiet: 1,5 g soli, 22,5 g cukru, 5 g tłuszczów nasyconych na 100 g), dopasowanie wynosi najwyżej 45%. Przy średniej ilości najwyżej 74%. Gdy baza nie podaje tej wartości, najwyżej 70%.</li><li>Jeśli produkt zawiera coś, czego unikasz (alergen, dieta, własny składnik), dopasowanie spada do 0–10%. Przy śladowych ilościach najwyżej do 35%.</li><li>Gdy baza nie ma danych, mówimy „Za mało danych” zamiast zgadywać.</li></ul>
+    <ul><li>Bez ustawień widzisz ogólną ocenę składu, taką samą dla wszystkich.</li>
+      <li><b>Pilnuję</b> (cukier, sól, tłuszcze nasycone, kalorie, przetworzenie): mało +5 pkt, średnio −10 pkt (najwyżej 74%), dużo −25 pkt (najwyżej 45%). Progi „mało” i „dużo” są z etykiet: np. sól do 0,3 g i powyżej 1,5 g, cukier do 5 g i powyżej 22,5 g, tłuszcze nasycone do 1,5 g i powyżej 5 g na 100 g.</li>
+      <li><b>Pilnuję</b> (olej palmowy, słodziki, kofeina): zawiera −25 pkt (najwyżej 45%).</li>
+      <li><b>Pilnuję</b> (białko, błonnik): dużo +10 pkt, źródło +5 pkt.</li>
+      <li>Gdy baza nie podaje potrzebnej wartości, dopasowanie wynosi najwyżej 70%, zamiast zgadywać.</li>
+      <li><b>Nie jem</b> (alergen, dieta, własny składnik): produkt, który to zawiera, ma 0–10%. Śladowe ilości: najwyżej 35%. Produkt bez wykluczeń ma zawsze co najmniej 12%.</li>
+      <li>Cele to tylko skróty: np. „Serce” zaznacza tłuszcze nasycone i sól. Przy produkcie zawsze widzisz rachunek: ocena składu i każda zmiana punktów.</li></ul>
     <h3>Werdykty</h3>
     <ul><li><b>Dobre na co dzień</b> (75–100), <b>Dobre</b> (50–74), <b>Od czasu do czasu</b> (25–49), <b>Raczej rzadko</b> (0–24). Żaden produkt nie jest „zakazany”, a liczy się cała dieta.</li></ul>
     <h3>Jedzenie</h3>
@@ -145,11 +157,15 @@
 <script defer src="shelf.js"></script>
 <script defer src="art.js"></script>
 <script defer src="ui-base.js"></script>
+<script defer src="album.js"></script>
+<script defer src="family.js"></script>
+<script defer src="disc.js"></script>
 <script defer src="ui-home.js"></script>
 <script defer src="ui-product.js"></script>
 <script defer src="ui-shelves.js"></script>
 <script defer src="ui-progress.js"></script>
 <script defer src="ui-complete.js"></script>
+<script defer src="ui-album.js"></script>
 <script defer src="ui-main.js"></script>
 </body>
 </html>

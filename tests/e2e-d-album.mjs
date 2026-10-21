@@ -26,7 +26,7 @@ await page.addInitScript(() => {
 });
 
 // 1. Strona z 10 miejscami
-await page.goto('http://localhost:8790/d/index.html#/album/en:yogurts'); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/index.html#/album/en:yogurts'); await page.waitForTimeout(1500); await closeCel();
 await page.screenshot({ path: shots + 'hunt-page.png', fullPage: true });
 const slots = await page.evaluate(() => App.slotsOf('en:yogurts'));
 ok(slots && slots.length === 10, 'strona ma 10 miejsc');
@@ -49,7 +49,7 @@ const target = await page.evaluate(raw => {
 ok(target && target.share < 1, 'skan trafi na najtrudniejsze pasujące miejsce: ' + (target && target.label));
 
 // 3. Skan → odsłonięcie → pełna strona → plakat
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.milk); await page.waitForTimeout(1800);
+await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1800);
 ok(await page.locator('#reveal').isVisible(), 'po skanie: nakładka nowego miejsca');
 ok((await page.innerText('#reveal')).includes(target.secret ? '???' : target.label), 'na odwrocie karty nazwa miejsca');
 await page.screenshot({ path: shots + 'hunt-back.png' });
@@ -67,8 +67,8 @@ await page.click('#reveal [data-act=reveal-album]'); await page.waitForTimeout(9
 ok(await page.locator('#scr-albumpage .gal.full .gal-t.open').count() === 10, 'strona: plakat odsłonięty w całości');
 
 // 4. Ponowny skan i produkt bez wolnego miejsca
-await page.goto('http://localhost:8790/d/index.html#/'); await page.waitForTimeout(400);
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.milk); await page.waitForTimeout(1200);
+await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(400);
+await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1200);
 ok(!(await page.locator('#reveal').isVisible()), 'ponowny skan: bez nowej karty');
 const r1 = await page.evaluate(raw => App.albumAdd(normalizeProduct(raw, 'off')), Object.assign({}, Y[0], { code: ean('591900000999') }));
 ok(r1 && r1.noSlot, 'pełna strona: kolejny jogurt nie zajmuje miejsca');
@@ -80,7 +80,7 @@ ok(await page.evaluate(() => { App.profile = cleanProfile({ diet: ['vegan'] }); 
 await page.evaluate(() => { App.profile = cleanProfile({}); });
 
 // 6. Album: polowanie tygodnia i lista stron
-await page.goto('http://localhost:8790/d/index.html#/album'); await page.waitForTimeout(800); await closeCel();
+await page.goto('http://localhost:8790/index.html#/album'); await page.waitForTimeout(800); await closeCel();
 await page.screenshot({ path: shots + 'hunt-album.png', fullPage: true });
 ok((await page.innerText('#scr-album')).includes('POLOWANIE TYGODNIA'), 'album: polowanie tygodnia');
 
@@ -94,14 +94,14 @@ await p2.addInitScript(y => {
   const cards = { [y[16].code]: { c: y[16].code, k: 'en:yogurts', r: 'epicka', h: false, s: false, w: false, n: 'Skyr 0', b: '', i: '', t: 1 }, '5900000000000': { c: '5900000000000', k: 'en:yogurts', r: 'zwykla', n: 'Nieznany', t: 2 } };
   localStorage.setItem('dcn-d-album', JSON.stringify({ cards, done: {}, weeks: {} })); localStorage.setItem('dcn-d-album-v', '2');
 }, Y);
-await p2.goto('http://localhost:8790/d/index.html#/album/en:yogurts'); await p2.waitForTimeout(1800);
+await p2.goto('http://localhost:8790/index.html#/album/en:yogurts'); await p2.waitForTimeout(1800);
 const mig = await p2.evaluate(c => ({ skyr: App.album.cards[c], unknown: App.album.cards['5900000000000'] }), Y[16].code);
 ok(mig.skyr && mig.skyr.slot && !mig.skyr.legacy, 'stara karta skyru dostała miejsce: ' + (mig.skyr && mig.skyr.slot));
 ok(!mig.unknown, 'stara karta bez danych produktu usunięta');
 // podpowiedź do tajnego miejsca po 5 skanach
 await p2.evaluate(() => { App.album.seen['en:yogurts'] = 5; App.albumSave(); });
-await p2.goto('http://localhost:8790/d/index.html#/album'); await p2.waitForTimeout(300);
-await p2.goto('http://localhost:8790/d/index.html#/album/en:yogurts'); await p2.waitForTimeout(900);
+await p2.goto('http://localhost:8790/index.html#/album'); await p2.waitForTimeout(300);
+await p2.goto('http://localhost:8790/index.html#/album/en:yogurts'); await p2.waitForTimeout(900);
 ok((await p2.innerText('#scr-albumpage')).includes('Podpowiedź: chodzi o'), 'podpowiedź do tajnego miejsca po 5 skanach');
 
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));

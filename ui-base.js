@@ -22,11 +22,12 @@ const App = {};
     set(k, v) { try { localStorage.setItem('dcn-' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
     del(k) { try { localStorage.removeItem('dcn-' + k); } catch (e) { } }
   };
-  A.profile = cleanProfile(A.store.get('profile', {}));
+  // Wersja D ma własny profil („Nie jem” + „Pilnuję”). Za pierwszym razem przenosimy ustawienia z głównej aplikacji.
+  A.profile = A.store.get('d-profile', null) ? cleanProfile(A.store.get('d-profile', {})) : migrateProfileD(A.store.get('profile', {}));
   A.settings = Object.assign({ guess: true }, A.store.get('settings', {}));
   A.game = Game.load(A.store.get('game', null));
   A.shelves = Shelf.load(A.store.get('shelves', null));
-  A.saveProfile = () => A.store.set('profile', A.profile);
+  A.saveProfile = () => A.store.set('d-profile', A.profile);
   A.saveSettings = () => A.store.set('settings', A.settings);
   A.saveShelves = () => A.store.set('shelves', A.shelves);
   A.saveGame = () => A.store.set('game', A.game);
@@ -39,12 +40,17 @@ const App = {};
   };
 
   /* ---------- Konfiguracja grywalizacji (pliki config/*.json) ---------- */
+  A.ALBUM_RULES = {
+    card_common: { points: 2, oncePerBarcode: true }, card_rare: { points: 5, oncePerBarcode: true }, card_epic: { points: 15, oncePerBarcode: true },
+    card_legend: { points: 50, oncePerBarcode: true }, card_holo: { points: 20, oncePerBarcode: true }, card_weekly: { points: 30, oncePerBarcode: true },
+    album_page: { points: 100, oncePerBarcode: true }
+  };
   A.cfg = A.store.get('cfg', { rules: {}, levels: {}, achievements: {}, challenges: {} });
   A.loadConfig = async () => {
     const names = { rules: 'points-rules', levels: 'levels', achievements: 'achievements', challenges: 'weekly-challenges' };
     try {
       const entries = await Promise.all(Object.entries(names).map(async ([k, f]) => {
-        const r = await fetch('config/' + f + '.json', { cache: 'no-cache' });
+        const r = await fetch(f === 'achievements' ? 'achievements.json' : 'config/' + f + '.json', { cache: 'no-cache' }); // wersja D: własne odznaki
         if (!r.ok) throw new Error(f);
         return [k, await r.json()];
       }));
@@ -52,10 +58,32 @@ const App = {};
       // Wersja 1.0 pokazuje odznaki oznaczone "1.0"; reszta przyjdzie z kolejnymi wersjami.
       const v = A.CFG.appVersion || '1.0';
       c.achievements = Object.assign({}, c.achievements, { achievements: (c.achievements.achievements || []).filter(a => !a.inVersion || parseFloat(a.inVersion) <= parseFloat(v)) });
+      // Wersja D: punkty za karty albumu (raz na produkt) i pełne strony.
+      c.rules = Object.assign({}, c.rules, { events: Object.assign({}, (c.rules || {}).events, A.ALBUM_RULES) });
       A.cfg = c; A.store.set('cfg', c);
     } catch (e) { /* bez sieci: zostaje ostatnia zapisana konfiguracja */ }
   };
-  A.extraMetrics = () => ({ breakfast_on_shelf: Shelf.breakfastGood(A.shelves) });
+  // Wersja D: dodatkowe liczniki odznak. Kategorie i „perełki” zbieramy w osobnych zbiorach, bo historia trzyma tylko 30 produktów.
+  A.extraMetrics = () => {
+    const hist = A.store.get('history', []).filter(h => h && h.code);
+    const cats = new Set(A.store.get('d-cats', [])), great = new Set(A.store.get('d-great', []));
+    const n0 = cats.size, g0 = great.size;
+    hist.forEach(h => {
+      const k = h.kind === 'cosmetic' ? '' : (A.catKeyOf ? (A.catKeyOf(h.categories) || A.catKeyByName(h.name)) : '');
+      if (k) cats.add(k); else if (h.categories && h.categories.length) cats.add(h.categories[h.categories.length - 1]);
+      if (h.pct != null && h.pct >= 75) great.add(h.code);
+    });
+    if (cats.size !== n0) A.store.set('d-cats', [...cats].slice(-500));
+    if (great.size !== g0) A.store.set('d-great', [...great].slice(-1000));
+    const c = (A.game && A.game.counters) || {}, p = A.profile || {};
+    return {
+      disc_best: (A.disc && A.disc.best) || 0,
+      breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
+      data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0),
+      profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0),
+      ...(A.albumMetrics ? A.albumMetrics() : {})
+    };
+  };
 
   /* ---------- Anonimowe statystyki (GoatCounter, bez ciasteczek) ----------
      Wysyłamy tylko nazwę ekranu albo zdarzenia (np. „skan-znaleziony”). Bez kodów produktów, profilu,
@@ -69,15 +97,15 @@ const App = {};
     const url = `https://${GC}.goatcounter.com/count?p=${encodeURIComponent(path)}${event ? '&e=true' : ''}&rnd=${Math.random().toString(36).slice(2, 8)}`;
     try { if (!(navigator.sendBeacon && navigator.sendBeacon(url))) new Image().src = url; } catch (e) { }
   }
-  A.track = name => hit(name, true);
+  A.track = name => hit('d-' + name, true); // wersja D: osobne zdarzenia w statystykach
   // Uwagi od testerów: gotowy e-mail z szablonem i wersją aplikacji (bez danych z profilu).
   A.feedbackHref = () => {
-    const v = A.CFG.appVersion || '1.0', scr = `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`;
+    const v = (A.CFG.appVersion || '2.0'), scr = `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`;
     const ua = /Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'komputer';
     const body = `Co było przydatne:\n\n\nCo przeszkadzało albo nie działało:\n\n\nCzego brakuje:\n\n\n---\nWersja ${v}, ${ua}, ekran ${scr}`;
     return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Dobre czy nie? ' + v)}&body=${encodeURIComponent(body)}`;
   };
-  A.trackView = screen => hit('/' + screen, false);
+  A.trackView = screen => hit('/d/' + screen, false);
   A.trackWeek = () => {
     const now = Date.now();
     let first = A.store.get('first', 0);
@@ -88,11 +116,47 @@ const App = {};
   };
   const EVENT_STATS = { product_checked: 'skan-znaleziony', guess_right: 'zgadnij-trafione', guess_wrong: 'zgadnij-pudlo', shelf_add: 'na-polke', swap_to_better: 'zamiana', list_completed: 'lista-kupiona', product_added: 'dodano-produkt', ingredients_added: 'uzupelniono-sklad', nutrition_added: 'uzupelniono-wartosci', photo_added: 'dodano-zdjecie', report_sent: 'zgloszenie', shelf_shared: 'polka-udostepniona', explanation_opened: 'wyjasnienie' };
 
+  /* ---------- Wersja D: dźwięki i wibracje ----------
+     Dźwięki są generowane w przeglądarce (Web Audio), bez plików. Wyłącza je przełącznik w profilu.
+     Przeglądarka pozwala grać dopiero po pierwszym dotknięciu ekranu, więc wtedy przygotowujemy dźwięk. */
+  let ac = null, master = null;
+  const audio = () => {
+    if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); master = ac.createGain(); master.gain.value = 0.35; master.connect(ac.destination); }
+    if (ac.state === 'suspended') ac.resume().catch(() => { });
+    return ac;
+  };
+  ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (A.settings.sound !== false) audio(); }, { once: true, passive: true }));
+  function tone(t, freq, dur, o = {}) {
+    const osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(freq, t);
+    if (o.glide) osc.frequency.exponentialRampToValueAtTime(o.glide, t + dur * 0.8);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || 0.2, t + (o.attack || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g); g.connect(master); osc.start(t); osc.stop(t + dur + 0.03);
+  }
+  const SOUNDS = {
+    scan: t => tone(t, 1568, 0.09, { vol: 0.25 }),
+    right: t => { tone(t, 784, 0.13, { type: 'triangle', vol: 0.3 }); tone(t + 0.09, 1175, 0.24, { type: 'triangle', vol: 0.3 }); },
+    wrong: t => { tone(t, 392, 0.16, { vol: 0.22 }); tone(t + 0.12, 330, 0.28, { vol: 0.2 }); },
+    shelf: t => tone(t, 520, 0.13, { vol: 0.3, glide: 880 }),
+    badge: t => { [1047, 1319, 1568, 2093].forEach((f, i) => tone(t + i * 0.085, f, 0.5, { type: 'triangle', vol: 0.22 })); tone(t + 0.34, 3136, 0.6, { vol: 0.05 }); },
+    gold: t => { SOUNDS.badge(t); [2637, 3136, 4186].forEach((f, i) => tone(t + 0.42 + i * 0.07, f, 0.5, { vol: 0.07 })); },
+    level: t => { [523, 659, 784].forEach((f, i) => tone(t + i * 0.11, f, 0.22, { type: 'square', vol: 0.06 })); [523, 659, 784, 1047].forEach(f => tone(t + 0.36, f, 1.1, { type: 'triangle', vol: 0.12 })); },
+    challenge: t => { [659, 784, 988, 1319].forEach((f, i) => tone(t + i * 0.1, f, 0.4, { type: 'triangle', vol: 0.2 })); }
+  };
+  const BUZZ = { scan: 40, right: [25, 40, 25], wrong: 60, badge: [30, 50, 30, 50, 80], gold: [30, 40, 30, 40, 30, 40, 120], level: [60, 60, 120], challenge: [40, 40, 80] };
+  A.sound = name => {
+    if (A.settings.sound === false || document.hidden) return;
+    try { const c = audio(); if (c && SOUNDS[name]) SOUNDS[name](c.currentTime + 0.02); } catch (e) { }
+    try { if (BUZZ[name] && navigator.vibrate) navigator.vibrate(BUZZ[name]); } catch (e) { }
+  };
+  const EVENT_SOUND = { guess_right: 'right', guess_wrong: 'wrong', shelf_add: 'shelf', swap_to_better: 'shelf' };
+
   /* ---------- Punkty, odznaki, gratulacje ---------- */
   A.award = (event, ctx = {}) => {
     if (EVENT_STATS[event]) A.track(EVENT_STATS[event]);
     const r = Game.award(A.game, A.cfg, event, Object.assign({ extra: A.extraMetrics() }, ctx));
     if (r.state !== A.game) { A.game = r.state; A.saveGame(); }
+    if (EVENT_SOUND[event]) A.sound(EVENT_SOUND[event]);
     if (r.gained > 0) A.plusFly(r.gained);
     if (r.events.length) A.celebrate(r.events);
     A.refreshHud();
@@ -116,8 +180,7 @@ const App = {};
     if (!reward) return '';
     if (typeof reward === 'string') return `<span class="reward-chip green">${A.esc(reward)}</span>`;
     const out = [];
-    if (reward.points) out.push(`<span class="reward-chip gold">+${reward.points} pkt</span>`, `<span class="reward-chip blue">+${reward.points} kropli</span>`);
-    (reward.items || []).forEach(i => out.push(`<span class="reward-chip red">${A.esc(ITEM_NAMES[i] || 'Nagroda')}</span>`));
+    if (reward.points) out.push(`<span class="reward-chip gold">+${reward.points} pkt</span>`); // wersja D: bez kropli i nasion
     return out.join('');
   };
   const ITEM_NAMES = { seed_strawberry: 'Nasiona truskawki', seed_golden_carrot: 'Złota marchewka', seed_pumpkin: 'Nasiona dyni', deco_rainbow_fence: 'Tęczowy płotek', tool_golden_can: 'Złota konewka' };
@@ -132,15 +195,19 @@ const App = {};
     if (e.type === 'achievement') {
       const a = ((A.cfg.achievements && A.cfg.achievements.achievements) || []).find(x => x.id === e.id) || {};
       ribbon = 'Nowa odznaka!'; head = e.name; sub = a.description || '';
-      emblem = medalSvg(a.icon, a.category, true, 170, 3);
+      emblem = medalSvg(a.icon, a.category, true, 170, a.tier || 3, 'm-pop');
+      setTimeout(() => A.sound(a.tier === 3 ? 'gold' : 'badge'), 250);
+      if (a.tier) { head = e.name + ' · ' + ['brąz', 'srebro', 'złoto'][a.tier - 1]; }
     } else if (e.type === 'level') {
       ribbon = 'Nowy poziom!'; head = e.name; sub = 'Poziom ' + e.level + '. Tak trzymaj!';
       emblem = shieldSvg(e.level, 150);
+      setTimeout(() => A.sound('level'), 250);
     } else {
+      setTimeout(() => A.sound('challenge'), 250);
       ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Nowe wyzwanie pojawi się w poniedziałek.';
       emblem = art('packet_strawberry', 150);
     }
-    const colors = ['#FFD23F', '#FF6B6B', '#5BB4F5', '#7EE08A', '#C9B2FF', '#FF9F6B', '#FFFFFF'];
+    const colors = ['#9FCDB0', '#F5D36B', '#F2A15E', '#EFA2B4', '#C9DAEC', '#E4DAF0', '#2B2C30']; // wersja D: pastelowe konfetti
     let conf = '';
     for (let i = 0; i < 36; i++) conf += `<i style="left:${(i * 37) % 100}%;background:${colors[i % colors.length]};animation-duration:${(3.5 + (i % 7) * .5).toFixed(1)}s;animation-delay:${(-(i % 9) * .7).toFixed(1)}s"></i>`;
     box.innerHTML = `<div class="rays"></div><div class="glow"></div><div class="confetti" aria-hidden="true">${conf}</div>
@@ -165,7 +232,91 @@ const App = {};
   A.announce = msg => { let l = A.$('srLive'); if (!l) { l = document.createElement('div'); l.id = 'srLive'; l.className = 'sr'; l.setAttribute('aria-live', 'polite'); document.body.appendChild(l); } l.textContent = msg; };
   A.openDlg = id => { const d = A.$(id); if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); };
   A.closeDlg = d => { if (!d) return; if (d.close) d.close(); else d.removeAttribute('open'); };
-  A.mascot = (pose, w) => art('z_' + pose, w).replace('<svg ', '<svg class="mascot" ');
+  // Wersja D: bez maskotki (spokojniejszy wygląd dla dorosłych).
+  A.mascot = () => '';
+  // Zdjęcia kategorii (img/cat/*.webp): najwęższa kategoria produktu, która jest na liście kategorii aplikacji.
+  const CAT_KEYS = new Set(SHOP_CATEGORIES.map(c => c.key));
+  const CAT_ALIAS = { 'en:hams': 'en:prepared-meats', 'en:cold-cuts': 'en:prepared-meats', 'en:frankfurters': 'en:sausages', 'en:hazelnut-spreads': 'en:sweet-spreads', 'en:plain-yogurts': 'en:yogurts', 'en:plant-based-milks': 'en:plant-based-milk-alternatives', 'en:mineral-waters': 'en:waters', 'en:chips': 'en:crisps', 'en:carbonated-drinks': 'en:sodas', 'en:sweetened-beverages': 'en:sodas', 'en:fruit-based-beverages': 'en:fruit-juices', 'en:nectars': 'en:fruit-juices', 'en:orange-nectars': 'en:fruit-juices', 'en:bars-covered-with-chocolate': 'en:chocolates', 'en:confectioneries': 'en:candies', 'en:instant-beverages': 'en:coffees', 'pl:kawy-ziarniste': 'en:coffees', 'en:broths': 'en:soups', 'en:poultry-broth': 'en:soups', 'en:lagers': 'en:beers', 'en:beer': 'en:beers', 'en:dairy-creams': 'en:creams', 'en:sour-creams': 'en:creams', 'en:chicken-eggs': 'en:eggs', 'en:poultries': 'en:fresh-meats', 'en:meats': 'en:fresh-meats', 'en:fruits': 'en:fresh-fruits', 'en:vegetables': 'en:fresh-vegetables' };
+  A.catKeyOf = cats => { const c = Array.isArray(cats) ? cats : []; for (let i = c.length - 1; i >= 0; i--) { if (CAT_KEYS.has(c[i])) return c[i]; if (CAT_ALIAS[c[i]] && CAT_KEYS.has(CAT_ALIAS[c[i]])) return CAT_ALIAS[c[i]]; } return ''; };
+  // Gdy baza nie podaje kategorii: rozpoznanie po nazwie produktu (kolejność: od najbardziej szczegółowych).
+  const NAME_RULES = [
+    [/\b(parowk|kielbas|kabanos|frankfurter)/, 'en:sausages'],
+    [/\b(sardyn|tunczyk|szprot|makrel)/, 'en:canned-fishes'],
+    [/\b(losos|dorsz|pstrag|mintaj|filet rybn|ryba|ryby|sledz|fish)/, 'en:fishes'],
+    [/\b(szynk|poledwic|salami|boczek|wedlin|baleron|mortadel)/, 'en:prepared-meats'],
+    [/\b(krem (orzech|kakao|czekol)|nutell|maslo orzech|pasta orzech)/, 'en:sweet-spreads'],
+    [/\b(napoj (owsian|sojow|migdal|ryzow|kokos|roslin))/, 'en:plant-based-milk-alternatives'],
+    [/\b(budyn|kisiel|deser|pudding|panna cotta)/, 'en:dairy-desserts'],
+    [/\bjogurt/, 'en:yogurts'],
+    [/\b(twarog|twarozek|serek|homogeniz)/, 'en:quarks'],
+    [/\b(ser|sery|sera|gouda|edam|mozzarell|camembert|feta|parmezan|cheddar|brie)\b/, 'en:cheeses'],
+    [/\b(mleko|kefir|maslank)/, 'en:milks'],
+    [/\b(maslo|masla)\b/, 'en:butters'],
+    [/\b(musli|granol)/, 'en:mueslis'],
+    [/\b(platki|owsianka)/, 'en:breakfast-cereals'],
+    [/\b(dzem|konfitur|powidl|marmolad)/, 'en:jams'],
+    [/\bhummus/, 'en:hummus'],
+    [/\b(chleb|bulk|bagiet|pieczyw|tortill|grahamk|rogal)/, 'en:breads'],
+    [/\b(chips|crisps)/, 'en:crisps'],
+    [/\b(paluszk|krakers|precel|wafle ryz|popcorn|chrupk)/, 'en:salty-snacks'],
+    [/\b(makaron|spaghetti|penne|fusilli|tagliatell|lasagn|nitki)/, 'en:pastas'],
+    [/\b(kasza|kaszk|bulgur|kuskus|quinoa)/, 'en:groats'],
+    [/\b(ryz|ryzu)\b/, 'en:rices'],
+    [/\b(fasol|soczewic|ciecierzyc|cieciork|groch)/, 'en:legumes'],
+    [/\bketchup/, 'en:ketchup'],
+    [/\b(sos|sosy|pesto|majonez)\b/, 'en:sauces'],
+    [/\b(olej|oliwa)/, 'en:vegetable-oils'],
+    [/\b(ogork|kiszon|marynowan|korniszon|gherkin|pickle)/, 'en:pickles'],
+    [/\b(kukurydz|groszek)/, 'en:canned-vegetables'],
+    [/\b(zupa|bulion|rosol|barszcz|zurek|krem z)/, 'en:soups'],
+    [/\b(pierog|uszka|kopytk|pyzy)/, 'en:pierogi'],
+    [/\bpizz/, 'en:pizzas'],
+    [/\b(mrozon|mieszanka warzyw)/, 'en:frozen-vegetables'],
+    [/\b(danie|gulasz|bigos|golabk|risotto)/, 'en:meals'],
+    [/\b(rodzynk|suszon|daktyl|zurawin|morel|figi)/, 'en:dried-fruits'],
+    [/\b(orzech|migdal|nerkow|pistacj|arachid)/, 'en:nuts'],
+    [/\b(czekolad|baton|praliny|bombonier)/, 'en:chocolates'],
+    [/\b(ciastk|herbatnik|biszkopt|wafel|wafelek|piernik|cookies)/, 'en:biscuits'],
+    [/\b(cukierk|zelk|zelki|lizak|landrynk|gumy)/, 'en:candies'],
+    [/\b(lody|lodow)/, 'en:ice-creams'],
+    [/\b(sok|soki|nektar|smoothie)\b/, 'en:fruit-juices'],
+    [/\b(cola|lemoniad|oranzad|tonic|napoj gazow|napoj energ|energy)/, 'en:sodas'],
+    [/\b(herbat)/, 'en:teas'],
+    [/\b(kawa|kawy|cappuccino|espresso|latte)\b/, 'en:coffees'],
+    [/\bwoda\b/, 'en:waters'],
+    [/\b(piwo|piwa|lager|radler)\b/, 'en:beers'],
+    [/\b(smietan|smietank)/, 'en:creams'],
+    [/\b(jaja|jajka|jajko)\b/, 'en:eggs'],
+    [/(kurczak|indyk|piers).*wedzon|wedzon.*(kurczak|indyk|piers)/, 'en:prepared-meats'],
+    [/\b(schab|filet z kurczaka|piers z kurczaka|karkowk|mielon|udka|lopatk|poledwiczk|wolowin|indyk|kurczak)/, 'en:fresh-meats'],
+    [/\b(pomidor|ogorek|marchew|papryk|salat|szpinak|ziemniak|cebul|brokul|kalafior|cukini|rzodkiew|kapust)/, 'en:fresh-vegetables'],
+    [/\b(jablk|banan|borowk|truskawk|gruszk|pomarancz|mandaryn|winogron|cytryn|malin|sliwk|kiwi)/, 'en:fresh-fruits']
+  ];
+  A.catKeyByName = name => { const f = fold(name).replace(/[^a-z0-9 ]+/g, ' '); for (const [re, k] of NAME_RULES) if (re.test(f)) return k; return ''; };
+  A.catImg = key => key && CAT_KEYS.has(key) ? 'img/cat/' + key.replace(/^en:/, '') + '.webp' : '';
+  A.prodCatKey = p => p && p.kind !== 'cosmetic' ? (A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
+  A.prodCatImg = p => p && p.kind !== 'cosmetic' ? A.catImg(A.catKeyOf(p.categories) || A.catKeyByName(p.name)) : '';
+  // Wersja D: liniowe ikony celów i pozycji „Pilnuję” (kolor z otoczenia).
+  const D_ICONS = {
+    sugar: 'M7 9l5-3 5 3v6l-5 3-5-3zM7 9l5 3 5-3M12 12v6',
+    heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM8 12h2l1-2 2 4 1-2h2',
+    pressure: 'M4 16a8 8 0 1 1 16 0M12 16l4-5M5 16h1.5M17.5 16H19M12 8V9.5M7.5 10.5l1 1M16.5 10.5l-1 1',
+    weight: 'M5 6h14l-1.5 13h-11zM9 11a3 3 0 0 1 6 0M12 11l1.6-1.6',
+    protein: 'M3 10v4M6 7.5v9M18 7.5v9M21 10v4M6 12h12',
+    fiber: 'M12 21V9M12 9c-2-1-3-3-3-5 2 1 3 3 3 5zM12 9c2-1 3-3 3-5-2 1-3 3-3 5zM12 15c-2-1-3.5-3-3.5-5 2 1 3.5 3 3.5 5zM12 15c2-1 3.5-3 3.5-5-2 1-3.5 3-3.5 5z',
+    processing: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9',
+    healthy: 'M5 19c0-8 6-14 14-14 0 8-6 14-14 14zM5 19l7-7',
+    salt: 'M8 10h8l-1 10H9zM8 10a4 4 0 0 1 8 0M10.5 6.5h.01M13.5 6.5h.01M12 5h.01',
+    fat: 'M12 3C9 8 6 11 6 15a6 6 0 0 0 12 0c0-4-3-7-6-12zM9.5 15a2.5 2.5 0 0 0 2.5 2.5',
+    kcal: 'M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1 1 2 2 2 4 0-3 1-5 1-8z',
+    palm: 'M12 21v-9M12 12c-1-3-4-5-8-4M12 12c1-3 4-5 8-4M12 12c-3-1-6 0-7 3M12 12c3-1 6 0 7 3',
+    sweetener: 'M12 4v3M12 17v3M4 12h3M17 12h3M6.5 6.5l2 2M15.5 15.5l2 2M17.5 6.5l-2 2M8.5 15.5l-2 2M12 10a2 2 0 1 0 0 4a2 2 0 1 0 0-4',
+    caffeine: 'M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M9 3c0 1.5 1 1.5 1 3M12.5 3c0 1.5 1 1.5 1 3',
+    ban: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM5.6 5.6l12.8 12.8'
+  };
+  A.dIcon = (name, size) => D_ICONS[name] ? `<svg class="d-ic" width="${size || 22}" height="${size || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${D_ICONS[name]}"/></svg>` : '';
+  // Nazwa produktu w dwóch grubościach: pierwsze słowo cienko, reszta grubo.
+  A.splitName = name => { const w = String(name || '').trim().split(/\s+/); if (w.length < 2) return `<span class="w-bold">${A.esc(w[0] || '')}</span>`; return `<span class="w-light">${A.esc(w[0])}</span> <span class="w-bold">${A.esc(w.slice(1).join(' '))}</span>`; };
 
   /* ---------- Nawigacja ---------- */
   A.routes = {};
@@ -181,11 +332,14 @@ const App = {};
     else if (h === '#/profil') screen = 'profile';
     else if (h === '#/start') screen = 'start';
     else if (h === '#/najlepsze') screen = 'cats';
+    else if (h === '#/album') screen = 'album';
+    else if (h === '#/odkrycia') screen = 'discoveries';
+    else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
-    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen));
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
-    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === screen) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
@@ -465,7 +619,9 @@ const App = {};
     setTimeout(() => scanning && requestAnimationFrame(tick), detector ? 100 : 140);
   }
   function found(code) {
-    if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }
+    if (A.settings.sound === false && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }
+    A.sound('scan');
+    if (A.markCameraScan) A.markCameraScan(code);
     A.closeScanner(true);
     A.openCode(code);
   }
@@ -485,6 +641,16 @@ const App = {};
     const track = stream && stream.getVideoTracks()[0]; if (!track) return;
     const on = A.$('torchBtn').getAttribute('aria-pressed') !== 'true';
     try { await track.applyConstraints({ advanced: [{ torch: on }] }); A.$('torchBtn').setAttribute('aria-pressed', String(on)); } catch (e) { A.toast('Latarka nie jest dostępna.'); }
+  };
+  /* Kody kreskowe na zdjęciu (odkrywcy: kod ze zdjęcia musi zgadzać się ze skanem). Zwraca listę poprawnych kodów. */
+  A.findCodes = async blob => {
+    try {
+      const img = await A.downscale(blob, 1600), out = [];
+      const det = await nativeDetector();
+      if (det) { try { (await det.detect(img)).forEach(r => out.push(r.rawValue)); } catch (e) { } }
+      if (!out.length) { try { await A.loadScript(ZXING_URLS); const c = zxDecode(img); if (c) out.push(c); } catch (e) { } }
+      return [...new Set(out.map(c => c.length === 12 ? '0' + c : c).filter(c => validBarcode(c)))];
+    } catch (e) { return []; }
   };
   A.decodeImageFile = async file => {
     const msg = A.$('scanMsg');

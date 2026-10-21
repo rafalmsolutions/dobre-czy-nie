@@ -51,7 +51,7 @@ export const SHOPS = {
 };
 export async function setup(ctx, opts = {}) {
   await ctx.route(/fonts\.(googleapis|gstatic)|jsdelivr|unpkg|play\.google/, r => r.abort());
-  const IMG = (await import('fs')).readFileSync(new URL('../icons/icon-192.png', import.meta.url));
+  const IMG = (await import('fs')).readFileSync(new URL('../icon-192.png', import.meta.url));
   await ctx.route(/images\.openfoodfacts/, r => r.fulfill({ body: IMG, contentType: 'image/png' }));
   opts.searchCalls = 0;
   await ctx.route(/openfoodfacts\.org\/api\/v2\/search/, async r => {

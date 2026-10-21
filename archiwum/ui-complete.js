@@ -24,16 +24,6 @@
   };
   // Liczby z polskim przecinkiem; puste = brak.
   A.parseNum = v => { const t = String(v == null ? '' : v).trim().replace(',', '.').replace(/\s/g, ''); if (!t) return null; const n = Number(t); return isFinite(n) ? n : NaN; };
-  /* Jaka część słów odczytanych ze zdjęcia została we wpisanym składzie (0–1). Bez odczytu: 1 (nie ma z czym porównać). */
-  A.ocrMatch = (ocr, typed) => {
-    const words = t => (fold(t || '').match(/[a-z]{4,}/g) || []);
-    const o = [...new Set(words(ocr))];
-    if (o.length < 5) return 1;
-    const t = [...new Set(words(typed))], tw = new Set(t), os = new Set(o);
-    if (!t.length) return 0;
-    // Większa z dwóch: ile odczytu zostało we wpisie i ile wpisu jest w odczycie (usunięcie zbędnego tekstu nie karze).
-    return Math.max(o.filter(w => tw.has(w)).length / o.length, t.filter(w => os.has(w)).length / t.length);
-  };
   A.nutProblem = n => {
     if (n['energy-kcal'] == null) return 'Wpisz wartość energetyczną w kcal (na 100 g).';
     for (const [k, label, , req] of NUT_FIELDS) {
@@ -45,11 +35,6 @@
     if (n['saturated-fat'] > n.fat) return 'Kwasy nasycone nie mogą być większe niż tłuszcz.';
     if (n.sugars > n.carbohydrates) return 'Cukry nie mogą być większe niż węglowodany.';
     if ((n.fat || 0) + (n.carbohydrates || 0) + (n.proteins || 0) + (n.salt || 0) + (n.fiber || 0) > 105) return 'Suma tłuszczu, węglowodanów, białka, błonnika i soli przekracza 100 g. Sprawdź liczby.';
-    // Odkrywcy: kalorie muszą pasować do białka, węglowodanów i tłuszczu (zmyślone liczby zwykle się nie sumują).
-    if (n.fat != null && n.carbohydrates != null && n.proteins != null) {
-      const est = 9 * n.fat + 4 * n.carbohydrates + 4 * n.proteins + 2 * (n.fiber || 0);
-      if (Math.abs(n['energy-kcal'] - est) > Math.max(30, 0.25 * Math.max(est, n['energy-kcal']))) return `Kalorie (${n['energy-kcal']} kcal) nie pasują do białka, węglowodanów i tłuszczu (wychodzi ok. ${Math.round(est)} kcal). Sprawdź liczby.`;
-    }
     return '';
   };
 
@@ -104,7 +89,6 @@
       const r = await post('/ocr', { code: opts.code });
       if (!el.isConnected) return;
       const text = r.ok ? A.trimOcr(r.text) : '';
-      st.ocr = text;
       const noImage = !r.ok && !urls.ingredients && !afterPhoto;
       el.innerHTML = `<div class="panel stack" id="completeIngr">${head('Sprawdź skład')}
         ${text ? '<p class="small">Tak odczytaliśmy skład ze zdjęcia. Popraw błędy i usuń to, co nie jest składem.</p>' : noImage
@@ -143,7 +127,6 @@
       if (act === 'save-ingr') {
         const text = A.$('cmpIngr').value.replace(/\s+/g, ' ').trim(), msg = A.$('cmpIngrMsg');
         if (text.length < 8) { msg.textContent = 'Wpisz skład z opakowania, przynajmniej kilka składników.'; A.$('cmpIngr').focus(); return; }
-        if (A.ocrMatch(st.ocr, text) < 0.35) { msg.textContent = 'Wpisany skład bardzo różni się od tego, co widać na zdjęciu. Popraw tylko błędy odczytu i usuń to, co nie jest składem.'; A.$('cmpIngr').focus(); return; }
         b.disabled = true; b.textContent = 'Zapisuję…';
         const r = await post('/edit', { code: opts.code, ingredients_text: text });
         if (r.ok || r.error === 'exists') {

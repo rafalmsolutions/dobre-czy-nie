@@ -3,7 +3,7 @@
 
 const OFF = 'https://world.openfoodfacts.org';
 const OBF = 'https://world.openbeautyfacts.org';
-const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,image_ingredients_url,image_nutrition_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy,unique_scans_n';
+const FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,image_ingredients_url,image_nutrition_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy';
 const ZXING_URLS = ['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js', 'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js', 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js'];
 const TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 
@@ -206,8 +206,6 @@ function normalizeProduct(p, source) {
     imageLarge: p.image_front_url || p.image_url || p.image_front_small_url || '',
     imageIngredients: p.image_ingredients_url || '', imageNutrition: p.image_nutrition_url || '',
     stores: (Array.isArray(p.stores) ? p.stores : typeof p.stores === 'string' ? p.stores.split(',') : Array.isArray(p.stores_tags) ? p.stores_tags : []).map(x => String(x).trim()).filter(Boolean).slice(0, 20),
-    qchg: Array.isArray(p.qchg) ? p.qchg.filter(x => Array.isArray(x) && x.length === 3 && x.every(y => typeof y === 'string')).slice(-3) : null,
-    scans: p.unique_scans_n != null && isFinite(Number(p.unique_scans_n)) ? Math.max(0, Math.round(Number(p.unique_scans_n))) : null,
     nutriscore: (p.nutriscore_grade || '').toLowerCase(), nova: p.nova_group || null,
     additiveTags: Array.isArray(p.additives_tags) ? p.additives_tags : (typeof p.additives_tags === 'string' ? [p.additives_tags] : (Array.isArray(p.ingredients_tags) && p.ingredients_tags.length ? p.ingredients_tags.filter(t => /^en:e\d{3}/.test(t)) : null)),
     allergens: Array.isArray(p.allergens_tags) ? p.allergens_tags : [], traces: Array.isArray(p.traces_tags) ? p.traces_tags : [],
@@ -313,7 +311,7 @@ function cleanProfile(p) {
   out.noScores = p.noScores === true;
   return out;
 }
-const profileSize = p => p.allergens.length + p.diet.length + p.avoid.length + p.cosmetic.length + (p.custom ? p.custom.length : 0) + (p.watch ? p.watch.length : 0);
+const profileSize = p => p.allergens.length + p.diet.length + p.avoid.length + p.cosmetic.length + (p.custom ? p.custom.length : 0);
 
 /* Własny składnik: same litery, spacje i myślniki, 3–30 znaków. Zwraca oczyszczony tekst albo ''. */
 function cleanCustom(v) {
@@ -741,144 +739,6 @@ function departmentFor(item) {
   const name = ' ' + fold((item && item.name) || '') + ' ';
   for (const d of DEPARTMENTS) if (d.words.some(w => name.includes(w.length <= 3 ? ' ' + w : w))) return d.key;
   return 'other';
-}
-
-/* ===================== Wersja D: profil „Nie jem” + „Pilnuję” =====================
-   Te deklaracje zastępują wcześniejsze o tej samej nazwie (cleanProfile, personalMatch, rankForUser). */
-function cleanProfile(p) {
-  const out = { allergens: [], diet: [], avoid: [], cosmetic: [], custom: [], goals: [], watch: [], noScores: false };
-  if (!p || typeof p !== 'object') return out;
-  if (Array.isArray(p.goals)) { const ok = new Set(GOALS.map(g => g.key)); out.goals = [...new Set(p.goals.filter(g => ok.has(g)))].slice(0, GOALS_MAX); }
-  if (Array.isArray(p.watch)) { const ok = new Set(WATCH.map(w => w.key)); out.watch = [...new Set(p.watch.filter(w => ok.has(w)))].slice(0, WATCH_MAX); }
-  if (Array.isArray(p.custom)) {
-    const seen = new Set();
-    p.custom.forEach(c => { const v = cleanCustom(c); if (v && !seen.has(fold(v))) { seen.add(fold(v)); out.custom.push(v); } });
-    out.custom = out.custom.slice(0, CUSTOM_MAX);
-  }
-  for (const g of ['allergens', 'diet', 'avoid', 'cosmetic']) {
-    const allowed = new Set(PROFILE_OPTIONS[g].map(o => o.key));
-    out[g] = Array.isArray(p[g]) ? [...new Set(p[g].filter(k => allowed.has(k)))] : [];
-  }
-  out.noScores = p.noScores === true;
-  return out;
-}
-/* Pozycje „Pilnuję” wynikające z celów (bez powtórzeń, w kolejności listy WATCH). */
-function watchFromGoals(goals) {
-  const set = new Set(); (goals || []).forEach(g => { const x = GOALS.find(y => y.key === g); if (x) x.watch.forEach(w => set.add(w)); });
-  return WATCH.map(w => w.key).filter(k => set.has(k));
-}
-/* Przeniesienie ustawień z głównej aplikacji (stare cele, diety i „unikam”) do nowego profilu. */
-function migrateProfileD(old) {
-  const o = old && typeof old === 'object' ? old : {};
-  const has = (g, k) => Array.isArray(o[g]) && o[g].includes(k);
-  const goalMap = { weight: 'weight', muscle: 'muscle', cholesterol: 'heart', pressure: 'pressure', digestion: 'digestion', sugar: 'sugar', healthy: 'healthy' };
-  const goals = [...new Set((Array.isArray(o.goals) ? o.goals : []).map(g => goalMap[g]).filter(Boolean))];
-  const watch = new Set(watchFromGoals(goals));
-  const add = (cond, ...keys) => { if (cond) keys.forEach(k => watch.add(k)); };
-  add(has('diet', 'lowsodium'), 'salt'); add(has('diet', 'lowcarb'), 'sugar'); add(has('diet', 'diabetes'), 'sugar'); add(has('diet', 'cardio'), 'satfat', 'salt');
-  add(has('diet', 'mediterranean') || has('diet', 'lightdiet'), 'processing');
-  add(has('avoid', 'salt'), 'salt'); add(has('avoid', 'satfat') || has('avoid', 'hydrogenated'), 'satfat'); add(has('avoid', 'sugar') || has('avoid', 'kidsugar'), 'sugar');
-  add(has('avoid', 'palm'), 'palm'); add(has('avoid', 'sweeteners'), 'sweeteners'); add(has('avoid', 'caffeine'), 'caffeine');
-  add(has('avoid', 'nitrites') || has('avoid', 'controversial') || has('avoid', 'ultra'), 'processing');
-  return cleanProfile({ allergens: o.allergens, diet: o.diet, avoid: o.avoid, cosmetic: o.cosmetic, custom: o.custom, noScores: o.noScores, goals, watch: WATCH.map(w => w.key).filter(k => watch.has(k)) });
-}
-const WATCH_FX = { limit: { low: 5, mid: -10, high: -25 }, contains: { yes: -25, no: 0 }, more: { high: 10, mid: 5, low: 0 } };
-const WATCH_CAP = { mid: 74, high: 45, unknown: 70, yes: 45 };
-const WATCH_WORD = { limit: { low: 'mało', mid: 'średnio', high: 'dużo' }, contains: { yes: 'zawiera', no: 'nie zawiera' }, more: { high: 'dużo', mid: 'źródło', low: 'mało' } };
-const KCAL_T = { food: [150, 400], drink: [20, 40] };
-const MATCH_FLOOR = 12;
-/* Każda pozycja „Pilnuję” liczona jedną zasadą. Zwraca poziom, słowo, wartość, zmianę punktów i ewentualny limit. */
-function watchInsights(prod, an, watch) {
-  if (!prod || prod.kind === 'cosmetic') return [];
-  const nm = prod.nutriments || {}, drink = !!prod.drink, per = drink ? '100 ml' : '100 g';
-  const f = v => String(Math.round(v * 10) / 10).replace('.', ',');
-  const ing = String(prod.ingredients || ''), hasIng = ing.trim().length > 0, txt = cleanForMatch(ing), folded = fold(ing);
-  const analysis = new Set(prod.analysis || []), codes = new Set(((an && an.additives) || []).map(a => a.code));
-  const adds = (an && an.additives) || [];
-  return (watch || []).map(key => {
-    const w = WATCH.find(x => x.key === key); if (!w) return null;
-    let level = null, value = '', note = '';
-    if (key === 'sugar') {
-      level = nutrientLevel('sugars', nm.sugars, drink); if (nm.sugars != null) value = `${f(nm.sugars)} g na ${per}`;
-      if (level === 'low' && folded.includes('syrop')) { level = 'mid'; note = 'syrop w składzie'; }
-    } else if (key === 'salt') {
-      level = nutrientLevel('salt', nm.salt, drink); if (nm.salt != null) value = `${f(nm.salt)} g na ${per}`;
-    } else if (key === 'satfat') {
-      level = nutrientLevel('saturated-fat', nm.sat, drink); if (nm.sat != null) value = `${f(nm.sat)} g na ${per}`;
-      if (hasWords(txt, WORDS.hydrogenated)) { level = 'high'; note = 'tłuszcz utwardzony w składzie'; }
-    } else if (key === 'kcal') {
-      if (nm.kcal != null) { const [lo, hi] = KCAL_T[drink ? 'drink' : 'food']; level = nm.kcal <= lo ? 'low' : nm.kcal > hi ? 'high' : 'mid'; value = `${Math.round(nm.kcal)} kcal na ${per}`; }
-    } else if (key === 'processing') {
-      const nova = Number(prod.nova), bad = adds.filter(a => a.level >= 2), some = adds.filter(a => a.level === 1);
-      if (nova === 4 || bad.length) { level = 'high'; value = [nova === 4 ? 'NOVA 4' : '', bad.map(a => a.code).slice(0, 3).join(', ')].filter(Boolean).join(', '); }
-      else if (nova === 3 || some.length) { level = 'mid'; value = nova === 3 ? 'NOVA 3' : some.map(a => a.code).slice(0, 3).join(', '); }
-      else if (nova === 1 || nova === 2) { level = 'low'; value = 'NOVA ' + nova; }
-      else if (an && an.additivesKnown) { level = adds.length ? 'mid' : 'low'; value = adds.length ? adds.map(a => a.code).slice(0, 3).join(', ') : 'bez dodatków'; }
-    } else if (key === 'palm') {
-      if (analysis.has('en:palm-oil') || txt.includes(fold('palmow')) || txt.includes('palm ')) level = 'yes';
-      else if (hasIng || analysis.has('en:palm-oil-free')) level = 'no';
-    } else if (key === 'sweeteners') {
-      const found = SWEETENER_CODES.filter(c => codes.has(c));
-      if (found.length) { level = 'yes'; value = found.join(', '); } else if (an && an.additivesKnown) level = 'no';
-    } else if (key === 'caffeine') {
-      if (hasWords(txt, WORDS.caffeine)) level = 'yes'; else if (hasIng) level = 'no';
-    } else if (key === 'protein' || key === 'fiber') {
-      const v = key === 'protein' ? nm.proteins : nm.fiber, [mid, high] = key === 'protein' ? [5, 10] : [3, 6];
-      if (v != null) { level = v >= high ? 'high' : v >= mid ? 'mid' : 'low'; value = `${f(v)} g na ${per}`; }
-    }
-    const fx = WATCH_FX[w.kind];
-    const delta = level == null ? 0 : fx[level];
-    const cap = level == null ? (w.kind === 'more' ? null : WATCH_CAP.unknown) : (w.kind === 'limit' && WATCH_CAP[level] != null ? WATCH_CAP[level] : w.kind === 'contains' && level === 'yes' ? WATCH_CAP.yes : null);
-    const word = level == null ? 'brak danych' : WATCH_WORD[w.kind][level];
-    return { key, label: w.label, kind: w.kind, icon: w.icon, level, word, value, note, delta, cap };
-  }).filter(Boolean);
-}
-function personalMatch(prod, an, profile) {
-  const prof = cleanProfile(profile);
-  const m = matchProfile(prod, an, prof);
-  const w = watchInsights(prod, an, prof.watch);
-  const personal = w.length > 0 || m.checked > 0;
-  const onlyAdditives = an && an.parts && an.parts.length === 1 && an.parts[0].key === 'additives';
-  const score = an && an.score != null && isFinite(an.score) && !onlyAdditives ? an.score : null;
-  if (!personal) {
-    const lv = score == null ? { key: 'unknown', label: 'Za mało danych' } : MATCH_LEVELS.find(l => score >= l.min);
-    return { pct: score, level: lv.key, label: score == null ? lv.label : grade(score).label, good: score == null ? null : score >= 50, personal: false, general: prof.goals.includes('healthy'), status: m.status, match: m, goals: [], watch: [], rows: [], cap: null, base: score };
-  }
-  const rows = [];
-  let cap = 100, capBy = null, sum = 0;
-  const setCap = (c, why) => { if (c != null && c < cap) { cap = c; capBy = why; } };
-  w.forEach(x => {
-    const kind = x.delta > 0 ? 'good' : x.delta < 0 ? 'bad' : x.level == null ? 'info' : 'neutral';
-    rows.push({ kind, watch: x.key, icon: x.icon, title: x.label, word: x.word, value: x.value, text: x.note, delta: x.level == null ? null : x.delta, cap: x.cap });
-    sum += x.delta;
-    setCap(x.cap, `${x.label.replace(' (więcej)', '')}: ${x.word}`);
-  });
-  m.fails.forEach(f => rows.push({ kind: 'bad', exclude: true, title: f.label, word: 'nie pasuje', value: f.why && f.why !== 'zawiera' ? f.why : 'zawiera', text: '', delta: null }));
-  if (m.traces.length) { rows.push({ kind: 'warn', exclude: true, title: 'Może zawierać: ' + m.traces.join(', '), word: 'śladowe ilości', value: '', text: '', delta: null, cap: 35 }); setCap(35, 'śladowe ilości'); }
-  if (m.checked && m.status === 'ok') rows.push({ kind: 'good', exclude: true, title: 'Nie jem', word: 'pasuje', value: 'nie zawiera niczego z Twojej listy', text: '', delta: null });
-  if (m.unknowns.length) { rows.push({ kind: 'info', exclude: true, title: 'Nie wiemy: ' + m.unknowns.join(', ').toLowerCase(), word: 'brak danych', value: '', text: 'sprawdź etykietę', delta: null, cap: LIMIT_CAP.unknown }); setCap(LIMIT_CAP.unknown, 'brak danych o składzie'); }
-  let pct = null, level;
-  if (m.status === 'fail') { pct = score == null ? 5 : Math.round(score / 10); capBy = 'zawiera coś, czego nie jesz'; cap = 10; }
-  // Produkt, który tylko „pilnujesz”, zawsze wypada lepiej niż ten, którego „nie jesz” (0–10%).
-  else if (score != null) pct = Math.max(MATCH_FLOOR, Math.min(cap, 100, Math.round(score + sum)));
-  if (pct == null) level = { key: 'unknown', label: 'Za mało danych' };
-  else level = MATCH_LEVELS.find(l => pct >= l.min);
-  return { pct, level: level.key, label: level.label, good: pct == null ? null : pct >= 50, personal: true, general: false, status: m.status, match: m, goals: [], watch: w, rows, cap: cap < 100 ? cap : null, capBy, base: score, sum, capped: score != null && m.status !== 'fail' && pct < Math.round(score + sum) };
-}
-function rankForUser(list, profile) {
-  const prof = cleanProfile(profile), hasProfile = profileSize(prof) > 0;
-  const seen = new Set(), out = [];
-  (list || []).forEach(pr => {
-    if (!pr || !pr.code || seen.has(pr.code) || !pr.name) return;
-    seen.add(pr.code);
-    const an = analyze(pr);
-    if (an.score == null || an.parts.length < 2) return;
-    const pm = personalMatch(pr, an, prof);
-    if (hasProfile && (pm.status === 'fail' || pm.status === 'traces')) return;
-    if (an.score < 50) return;
-    out.push({ pr, an, match: pm.match, goals: [], rank: pm.pct == null ? an.score : pm.pct });
-  });
-  return out.sort((a, b) => b.rank - a.rank);
 }
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') {

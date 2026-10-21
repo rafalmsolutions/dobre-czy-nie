@@ -27,7 +27,7 @@ const pts = () => page.evaluate(() => App.game.points);
 const txt = async sel => (await page.locator(sel).innerText().catch(() => '')) || '';
 
 // 1. Brak produktu: anonimowe zgłoszenie do „Poszukiwanych”
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.missing); await page.waitForTimeout(2000); await closeCel();
+await page.goto('http://localhost:8790/index.html#/p/' + C.missing); await page.waitForTimeout(2000); await closeCel();
 ok(S.miss.length === 1 && S.miss[0].includes(C.missing), 'brak produktu: zgłoszony do „Poszukiwanych”');
 ok((await txt('#addCta')).includes('+10 od razu') && (await txt('#addCta')).includes('Złota karta'), 'nagroda odkrywcy: +10 od razu, +50 po potwierdzeniu');
 // 2. Sprawdzenia przy dodawaniu
@@ -61,13 +61,13 @@ ok((await txt('#cmpNutMsg')).includes('nie pasują'), 'kalorie niezgodne z makro
 await fillNut({ 'energy-kcal': 61 }); await page.click('[data-cmp=save-nut]'); await page.waitForTimeout(500);
 ok(!(await txt('#cmpNutMsg')).includes('nie pasują'), 'poprawne wartości: zapisane');
 // 4. Kolejna osoba: pytanie tylko po skanie aparatem
-await page.goto('http://localhost:8790/d/index.html#/'); await page.waitForTimeout(300);
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(300);
+await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]');
 ok(await page.locator('#discAsk').count() === 0, 'kod wpisany ręcznie: bez pytania o potwierdzenie');
-await page.goto('http://localhost:8790/d/index.html#/'); await page.waitForTimeout(300);
+await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(300);
 await page.evaluate(c => App.markCameraScan(c), C.oil);
-await page.goto('http://localhost:8790/d/index.html#/p/' + C.oil); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/index.html#/p/' + C.oil); await page.waitForTimeout(1500); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]');
 ok(await page.locator('#discAsk').isVisible(), 'po skanie aparatem: „Czy trzymasz ten produkt?”');
 ok((await txt('#discAsk')).includes('Ola'), 'widać pseudonim odkrywcy');
@@ -95,12 +95,12 @@ ok(await pts() >= p3 + 100, 'awans: +100 pkt (' + (await pts() - p3) + ')');
 await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(300);
 ok(await pts() < p3 + 200, 'awans nagradzany tylko raz');
 // 6. Ekran „Twoje odkrycia”
-await page.goto('http://localhost:8790/d/index.html#/odkrycia'); await page.waitForTimeout(900); await closeCel();
+await page.goto('http://localhost:8790/index.html#/odkrycia'); await page.waitForTimeout(900); await closeCel();
 const d = await txt('#scr-discoveries');
 ok(d.includes('Jogurt testowy 2%') && d.includes('potwierdzone') && d.includes('5900000000999'), 'odkrycia: moje produkty i lista „Poszukiwane”');
 ok(d.includes('Zaufany odkrywca') && d.includes('5 z 15'), 'odkrycia: stopień i postęp do strażnika bazy');
 await page.screenshot({ path: shots + 'disc-page.png', fullPage: true });
-await page.goto('http://localhost:8790/d/index.html#/album'); await page.waitForTimeout(600);
+await page.goto('http://localhost:8790/index.html#/album'); await page.waitForTimeout(600);
 ok((await txt('#scr-album')).includes('Twoje odkrycia'), 'album: wejście do „Twoich odkryć”');
 // 7. Funkcje sprawdzające
 ok(await page.evaluate(() => App.ocrMatch('mleko pasteryzowane, kultury bakterii jogurtowych, białka mleka, skrobia', 'mleko pasteryzowane, kultury bakterii jogurtowych') >= 0.5 && App.ocrMatch('mleko pasteryzowane kultury bakterii jogurtowych białka', 'czekolada orzechy karmel') < 0.35), 'porównanie składu ze zdjęciem');

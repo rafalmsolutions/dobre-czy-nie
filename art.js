@@ -35,3 +35,43 @@ function ribbonSvg(textEsc, w, colors) {
   const [c1, c2, c3] = colors || ['#FF7A5C', '#D9412B', '#9E2A1A'];
   return `<svg class="ribbon" width="${w}" height="58" viewBox="0 0 ${w} 58" aria-hidden="true"><path d="M4 18 H40 V50 H4 L16 34Z" fill="${c3}"/><path d="M${w - 4} 18 H${w - 40} V50 H${w - 4} L${w - 16} 34Z" fill="${c3}"/><path d="M26 8 H${w - 26} V44 H26Z" fill="${c2}"/><path d="M26 8 H${w - 26} V26 H26Z" fill="${c1}"/><path d="M26 44 L40 50 V44Z M${w - 26} 44 L${w - 40} 50 V44Z" fill="${c3}"/><text x="${w / 2}" y="34" text-anchor="middle" font-family="Nunito, system-ui, sans-serif" font-weight="900" font-size="20" fill="#FFF" stroke="${c3}" stroke-width="4" paint-order="stroke">${textEsc}</text></svg>`;
 }
+
+/* Wersja D: zamiast wstęgi spokojny nagłówek w dwóch grubościach. */
+function ribbonSvg(textEsc, w, colors) {
+  const words = String(textEsc).split(' ');
+  return `<div class="d-ribbon" role="heading" aria-level="2"><span class="w-light">${words[0]}</span> <span class="w-bold">${words.slice(1).join(' ')}</span></div>`;
+}
+
+/* Wersja D: medale z obręczą w kolorze stopnia (brąz, srebro, złoto), pastelowym środkiem w kolorze kategorii
+   i liniową ikoną. Zdobyty medal co kilka sekund „błyska”; nowy medal wskakuje i rysuje ikonę (klasa m-pop). */
+const D_MEDAL = { odkrywanie: '#C9DAEC', wybory: '#D3E8DA', baza: '#F6D3B6', profil: '#E4DAF0', ogrod: '#F6D0DA', rodzina: '#E4DAF0' };
+const D_RING = { 0: ['#55575D', '#2B2C30'], 1: ['#F0C29A', '#B9774A'], 2: ['#F4F6F9', '#A9B1BC'], 3: ['#FFE897', '#D19A12'] };
+function medalSvg(glyphKey, cat, earned, size, tier, extraClass) {
+  const glyph = GLYPH[glyphKey] || GLYPH.trophy, id = 'm' + (++artSeq);
+  const t = earned ? Math.max(0, Math.min(3, tier || 0)) : 0, [r1, r2] = D_RING[t];
+  const ink = earned ? '#2B2C30' : '#A3A6AC';
+  let o = `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true" class="medal${earned ? ' on' : ''}${extraClass ? ' ' + extraClass : ''}" style="--md:${(artSeq % 7) * .7}s">`;
+  o += `<defs><linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${r1}"/><stop offset=".55" stop-color="${r2}"/><stop offset="1" stop-color="${r1}"/></linearGradient><clipPath id="${id}c"><circle cx="50" cy="50" r="46"/></clipPath></defs>`;
+  if (earned) {
+    o += `<circle cx="50" cy="52" r="46" fill="#000" opacity=".08"/><circle cx="50" cy="50" r="46" fill="url(#${id}r)"/><circle cx="50" cy="50" r="36" fill="${D_MEDAL[cat] || '#DADCE0'}"/><circle cx="50" cy="50" r="36" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"/>`;
+  } else {
+    o += '<circle cx="50" cy="50" r="45" fill="#F1F2F3"/><circle cx="50" cy="50" r="45" fill="none" stroke="#C4C6CB" stroke-width="2" stroke-dasharray="5 5"/>';
+  }
+  o += `<g transform="translate(29 29) scale(1.75)"><path class="m-glyph" pathLength="1" d="${glyph}" fill="none" stroke="${ink}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  for (let k = 0; k < t; k++) { const x = 50 + (k - (t - 1) / 2) * 9; o += `<circle cx="${x}" cy="91" r="2.6" fill="#fff" stroke="${r2}" stroke-width="1"/>`; }
+  if (earned) o += `<g clip-path="url(#${id}c)"><g transform="rotate(24 50 50)"><rect class="m-shine" x="-70" y="-20" width="26" height="140" fill="#fff" opacity=".5"/></g></g>`;
+  else o += '<circle cx="76" cy="76" r="12" fill="#fff" stroke="#A3A6AC" stroke-width="2"/><rect x="70.5" y="75" width="11" height="8" rx="2" fill="#A3A6AC"/><path d="M73 75v-2.5a3 3 0 0 1 6 0V75" fill="none" stroke="#A3A6AC" stroke-width="2"/>';
+  return o + '</svg>';
+}
+function shieldSvg(n, size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#2B2C30"/><text x="50" y="50" dy=".36em" text-anchor="middle" font-family="Montserrat, system-ui, sans-serif" font-weight="800" font-size="44" fill="#FFFFFF">${Number(n) || 1}</text></svg>`;
+}
+
+/* Wersja D: ikony odznak albumu. */
+Object.assign(GLYPH, {
+  album: 'M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h11M9 8h5M9 11h5',
+  gem: 'M6 4h12l3 5-9 11L3 9zM3 9h18M9 4l3 16 3-16',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+  crown: 'M3 8l4 4 5-7 5 7 4-4-2 11H5zM5 19h14'
+});
+D_MEDAL.album = '#FFF1C7';

@@ -2,7 +2,7 @@
 import { chromium } from 'playwright';
 import { setup, C, YOG } from './lib.mjs';
 import fs from 'fs';
-const BASE = 'http://localhost:8790/';
+const BASE = 'http://localhost:8790/archiwum/';
 const ONLY = process.argv[2] || '';
 const SHOTS = new URL('./shots/', import.meta.url).pathname;
 fs.mkdirSync(SHOTS, { recursive: true });
@@ -16,7 +16,7 @@ async function fresh(opts = {}) {
   await setup(ctx, opts);
   // Testy nigdy nie łączą się z prawdziwym pośrednikiem ani statystykami: podmieniamy config.js.
   await ctx.route(/\/config\.js$/, async r => {
-    let body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
+    let body = fs.readFileSync(new URL('../archiwum/config.js', import.meta.url), 'utf8');
     body = body.replace(/offProxyUrl: '[^']*'/, `offProxyUrl: '${opts.proxy ? 'https://proxy.test/' : ''}'`);
     body = body.replace(/goatcounter: '[^']*'/, `goatcounter: '${opts.stats ? 'testdcn' : ''}'`);
     r.fulfill({ body, contentType: 'text/javascript' });
@@ -668,7 +668,8 @@ await section('Statystyki i uwagi', async () => {
   const o = { stats: true, onboarded: false };
   const { ctx, page } = await fresh(o);
   await page.click('[data-act=start-skip]'); await page.waitForTimeout(300);
-  const ev = () => o.hits.filter(h => h.e).map(h => h.p), views = () => o.hits.filter(h => !h.e).map(h => h.p);
+  // Archiwum: zdarzenia z przedrostkiem „arch-”, odsłony pod „/archiwum/”.
+  const ev = () => o.hits.filter(h => h.e).map(h => h.p.replace(/^arch-/, '')), views = () => o.hits.filter(h => !h.e).map(h => h.p.replace(/^\/archiwum/, ''));
   ok(ev().includes('nowa-instalacja') && ev().includes('aktywny-tydzien-1'), 'pierwsze otwarcie i tydzień 1 (' + ev() + ')');
   ok(views().includes('/start') && views().includes('/home'), 'odsłony ekranów (' + views() + ')');
   await page.evaluate(() => { App.settings.guess = false; App.saveSettings(); });

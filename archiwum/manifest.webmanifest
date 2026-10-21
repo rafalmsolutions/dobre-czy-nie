@@ -1,0 +1,20 @@
+{
+  "name": "Dobre czy nie? – archiwum (wersja 1)",
+  "short_name": "Dobre czy nie 1",
+  "description": "Zeskanuj produkt i zobacz, czy pasuje do Twoich celów. Półki zakupowe, odznaki i Ziarenko.",
+  "lang": "pl",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF6E5",
+  "theme_color": "#2E9A3E",
+  "categories": ["food", "health", "shopping"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
