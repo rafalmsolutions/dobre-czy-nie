@@ -145,7 +145,30 @@ const App = {};
     if (ac.state === 'suspended') ac.resume().catch(() => { });
     return ac;
   };
-  ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (A.settings.sound !== false) audio(); }, { once: true, passive: true }));
+  /* Nagrane efekty z zestawu SFX Kit (Wyzowl, licencja CC0, folder sfx/). Każdy dźwięk aplikacji to jedna albo kilka warstw:
+     [plik, przesunięcie w s, głośność]. Zanim pliki się wczytają (albo gdy się nie uda), gra syntezator niżej. */
+  const SFX = {
+    scan: [['click-tap-medium', 0, 0.8], ['tone-ding-high', 0.02, 0.45]],
+    right: [['notification-success-chime', 0, 0.9]],
+    wrong: [['notification-failure-pluck', 0, 0.8]],
+    shelf: [['pop-medium-bubble', 0, 0.9]],
+    flip: [['appear-flip-quick', 0, 0.9]],
+    badge: [['notification-success-sparkle', 0, 0.95], ['shimmer-short-sparkle', 0.22, 0.55]],
+    gold: [['sting-bright-short', 0, 0.95], ['shimmer-medium-sparkle', 0.32, 0.5]],
+    level: [['celebration-popper', 0, 0.8], ['notification-success-fanfare', 0.06, 0.95], ['shimmer-medium-sparkle', 0.36, 0.45]],
+    challenge: [['notification-success-fanfare', 0, 0.95], ['celebration-confetti', 0.04, 0.6]]
+  };
+  const SFX_GAIN = 3.2; // nagrania z zestawu są ciche (pod lektora); w telefonie mają być wyraźne, kompresor pilnuje szczytów
+  const sfxBuf = {}; let sfxLoading = null;
+  const loadSfx = () => sfxLoading || (sfxLoading = Promise.all([...new Set(Object.values(SFX).flat().map(l => l[0]))].map(async n => {
+    try { const r = await fetch('sfx/' + n + '.mp3'); if (!r.ok) return; const ab = await r.arrayBuffer(); sfxBuf[n] = await new Promise((ok, no) => { const p = ac.decodeAudioData(ab, ok, no); if (p && p.then) p.then(ok, no); }); } catch (e) { }
+  })));
+  function playSfx(name, t) {
+    const layers = SFX[name]; if (!layers || !layers.every(l => sfxBuf[l[0]])) return false;
+    layers.forEach(([n, d, v]) => { const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = sfxBuf[n]; g.gain.value = v * SFX_GAIN; s.connect(g); g.connect(master); s.start(t + d); });
+    return true;
+  }
+  ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (A.settings.sound !== false && audio()) loadSfx(); }, { once: true, passive: true }));
   const env = (g, t, vol, attack, dur) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
   const out = (node, send) => { node.connect(master); if (send && verb) { const s = ac.createGain(); s.gain.value = send; node.connect(s); s.connect(verb); } };
   const pan = (node, p) => { if (!p || !ac.createStereoPanner) return node; const sp = ac.createStereoPanner(); sp.pan.value = p; node.connect(sp); return sp; };
@@ -190,6 +213,7 @@ const App = {};
   function sparkle(t, n = 7, base = 2637, vol = 0.05) { const st = [0, 3, 7, 12, 5, 10, 15, 9, 14, 19]; for (let i = 0; i < n; i++) bell(t + i * 0.045, base * Math.pow(2, st[i % st.length] / 12), 0.35, vol * (1 - i / (n * 1.6)), { pan: ((i % 4) - 1.5) / 2, index: 1.2, ratio: 4.1, send: 0.7 }); }
   const SOUNDS = {
     scan: t => { bell(t, 1760, 0.16, 0.16, { index: 1, send: 0.15 }); tone(t, 880, 0.06, { type: 'triangle', vol: 0.08 }); },
+    flip: t => { noise(t, 0.14, 0.12, { f1: 1500, f2: 4000, q: 0.8 }); tone(t + 0.13, 300, 0.06, { vol: 0.2 }); },
     // Trafione: dwa jasne dzwonki w górę i iskierka.
     right: t => { bell(t, 1175, 0.35, 0.2); bell(t + 0.09, 1568, 0.5, 0.22); sparkle(t + 0.16, 4, 3136, 0.04); },
     // Pudło: łagodne, nie karzące „hmm” w dół.
@@ -230,15 +254,16 @@ const App = {};
   // Podgląd dźwięku bez głośnika (testy i nagrania): renderuje dźwięk do bufora.
   A.renderSound = async (name, seconds = 3.2) => {
     const C = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!C || !SOUNDS[name]) return null;
+    if (audio()) await loadSfx();
     const off = new C(2, Math.round(44100 * seconds), 44100), keep = [ac, master, verb];
     ac = off; ({ m: master, verb } = build(off));
-    try { SOUNDS[name](0.02); } finally { [ac, master, verb] = keep; }
+    try { if (!playSfx(name, 0.02)) SOUNDS[name](0.02); } finally { [ac, master, verb] = keep; }
     return off.startRendering();
   };
   const BUZZ = { scan: 40, right: [25, 40, 25], wrong: 60, badge: [30, 50, 30, 50, 80], gold: [30, 40, 30, 40, 30, 40, 120], level: [60, 60, 120], challenge: [40, 40, 80] };
   A.sound = name => {
     if (A.settings.sound === false || document.hidden) return;
-    try { const c = audio(); if (c && SOUNDS[name]) SOUNDS[name](c.currentTime + 0.02); } catch (e) { }
+    try { const c = audio(); if (c) { loadSfx(); if (!playSfx(name, c.currentTime + 0.01) && SOUNDS[name]) SOUNDS[name](c.currentTime + 0.02); } } catch (e) { }
     try { if (BUZZ[name] && navigator.vibrate) navigator.vibrate(BUZZ[name]); } catch (e) { }
   };
   const EVENT_SOUND = { guess_right: 'right', guess_wrong: 'wrong', shelf_add: 'shelf', swap_to_better: 'shelf' };

@@ -14,6 +14,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Dźwięki z zestawu SFX Kit (21.10.2026, wersja 2.4.1)
+
+- Nagrody, skan, półka, odsłonięcie karty: nagrania z **SFX Kit** (Wyzowl, CC0, https://github.com/wyzowl/sfx-kit) w `sfx/` (MP3 mono, razem ok. 135 kB, w pamięci service workera).
+  Mapa zdarzeń → warstwy nagrań: `SFX` w `ui-base.js` (np. odznaka = „success-sparkle” + iskierki, nowy poziom = „popper” + fanfara + iskierki). Syntezator z 2.4.0 zostaje jako zapas,
+  gdy pliki jeszcze się nie wczytały. Odsłonięcie karty w albumie: najpierw odgłos odwracanej karty, potem dźwięk rzadkości.
+
 ## Szukaj po nazwie, porównaj 2–3 produkty, nowe dźwięki nagród (21.10.2026, wersja 2.4.0)
 
 - **Szukaj** (`#/szukaj/<zapytanie>`, pole na górze „Dla Ciebie”): pośrednik `/search?q=` (wyszukiwarka Open Food Facts, słowa łączone przez AND,

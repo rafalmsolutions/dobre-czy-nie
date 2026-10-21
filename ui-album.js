@@ -172,7 +172,7 @@
     if (!rv) return;
     if (act === 'reveal-flip') {
       rv.flipped = true; renderReveal(); reward();
-      const c = rv.res.card; A.sound(c.h ? 'gold' : SOUND[c.r] || 'shelf');
+      const c = rv.res.card; A.sound('flip'); setTimeout(() => A.sound(c.h ? 'gold' : SOUND[c.r] || 'shelf'), 160);
       const b = A.$('reveal').querySelector('.rv-btns .btn'); if (b) b.focus({ preventScroll: true });
     } else if (act === 'reveal-page') { rv.step = 'page'; renderReveal(); A.sound('level'); }
     else if (act === 'reveal-close' || act === 'reveal-album') A.closeReveal();
