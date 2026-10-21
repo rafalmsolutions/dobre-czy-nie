@@ -126,7 +126,8 @@
         <div class="slots" aria-label="Postęp ${ch.have} z ${ch.target}">${slots}</div>
         <div class="chips" style="position:relative">${A.rewardChips(ch.reward)}</div></div>` : ''}
       ${A.family && A.family.length ? `<section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Profile rodziny</h2><a href="#/profil">Zmień</a></div>
-        <div class="card stack fam-home">${A.familyRows().map(r => { const c = A.profileChips(r.p); return `<div class="fam-home-row"><div class="fam-home-h"><b>${esc(r.id === 'me' ? (r.name === 'Ja' ? 'Ty' : r.name + ' (Ty)') : r.name)}</b><button type="button" class="linkbtn small" data-act="prof-of" data-id="${esc(r.id)}">Zmień</button></div>${c.length ? `<div class="chips">${c.join('')}</div>` : '<span class="small muted">Nic nie zaznaczono: ogólna ocena składu.</span>'}</div>`; }).join('')}</div></section>`
+        <p class="small muted" style="margin-top:-6px">Robisz zakupy tylko dla części rodziny? Wyłącz pozostałe osoby: nie będą liczone przy produktach i na listach.</p>
+        <div class="card stack fam-home">${A.familyRows().map(r => { const c = A.profileChips(r.p), on = A.isShopOn(r.id), nm = r.id === 'me' ? (r.name === 'Ja' ? 'Ty' : r.name + ' (Ty)') : r.name; return `<div class="fam-home-row${on ? '' : ' off'}"><div class="fam-home-h"><button type="button" class="fam-sw" role="switch" aria-checked="${on}" data-act="shop-on" data-id="${esc(r.id)}" aria-label="Licz dla: ${esc(nm)}"><i aria-hidden="true"></i></button><b class="grow">${esc(nm)}</b>${on ? '' : '<span class="small muted fam-off-l">nie liczymy</span>'}<button type="button" class="linkbtn small" data-act="prof-of" data-id="${esc(r.id)}">Zmień</button></div>${c.length ? `<div class="chips">${c.join('')}</div>` : '<span class="small muted">Nic nie zaznaczono: ogólna ocena składu.</span>'}</div>`; }).join('')}</div></section>`
       : `<section class="stack" aria-labelledby="hProf"><div class="sec-head"><h2 id="hProf">Twój profil</h2><a href="#/profil">Zmień</a></div>
         ${chips.length ? `<div class="chips">${chips.join('')}</div>` : `<div class="empty">Ustaw cel i to, czego unikasz, a od razu zobaczysz, czy produkt pasuje do Ciebie. <a href="#/start">Ustaw profil</a></div>`}</section>`}
       <section class="stack" aria-labelledby="hBest"><div class="sec-head"><h2 id="hBest" style="font-size:1.25rem">${A.hasProfile() ? 'Najlepsze dla Ciebie' : 'Najlepsze w sklepie'}</h2><a href="#/najlepsze">Wszystkie</a></div>
@@ -182,14 +183,16 @@
   A.storeName = raw => { const f = fold(raw).replace(/\s+/g, ''); const k = STORES.find(x => f.includes(x.key)); return k ? k.label : String(raw).charAt(0).toUpperCase() + String(raw).slice(1); };
   /* Dla kogo liczymy listę: 'me' (Ty), id domownika albo 'all' (cała rodzina = wynik najsłabszej osoby). Bez domowników zawsze 'me'. */
   const listWho = () => {
-    if (!A.family || !A.family.length) return 'me';
+    if (!A.famOn || !A.famOn()) return 'me';
+    const on = A.activeRows();
+    if (on.length === 1) return on[0].id;
     const w = A.store.get('d-listwho', 'all');
-    return w === 'all' || w === 'me' || A.family.some(f => f.id === w) ? w : 'all';
+    return w === 'all' || on.some(r => r.id === w) ? w : 'all';
   };
   const whoName = r => r.id === 'me' ? 'Ty' : r.name;
   function matchFor(pr, an, who) {
     if (who === 'me') return personalMatch(pr, an, A.profile);
-    const rows = A.familyRows();
+    const rows = A.activeRows();
     if (who !== 'all') { const r = rows.find(x => x.id === who); return personalMatch(pr, an, r ? r.p : A.profile); }
     const st = rows.map(r => ({ r, s: A.personState(pr, an, r.p) }));
     const bad = st.filter(x => x.s.st === 'bad'), unk = st.filter(x => x.s.st === 'unk'), known = st.filter(x => x.s.st === 'ok' || x.s.st === 'mid');
@@ -201,33 +204,70 @@
     if (!weakest) return { pct: null, status: 'none', level: 'unknown', label: 'Za mało danych' };
     return { pct, status: 'ok', level: weakest.s.pm.level, label: known.every(x => x.s.st === 'ok') ? 'Pasuje wszystkim' : 'Najsłabiej: ' + whoName(weakest.r) };
   }
-  /* Pełne dane produktów z listy. Wyszukiwarka OFF (źródło listy) bywa niepełna, np. bez wartości odżywczych albo składu,
-     więc wynik na liście różnił się od wyniku po otwarciu produktu. Dociągamy pełne dane widocznych produktów tak jak ekran produktu
-     (te same źródła), pamiętamy je w telefonie na 7 dni i przeliczamy listę. */
-  const DET_TTL = 7 * 24 * 3600e3, DET_MAX = 120;
-  const detail = code => {
-    const c = A.store.get('cache', {})[code];
-    if (c && c.p && Date.now() - c.at < DET_TTL) return c.p;
-    const d = A.store.get('d-pdet', {})[code];
-    return d && d.p && Date.now() - d.at < DET_TTL ? d.p : null;
+  /* Pełne dane produktów. Wyszukiwarka OFF (źródło list) bywa niepełna, np. bez wartości odżywczych albo składu, więc wynik liczony
+     na jej danych różnił się od ekranu produktu. Pełne dane bierzemy przez pośrednika (/details, kopia w Cloudflare 3 dni) i pamiętamy
+     w telefonie (Cache API „dcn-pdet”, 7 dni). Produkt otwarty na ekranie produktu zastępuje kopię najświeższymi danymi. */
+  const DET = new Map(), DET_TTL = 7 * 24 * 3600e3, DET_CACHE = 'dcn-pdet';
+  const detStore = () => (typeof caches !== 'undefined' ? caches.open(DET_CACHE).catch(() => null) : Promise.resolve(null));
+  const detKey = code => new Request(location.origin + '/__pdet/' + code);
+  A.putDetail = prod => {
+    if (!prod || !prod.code || prod.kind !== 'food') return;
+    DET.set(prod.code, prod);
+    detStore().then(c => c && c.put(detKey(prod.code), new Response(JSON.stringify({ p: prod, at: Date.now() }), { headers: { 'Content-Type': 'application/json' } }))).catch(() => { });
   };
-  const saveDetail = (code, prod) => {
-    const m = A.store.get('d-pdet', {}) || {}; m[code] = { p: prod, at: Date.now() };
-    Object.keys(m).sort((a, b) => m[b].at - m[a].at).slice(DET_MAX).forEach(k => delete m[k]);
-    if (!A.store.set('d-pdet', m)) A.store.set('d-pdet', { [code]: m[code] });
-  };
-  const withDetail = pr => { const d = detail(pr.code); return d ? Object.assign({}, d, { stores: d.stores && d.stores.length ? d.stores : pr.stores, name: d.name || pr.name }) : pr; };
+  A.detailOne = async code => { await loadDetails([code]); return DET.get(code) || null; };
+  const withDetail = pr => { const d = DET.get(pr.code); return d ? Object.assign({}, d, { stores: d.stores && d.stores.length ? d.stores : pr.stores, name: d.name || pr.name }) : pr; };
   A.withDetail = withDetail;
-  async function fetchDetails(codes, token) {
-    const queue = codes.slice(); let done = 0;
-    const one = async () => {
-      while (queue.length && listToken === token) {
-        const code = queue.shift();
-        try { const p = await A.lookup(code); if (p && p.kind === 'food') { saveDetail(code, p); done++; } } catch (e) { if (e && (e.kind === 'offline' || e.kind === 'rate')) { queue.length = 0; } }
-      }
-    };
-    await Promise.all([one(), one(), one(), one()]);
-    return done;
+  // Wczytuje pełne dane podanych produktów (najpierw z telefonu, potem przez pośrednika). Zwraca true, gdy mamy wszystkie.
+  const detInflight = new Map(); // kod → trwające pobieranie (dwa wywołania naraz nie pobierają dwa razy)
+  async function loadDetails(codes) {
+    const waiting = codes.filter(c => !DET.has(c) && detInflight.has(c)).map(c => detInflight.get(c));
+    const mine = codes.filter(c => !DET.has(c) && !detInflight.has(c));
+    let done; const p = new Promise(r => { done = r; }); mine.forEach(c => detInflight.set(c, p));
+    try { const ok = await loadDetailsNow(mine); await Promise.all(waiting); return ok && codes.every(c => DET.has(c)); }
+    finally { mine.forEach(c => detInflight.delete(c)); done(); }
+  }
+  async function loadDetailsNow(codes) {
+    let need = codes.filter(c => !DET.has(c));
+    if (!need.length) return true;
+    const store = await detStore();
+    if (store) await Promise.all(need.map(async code => {
+      try { const r = await store.match(detKey(code)); if (!r) return; const j = await r.json(); if (j && Date.now() - j.at < DET_TTL) DET.set(code, j.p || false); } catch (e) { }
+    }));
+    need = need.filter(c => !DET.has(c));
+    const proxy = (A.CFG.offProxyUrl || '').replace(/\/$/, '');
+    if (!need.length) return true;
+    if (!proxy || navigator.onLine === false) return false;
+    let complete = true;
+    const chunks = []; for (let i = 0; i < need.length; i += 40) chunks.push(need.slice(i, i + 40));
+    await Promise.all(chunks.map(async chunk => {
+      try {
+        const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
+        const r = await fetch(`${proxy}/details?codes=${chunk.join(',')}`, { signal: ctrl.signal }); clearTimeout(t);
+        const j = r.ok ? await r.json() : null;
+        if (!j || !j.products) { complete = false; return; }
+        if (j.failed) complete = false;
+        chunk.forEach(code => {
+          if (!(code in j.products)) return;
+          const raw = j.products[code], prod = raw ? normalizeProduct(raw, 'off') : false;
+          DET.set(code, prod);
+          if (store) store.put(detKey(code), new Response(JSON.stringify({ p: prod, at: Date.now() }), { headers: { 'Content-Type': 'application/json' } })).catch(() => { });
+        });
+      } catch (e) { complete = false; }
+    }));
+    return complete && codes.every(c => DET.has(c));
+  }
+  /* Lista jednej kategorii liczona RAZ na pełnych danych i zapamiętana na czas sesji: przełączanie osób i sklepów tylko przelicza te same dane,
+     więc ta sama osoba zawsze widzi ten sam wynik, a „Cała rodzina” jest zawsze częścią listy każdej osoby. */
+  const LISTS = {};
+  const CAND = 80; // tyle produktów z czołówki (najlepszy wynik dla kogokolwiek z rodziny) dostaje pełne dane
+  function candidates(list) {
+    const people = A.family && A.family.length ? A.familyRows() : [{ id: 'me', p: A.profile }];
+    return list.filter(pr => pr.name && pr.code).map(pr => {
+      const an = analyze(pr);
+      const best = Math.max(-1, ...people.map(r => { const m = personalMatch(pr, an, r.p); return m.pct == null ? -1 : m.pct; }));
+      return { code: pr.code, best: an.score == null ? -2 : best };
+    }).sort((a, b) => b.best - a.best || (a.code < b.code ? -1 : 1)).slice(0, CAND).map(x => x.code);
   }
   async function renderList(cat, storeKey) {
     const cName = (SHOP_CATEGORIES.find(c => c.key === cat) || {}).label || 'Produkty';
@@ -236,28 +276,30 @@
       <div class="d-listhero" aria-hidden="true"><span class="d-arc d-arc-list"></span><img src="${A.catImg(cat)}" alt="" width="480" height="480"></div>
       <div id="listBody" class="stack" aria-live="polite"><p class="small muted" id="listWait">Szukam produktów…</p><div class="sk" style="height:58px"></div><div class="sk" style="height:58px"></div><div class="sk" style="height:58px"></div></div></div>`;
     const token = {}; listToken = token;
+    const have = LISTS[cat], sig = JSON.stringify([A.profile, A.family]);
+    if (have && have.complete && have.sig === sig && Date.now() - have.at < 6 * 3600e3) { drawList(cat, storeKey, have); return; }
     try {
       const list = await A.fetchCategory(cat, sec => { const w = A.$('listWait'); if (w && listToken === token) w.textContent = `Wyszukiwarka produktów ma limit zapytań. Spróbuję za ${sec} s…`; });
       if (listToken !== token || A.current.screen !== 'list') return;
-      const pending = drawList(cat, storeKey, list, true);
-      if (pending.length && navigator.onLine !== false) {
-        const n = await fetchDetails(pending, token);
-        if (n && listToken === token && A.current.screen === 'list') drawList(cat, storeKey, list, false);
-        else { const w = A.$('listDet'); if (w) w.remove(); }
-      }
+      const codes = candidates(list);
+      const w = A.$('listWait'); if (w) w.textContent = `Sprawdzam szczegóły ${codes.length} ${plural(codes.length, 'produktu', 'produktów', 'produktów')}…`;
+      const complete = await loadDetails(codes);
+      if (listToken !== token || A.current.screen !== 'list') return;
+      LISTS[cat] = { list, at: Date.now(), complete, sig };
+      drawList(cat, storeKey, LISTS[cat]);
     } catch (e) {
       if (listToken !== token || !A.$('listBody')) return;
       const kind = (e && e.kind) || 'network';
       A.$('listBody').innerHTML = `<div class="empty stack" style="align-items:center">${A.mascot('sad', 60)}<b>${esc(A.ERR_TEXT[kind][0])}</b><span>${esc(A.ERR_TEXT[kind][1])}</span><button class="btn btn-gold" type="button" data-act="list-store" data-cat="${esc(cat)}" data-store="${esc(storeKey)}">Spróbuj ponownie</button></div>`;
     }
   }
-  // Rysuje listę z tego, co mamy (pełne dane tam, gdzie już są). Zwraca kody produktów, którym warto dociągnąć pełne dane.
-  function drawList(cat, storeKey, list, first) {
+  function drawList(cat, storeKey, data) {
+    const list = data.list;
     const personal = A.hasProfile() || (A.family && A.family.length > 0);
-    const who = listWho(), fam = A.family && A.family.length ? A.familyRows() : null;
+    const who = listWho(), famAll = A.famOn && A.famOn() ? A.activeRows() : null, fam = famAll && famAll.length > 1 ? famAll : null;
     const scored = list.filter(pr => pr.name).map(pr => { const p = withDetail(pr); const an = analyze(p); return { pr: p, an, pm: matchFor(p, an, who), full: p !== pr }; })
       .filter(x => x.an.score != null && x.an.parts.length >= 2);
-    const all = scored.slice().sort((a, b) => (b.pm.pct ?? -1) - (a.pm.pct ?? -1));
+    const all = scored.slice().sort((a, b) => (b.pm.pct ?? -1) - (a.pm.pct ?? -1) || (a.pr.code < b.pr.code ? -1 : 1));
     const ok = x => x.pm.pct >= 50 && x.pm.status !== 'fail' && x.pm.status !== 'unknown';
     const good = all.filter(ok);
     const counts = {}; STORES.forEach(s => { counts[s.key] = good.filter(x => A.storeOf(x.pr, s.key)).length; });
@@ -265,25 +307,24 @@
     if (storeKey !== 'all' && !counts[storeKey]) storeKey = 'all';
     const shown = storeKey === 'all' ? good : good.filter(x => A.storeOf(x.pr, storeKey));
     const withStore = list.filter(pr => pr.stores.length).length;
-    // Do dociągnięcia: produkty bez pełnych danych z czołówki (także tuż pod progiem, bo pełne dane mogą je podnieść).
-    const pending = first ? all.filter(x => !x.full).slice(0, 40).map(x => x.pr.code) : [];
-    const whoChips = fam ? `<div class="chips list-who" role="group" aria-label="Dla kogo">${[['all', 'Cała rodzina']].concat(fam.map(r => [r.id, whoName(r)])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="list-who" data-cat="${esc(cat)}" data-store="${esc(storeKey)}" data-who="${esc(k)}" aria-pressed="${k === who}">${esc(l)}</button>`).join('')}</div>` : '';
+    const whoChips = fam ? `<div class="chips list-who" role="group" aria-label="Dla kogo">${[['all', A.offRows().length ? 'Wszyscy wybrani' : 'Cała rodzina']].concat(fam.map(r => [r.id, whoName(r)])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="list-who" data-cat="${esc(cat)}" data-store="${esc(storeKey)}" data-who="${esc(k)}" aria-pressed="${k === who}">${esc(l)}</button>`).join('')}</div>` : '';
     const chips = good.length ? `<div class="chips" role="group" aria-label="Sklep">${[['all', 'Wszystkie sklepy', good.length]].concat(STORES.filter(s => counts[s.key]).map(s => [s.key, s.label, counts[s.key]])).map(([k, l, n]) => `<button class="cat-tab" type="button" data-act="list-store" data-cat="${esc(cat)}" data-store="${esc(k)}" aria-pressed="${k === storeKey}">${esc(l)} <span class="muted">${n}</span></button>`).join('')}</div>
         <p class="small muted">Sklep przy produkcie wpisują kupujący, więc znamy go tylko dla ${withStore} z ${list.length} produktów. Brak sklepu nie znaczy, że produktu tam nie ma.</p>` : '';
-    const forWho = who === 'all' ? 'całej rodziny (liczy się wynik osoby, której produkt pasuje najsłabiej)' : who === 'me' ? 'Twoich celów i ograniczeń' : 'celów i ograniczeń: ' + esc(whoName((fam || []).find(r => r.id === who) || { id: 'me' }));
+    const forWho = who === 'all' ? (A.offRows().length ? 'wybranych osób' : 'całej rodziny') + ' (liczy się wynik osoby, której produkt pasuje najsłabiej)' : who === 'me' ? 'Twoich celów i ograniczeń' : 'celów i ograniczeń: ' + esc(whoName((famAll || []).find(r => r.id === who) || { id: 'me' }));
     let body;
     if (!list.length) body = `<div class="empty">W bazie Open Food Facts nie ma jeszcze produktów z tej kategorii sprzedawanych w Polsce.</div>`;
     else if (!good.length) {
       const best = all.filter(x => x.pm.pct != null && x.pm.status !== 'fail').slice(0, 5);
-      body = `<div class="empty">Sprawdziliśmy ${list.length} ${plural(list.length, 'produkt', 'produkty', 'produktów')}. Żaden nie ma ${who === 'all' ? 'dobrego dopasowania dla całej rodziny' : personal ? 'co najmniej dobrego dopasowania' : 'oceny co najmniej „Dobre”'}.${best.length ? ' Poniżej najlepsze z dostępnych.' : ''}</div>${best.length ? `<div class="list" id="shopList">${best.map(itemHtml).join('')}</div>` : ''}`;
+      body = `<div class="empty">Sprawdziliśmy ${list.length} ${plural(list.length, 'produkt', 'produkty', 'produktów')}. Żaden nie ma ${who === 'all' ? 'dobrego dopasowania dla ' + (A.offRows().length ? 'wybranych osób' : 'całej rodziny') : personal ? 'co najmniej dobrego dopasowania' : 'oceny co najmniej „Dobre”'}.${best.length ? ' Poniżej najlepsze z dostępnych.' : ''}</div>${best.length ? `<div class="list" id="shopList">${best.map(itemHtml).join('')}</div>` : ''}`;
     } else body = `<p class="small">${personal ? 'Ułożone według dopasowania do ' + forWho + '.' : 'Ułożone według oceny składu. Ustaw cele, a lista dopasuje się do Ciebie.'} <a href="#/profil">${personal ? 'Zmień' : 'Ustaw cele'}</a></p>
         <div class="list" id="shopList">${shown.slice(0, 20).map(itemHtml).join('')}</div>
         <p class="small muted">Pokazujemy ${Math.min(20, shown.length)} z ${shown.length} (sprawdziliśmy ${list.length} popularnych produktów). Asortyment sklepów się zmienia.</p>`;
-    const det = pending.length ? '<p class="small muted" id="listDet">Sprawdzam pełne dane produktów, wyniki mogą się jeszcze trochę zmienić…</p>' : '';
-    A.$('listBody').innerHTML = whoChips + chips + det + body;
+    const det = data.complete ? '' : '<p class="small muted" id="listDet">Nie udało się sprawdzić szczegółów wszystkich produktów (słaby zasięg albo baza nie odpowiada). Część wyników może się różnić od ekranu produktu.</p>';
+    A.$('listBody').innerHTML = whoChips + (A.offNoteHtml ? A.offNoteHtml() : '') + chips + det + body;
     A.listCache = all;
-    return pending;
   }
-  A.listWhoSet = (cat, storeKey, who) => { A.store.set('d-listwho', who); renderList(cat, storeKey === 'all' || STORES.some(s => s.key === storeKey) ? storeKey : null); };
-  A.listStore = (cat, storeKey) => { A.store.set('shopStore', storeKey); renderList(cat, storeKey); };
+  A.store.del('d-pdet'); // dawna kopia w localStorage (2.3.2), zastąpiona przez Cache API
+  const redraw = (cat, storeKey) => { const d = LISTS[cat]; if (d && d.sig === JSON.stringify([A.profile, A.family]) && A.current.screen === 'list') { drawList(cat, storeKey, d); return true; } return false; };
+  A.listWhoSet = (cat, storeKey, who) => { A.store.set('d-listwho', who); const sk = storeKey === 'all' || STORES.some(s => s.key === storeKey) ? storeKey : null; if (!redraw(cat, sk)) renderList(cat, sk); };
+  A.listStore = (cat, storeKey) => { A.store.set('shopStore', storeKey); if (!redraw(cat, storeKey)) renderList(cat, storeKey); };
 })();

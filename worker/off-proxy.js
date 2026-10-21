@@ -27,6 +27,9 @@ const CAT_TTL = 24 * 3600;
 const STORE_NAMES = { biedronka: 'Biedronka', lidl: 'Lidl', aldi: 'Aldi', kaufland: 'Kaufland', auchan: 'Auchan', carrefour: 'Carrefour', netto: 'Netto', dino: 'Dino', stokrotka: 'Stokrotka', zabka: 'Żabka', lewiatan: 'Lewiatan', polomarket: 'Polomarket', intermarche: 'Intermarché', rossmann: 'Rossmann', hebe: 'Hebe', spar: 'Spar' };
 const storeLabel = v => STORE_NAMES[String(v || '').toLowerCase()] || '';
 const CAT_FIELDS = 'code,product_name,product_name_pl,brands,quantity,image_front_small_url,image_front_url,nutriscore_grade,nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,nutriments,categories_tags,categories,stores';
+// Pełne dane produktów dla list (te same pola co ekran produktu w aplikacji, core.js FIELDS).
+const DET_FIELDS = 'code,traces_tags,ingredients_analysis_tags,labels_tags,categories,product_name,product_name_pl,generic_name,generic_name_pl,brands,quantity,image_front_small_url,image_front_url,image_url,nutriscore_grade,nova_group,additives_tags,allergens_tags,ingredients_text,ingredients_text_pl,nutriments,categories_tags,categories_hierarchy,stores';
+const DET_MAX = 40, DET_TTL = 3 * 24 * 3600;
 const NUTRIMENTS = ['energy-kcal_100g', 'fat_100g', 'saturated-fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g', 'fiber_100g', 'carbohydrates_100g', 'alcohol_100g'];
 
 export default {
@@ -89,6 +92,28 @@ export default {
       if (!/^[a-z]{2}:[a-z0-9-]{2,60}$/.test(tag)) return reply(400, { ok: false, error: 'tag' });
       const r = await category(tag, env);
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': r.status === 200 ? 'public, max-age=3600' : 'no-store' }, cors) });
+    }
+    // Pełne dane wielu produktów naraz (do 40). Wyszukiwarka OFF, z której biorą się listy, bywa niepełna (np. bez wartości odżywczych),
+    // więc lista liczona na jej danych różniła się od ekranu produktu. Odpowiedzi OFF zapamiętujemy w Cloudflare na 3 dni.
+    if (url.pathname === '/details') {
+      if (request.method !== 'GET') return reply(405, { ok: false, error: 'method' });
+      if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
+      const codes = [...new Set(String(url.searchParams.get('codes') || '').split(',').map(s => s.trim()).filter(s => /^\d{6,14}$/.test(s)))].slice(0, DET_MAX);
+      if (!codes.length) return reply(400, { ok: false, error: 'codes' });
+      const base = (env.OFF_BASE || 'https://world.openfoodfacts.org').replace(/\/$/, '');
+      const headers = { 'User-Agent': `${APP_NAME}/1.0 (${env.CONTACT_EMAIL || 'rafalmsolutions@gmail.com'})` };
+      if (env.OFF_BASIC) headers.Authorization = 'Basic ' + btoa(env.OFF_BASIC);
+      const products = {}; let failed = 0;
+      await Promise.all(codes.map(async code => {
+        try {
+          const r = await fetch(`${base}/api/v2/product/${code}.json?fields=${DET_FIELDS}`, { headers, cf: { cacheTtl: DET_TTL, cacheEverything: true } });
+          if (r.status === 404) { products[code] = null; return; }
+          if (!r.ok) { failed++; return; }
+          const j = await r.json();
+          products[code] = j && j.status === 1 && j.product && typeof j.product === 'object' ? detail(j.product, code) : null;
+        } catch (e) { failed++; }
+      }));
+      return new Response(JSON.stringify({ ok: true, products, failed }), { status: 200, headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': failed ? 'no-store' : 'public, max-age=3600' }, cors) });
     }
     if (['/ocr', '/image', '/edit'].includes(url.pathname)) {
       if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
@@ -296,6 +321,18 @@ async function category(tag, env) {
   const body = JSON.stringify({ ok: true, tag, count: j.count, at: new Date().toISOString(), products });
   if (cache && products.length) await cache.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${CAT_TTL}` } }));
   return { status: 200, body };
+}
+// Pełne dane produktu: tylko pola z DET_FIELDS, teksty przycięte.
+function detail(p, code) {
+  const out = { code: String(p.code || code) };
+  DET_FIELDS.split(',').forEach(k => {
+    const v = p[k]; if (v === undefined || v === null || k === 'code') return;
+    if (typeof v === 'string') out[k] = v.slice(0, k.startsWith('ingredients_text') ? 4000 : 400);
+    else if (Array.isArray(v)) out[k] = v.filter(x => typeof x === 'string').slice(0, 60).map(x => x.slice(0, 120));
+    else if (typeof v === 'number' && isFinite(v)) out[k] = v;
+    else if (k === 'nutriments' && typeof v === 'object') { const n = {}; Object.keys(v).filter(x => /_100g$/.test(x)).forEach(x => { const num = Number(v[x]); if (isFinite(num)) n[x] = num; }); out.nutriments = n; }
+  });
+  return out;
 }
 // Zostawiamy tylko pola, których używa aplikacja (mniej danych w telefonie).
 function compact(h) {

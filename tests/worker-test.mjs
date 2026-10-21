@@ -6,6 +6,7 @@ let calls = [], exists = false, saveFail = false, searchDown = false;
 globalThis.fetch = async (url, init = {}) => {
   const body = init.body instanceof FormData ? Object.fromEntries([...init.body.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : '[file ' + v.type + ' ' + v.size + ']'])) : null;
   calls.push({ url: String(url), headers: init.headers || {}, body });
+  if (String(url).includes('/api/v2/product/590000007770')) { const code = String(url).match(/product\/(\d+)/)[1]; if (code.endsWith('3')) return new Response('{"status":0}', { status: 404 }); if (code.endsWith('4')) return new Response('down', { status: 503 }); return new Response(JSON.stringify({ status: 1, product: { code, product_name_pl: 'Gulasz', ingredients_text_pl: 'mięso, sól', nutriments: { salt_100g: 1.3, 'salt_unit': 'g', energy_100g: 500 }, additives_tags: ['en:e621'], secret: 'x' } })); }
   if (String(url).includes('/api/v2/product/')) return new Response(JSON.stringify(exists ? { status: 1, product: { product_name: 'Jest' } } : { status: 0 }), { status: exists ? 200 : 404 });
   if (String(url).includes('product_jqm2')) return new Response(JSON.stringify(saveFail ? { status: 0 } : { status: 1, status_verbose: 'fields saved' }));
   if (String(url).startsWith('https://search.openfoodfacts.org/')) {
@@ -88,7 +89,7 @@ const origFetch = globalThis.fetch;
 globalThis.fetch = async (url, init = {}) => {
   const u = String(url);
   if (u.includes('/cgi/ingredients.pl')) { calls.push({ url: u, headers: init.headers || {} }); return new Response(JSON.stringify({ status: 0, ingredients_text_from_image: 'mleko, <b>kultury</b> bakterii' })); }
-  if (u.includes('/api/v2/product/') && u.includes('ingredients_text')) { calls.push({ url: u }); return new Response(JSON.stringify({ status: 1, product: existing })); }
+  if (u.includes('/api/v2/product/') && u.includes('ingredients_text') && !u.includes('/api/v2/product/590000007770')) { calls.push({ url: u }); return new Response(JSON.stringify({ status: 1, product: existing })); }
   return origFetch(url, init);
 };
 const ef = o => { const f = new FormData(); for (const [k, v] of Object.entries(Object.assign({ code: CODE, lang: 'pl', app_uuid: '0123456789abcdef0123', app_version: '1.0' }, o))) if (v !== null) f.append(k, v); return f; };
@@ -136,5 +137,22 @@ r = await run(ef({}), { path: '/edit', origin: 'https://zly.test' }); ok(r.statu
   ir = await img('/cgi/session.pl'); ok(ir.status === 400, 'zdjęcie: tylko zdjęcia produktów');
   ir = await img('/images/products/590/brak/front.jpg'); ok(ir.status === 400 || ir.status === 404, 'zdjęcie: brak zdjęcia');
   ir = await img('/images/products/590/082/000/0234/brak.jpg'); ok(ir.status === 404, 'zdjęcie: 404 z OFF przekazane');
+}
+// Pełne dane produktów dla list.
+{
+  const det = (q, origin = 'https://app.test') => worker.fetch(new Request('https://proxy.test/details?codes=' + q, { headers: { Origin: origin } }), env, {});
+  calls = [];
+  let dr = await det('5900000077701,5900000077702,5900000077703,5900000077704,abc'); const dj = await dr.json(); if (process.env.DBG) console.log(JSON.stringify(dj));
+  ok(dr.status === 200 && dj.ok, 'dane produktów: 200');
+  ok(dj.products['5900000077701'] && dj.products['5900000077701'].nutriments.salt_100g === 1.3 && !('salt_unit' in dj.products['5900000077701'].nutriments), 'dane produktów: wartości odżywcze na 100 g');
+  ok(dj.products['5900000077701'].ingredients_text_pl === 'mięso, sól' && !dj.products['5900000077701'].secret, 'dane produktów: tylko potrzebne pola');
+  ok(dj.products['5900000077703'] === null, 'dane produktów: brak w bazie = null');
+  ok(!('5900000077704' in dj.products) && dj.failed === 1, 'dane produktów: błąd OFF liczony, bez zgadywania');
+  ok(!('abc' in dj.products), 'dane produktów: złe kody pominięte');
+  ok(calls.filter(c => c.url.includes('/api/v2/product/')).length === 4, 'dane produktów: jedno zapytanie na produkt');
+  dr = await det('5900000077701', 'https://zly.test'); ok(dr.status === 403, 'dane produktów: obca strona 403');
+  dr = await det(''); ok(dr.status === 400, 'dane produktów: bez kodów 400');
+  const many = Array.from({ length: 60 }, (_, i) => String(5900000077000 + i)).join(',');
+  calls = []; await det(many); ok(calls.filter(c => c.url.includes('/api/v2/product/')).length === 40, 'dane produktów: najwyżej 40 naraz');
 }
 console.log(`Pośrednik: ${pass} OK, ${fail} błędów`); process.exit(fail ? 1 : 0);

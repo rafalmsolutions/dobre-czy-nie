@@ -609,7 +609,6 @@ button.pchip{font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
    pierścienie domowników; łuk w tle to ten sam kolor rozjaśniony, napis pod wynikiem – przyciemniony, żeby był czytelny. */
 .d-hero[style*="--sc"] .d-arc{border-color:color-mix(in srgb,var(--sc) 32%,#E8E9EB)}
 .d-hero[style*="--sc"] .mlabel{color:color-mix(in srgb,var(--sc) 62%,#2B2C30)}
-.d-hero[style*="--sc"] .fam-ans{background:color-mix(in srgb,var(--sc) 22%,#FFFFFF);color:color-mix(in srgb,var(--sc) 35%,#2B2C30)}
 .pctl-bar{background:linear-gradient(90deg,#E5533D,#EE8139 25%,#F2B43C 50%,#D9C13A 62%,#A3C23F 75%,#62B14B 88%,#2E9E55)}
 /* Małe talerze na liście „Ostatnio sprawdzone”: obręcz = wynik, jak duży talerz. */
 #scr-home .list .item .thumb.has-score{width:78px;height:78px;margin:-5px;border:5px solid transparent;
@@ -630,3 +629,17 @@ img.noimg{object-fit:cover}
 .list-who{margin-bottom:2px}
 #scr-list .item .grow{min-width:0;overflow-wrap:break-word}
 #scr-list .item > .iconbtn{flex:0 0 auto}
+
+/* 2.3.4: osoby na zakupy (włącz/wyłącz na ekranie głównym) */
+.fam-sw{flex:0 0 auto;width:46px;height:28px;min-height:28px;padding:0;border:0;border-radius:999px;background:#C9CBD0;position:relative;cursor:pointer;transition:background .15s}
+.fam-sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.fam-sw[aria-checked="true"]{background:#2E9E55}
+.fam-sw[aria-checked="true"] i{transform:translateX(18px)}
+.fam-sw:focus-visible{outline:3px solid #2B2C30;outline-offset:2px}
+.fam-sw::before{content:"";position:absolute;inset:-8px}
+.fam-home-row.off .chips,.fam-home-row.off > .small,.fam-home-row.off .fam-home-h b{opacity:.45}
+.fam-home-h .grow{flex:1;min-width:0}
+.fam-off{margin:4px 0 0}
+@media (prefers-reduced-motion:reduce){.fam-sw,.fam-sw i{transition:none}}
+.fam-box{grid-area:fam;display:flex;flex-direction:column;gap:6px;min-width:0;width:100%}
+.fam-box .fam-circles{grid-area:auto}

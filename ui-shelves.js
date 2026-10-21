@@ -8,7 +8,7 @@
   /* Ocena przy rzeczy: z domownikami odpowiedź dla całej rodziny (zapamiętana przy ostatnim sprawdzeniu produktu), bez nich mój procent. */
   const FAM_IC = { ok: '✓', mid: '!', bad: '✕', unk: '?' };
   function scoreHtml(i) {
-    if (A.family.length && i.fam) {
+    if (A.famOn() && i.fam) {
       const who = i.fam.t === 'ok' ? 'wszyscy' : i.fam.h.replace(/^[^:]*:\s*/, '');
       return `<span class="famchip" data-t="${esc(i.fam.t)}" title="${esc(i.fam.h)}" aria-label="${esc(i.fam.h)}"><b aria-hidden="true">${FAM_IC[i.fam.t]}</b><span aria-hidden="true">${esc(who)}</span></span>`;
     }

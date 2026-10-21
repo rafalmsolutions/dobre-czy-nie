@@ -7,10 +7,15 @@
   let pendingToken = null;
 
   A.route('product', code => {
-    if (cur && cur.prod && cur.prod.code === code && cur.rendered && !cur.missing && !cur.local) return; // ponowne wejście bez zmian
+    if (cur && cur.prod && cur.prod.code === code && cur.rendered && !cur.missing && !cur.local) {
+      // Ponowne wejście: przeliczamy tylko, gdy w międzyczasie zmienił się profil, domownicy albo to, dla kogo robisz zakupy.
+      if (cur.sig !== whoSig() && cur.guess !== null) A.rerenderProduct();
+      return;
+    }
     openProduct(code);
   });
   A.currentProduct = () => cur;
+  const whoSig = () => JSON.stringify([A.profile, A.family, A.shopOff]);
 
   function screen(html) { A.$('scr-product').innerHTML = `<div class="wrap">${html}</div>`; A.fitTitle(A.$('scr-product').querySelector('.d-title h1')); }
   const topbar = (title) => `<div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><span class="grow small muted" style="font-weight:800">${esc(title)}</span>${A.hudPill()}</div>`;
@@ -23,9 +28,22 @@
     // Gdy baza na żywo spóźnia się ponad 2,5 s, pokazujemy kopię i podmieniamy dane, kiedy baza odpowie.
     const snapP = A.snapshotProduct(code).catch(() => null);
     const liveP = A.lookup(code).then(p => ({ ok: true, p }), e => ({ ok: false, e }));
-    const first = await Promise.race([liveP, new Promise(r => setTimeout(() => r(null), 2500))]);
+    // Pełne dane przez pośrednika liczymy od razu równolegle (zwykle z pamięci telefonu albo Cloudflare), na wypadek wolnej bazy.
+    const detP = A.detailOne ? A.detailOne(code).catch(() => null) : Promise.resolve(null);
+    const first = await Promise.race([liveP, new Promise(r => setTimeout(() => r(null), 1200))]);
     if (pendingToken !== token) return;
     if (!first) {
+      // Baza na żywo się spóźnia: najpierw pełne dane przez naszego pośrednika (kopia w Cloudflare, ten sam zestaw pól co na żywo),
+      // dopiero potem cotygodniowa kopia (ta nie ma tekstu składu, więc nie wiadomo, czego brakuje, i nie da się uzupełnić).
+      const det = await Promise.race([detP, new Promise(r => setTimeout(() => r(null), 2500))]);
+      if (pendingToken !== token) return;
+      if (det && det.kind === 'food' && det.name) {
+        show(mergeLocal(Object.assign({}, det)), {});
+        const live = await liveP;
+        if (pendingToken !== token || !cur || cur.prod.code !== code) return;
+        if (live.ok && live.p) upgrade(live.p);
+        return;
+      }
       const snap = await Promise.race([snapP, new Promise(r => setTimeout(() => r(null), 1500))]);
       if (pendingToken !== token) return;
       if (snap) {
@@ -126,10 +144,10 @@
     const lvl = (pm && pm.pct != null && pm.level) || 'unknown';
     const nm = p.name || 'Produkt bez nazwy';
     // Zdjęcie produktu z bazy ma pierwszeństwo; miska kategorii jest wtedy małym znaczkiem w rogu z nazwą kategorii.
-    // Obręcz talerza pokazuje wynik (jak znak Lupki). Z domownikami: najsłabszy wynik w rodzinie; bez liczb w profilu: sama szara obręcz.
-    const fam = pm && cur.fam ? cur.fam : null;
-    const known = fam ? fam.rows.filter(r => r.st !== 'unk' && r.pm && r.pm.pct != null) : [];
-    const ringPct = A.profile.noScores || !pm ? null : fam ? (fam.tone === 'unk' || !known.length ? null : Math.min(...known.map(r => r.pm.pct))) : pm.pct;
+    // Obręcz talerza pokazuje wynik (jak znak Lupki). Z domownikami: wynik osoby zaznaczonej w kółkach – tej samej, dla której jest
+    // rachunek „Dlaczego dla: …” (stuknięcie w inną osobę zmienia obręcz); bez liczb w profilu: sama szara obręcz.
+    const fam = pm && cur.fam ? cur.fam : null, focus = fam ? fam.focus : null;
+    const ringPct = A.profile.noScores || !pm ? null : fam ? (focus && focus.st !== 'unk' && focus.pm && focus.pm.pct != null ? focus.pm.pct : null) : pm.pct;
     const ring = ringPct != null ? ` has-score" style="--sc:${A.scoreColor(ringPct)};--pdeg:${Math.max(4, Math.round(ringPct * 3.6))}deg` : '';
     const main = img ? `<button class="prod-img-btn d-plate${ring}" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
@@ -140,7 +158,7 @@
     const verdict = fv ? A.familyAnswerHtml(fv) : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
-      <div class="d-hside">${chip}${verdict}</div>${fv ? A.familyCirclesHtml(fv) : ''}
+      <div class="d-hside">${chip}${verdict}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
@@ -164,6 +182,7 @@
   function render() {
     const { prod, an, pm } = cur;
     const added = cur.local && prod.added;
+    cur.sig = whoSig();
     cur.fam = cur.guess !== null && A.familyView ? A.familyView(prod, an, cur.famPick) : null;
     // Produkt jest na półce: odświeżamy tam dopasowanie i odpowiedź dla rodziny.
     if (cur.guess !== null && prod.code && Shelf.hasCode(A.shelves, prod.code)) {

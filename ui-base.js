@@ -218,8 +218,8 @@ const App = {};
       setTimeout(() => A.sound('level'), 250);
     } else {
       setTimeout(() => A.sound('challenge'), 250);
-      ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Nowe wyzwanie pojawi się w poniedziałek.';
-      emblem = art('packet_strawberry', 150);
+      ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Ukończone wyzwanie widać na ekranie głównym i w Kolekcji → Odznaki. Nowe pojawi się w poniedziałek.';
+      emblem = medalSvg('trophy', 'wybory', true, 170, 3, 'm-pop'); // wersja D: medal zamiast paczki nasion truskawki z dawnej gry w ogródek
     }
     const colors = ['#9FCDB0', '#F5D36B', '#F2A15E', '#EFA2B4', '#C9DAEC', '#E4DAF0', '#2B2C30']; // wersja D: pastelowe konfetti
     let conf = '';
@@ -562,6 +562,7 @@ const App = {};
     const prev = A.store.get('history', []).find(h => h && h.code === prod.code) || {};
     hist.unshift({ code: prod.code, name: prod.name || 'Produkt bez nazwy', brand: prod.brand, image: A.safeImg(prod.image), score: an.score, pct: pm ? pm.pct : null, level: pm ? pm.level : null, kind: prod.kind, categories: (prod.categories || []).slice(-4), alt: prev.alt || null, at: Date.now() });
     A.store.set('history', hist.slice(0, 30));
+    if (A.putDetail && prod.source === 'off' && !prod.snapshot) A.putDetail(prod);
     const cache = A.store.get('cache', {});
     cache[prod.code] = { p: prod, at: Date.now() };
     Object.keys(cache).sort((a, b) => cache[b].at - cache[a].at).slice(40).forEach(k => delete cache[k]);

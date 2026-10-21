@@ -14,6 +14,16 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Stabilne listy, obręcz osoby w fokusie, pełne dane zamiast kopii (21.10.2026, wersja 2.3.3)
+
+- **Lista liczona raz, na pełnych danych:** po pobraniu kategorii aplikacja bierze 80 najlepszych kandydatów i jednym zapytaniem `/details?codes=` (pośrednik, do 40 kodów, pamięć Cloudflare 3 dni)
+  dociąga ich pełne dane. Wynik zapamiętuje (6 h, ten sam profil i rodzina). Przełączanie „Cała rodzina / osoby” i sklepów tylko przerysowuje listę, niczego nie pobiera,
+  więc liczby się nie zmieniają, a lista „Cała rodzina” zawsze mieści się w liście każdej osoby. Pełne dane trzyma telefon (`dcn-pdet`, 7 dni).
+- **Obręcz talerza z rodziną = osoba w fokusie** (ta sama co w „Dlaczego dla: …”): procent obręczy zawsze widać na ekranie.
+- **Wolna baza OFF:** po 1,2 s aplikacja pokazuje pełne dane z pośrednika (pobierane równolegle od początku), a kopię bazy dopiero, gdy i ich brak.
+  Dzięki temu przy produkcie bez składu jest przycisk „Pomóż uzupełnić”.
+- Testy: `tests/e2e-d-list.mjs` (stabilność, obręcz, wolna baza), `tests/worker-test.mjs` (`/details`).
+
 ## Szybsze zdjęcia, spójne wyniki na listach, lista dla rodziny (21.10.2026, wersja 2.3.2)
 
 - **Zdjęcia produktów** idą przez pośrednika (`/img/images/products/…` w `worker/off-proxy.js`): serwer zdjęć OFF odpowiadał 1–12 s na zdjęcie i nie pozwalał ich zapamiętać.

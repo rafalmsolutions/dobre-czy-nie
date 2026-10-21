@@ -20,12 +20,33 @@
     const f = { id: 'f' + Date.now().toString(36), name: 'Osoba ' + n, p: cleanProfile({}) };
     A.family.push(f); A.saveFamily(); return f;
   };
-  A.familyRemove = id => { A.family = A.family.filter(f => f.id !== id); A.saveFamily(); if (A.focusId === id) A.setFocus('me'); };
+  A.familyRemove = id => { A.family = A.family.filter(f => f.id !== id); A.saveFamily(); if (A.focusId === id) A.setFocus('me'); A.shopOff = A.shopOff.filter(x => x !== id); A.store.set('d-shopoff', A.shopOff); };
   /* Najważniejsza osoba: jej wyjaśnienie widać, gdy produkt pasuje wszystkim. Zapamiętujemy ostatni wybór. */
   A.familyRows = () => [{ id: 'me', name: A.userName() || 'Ja', p: A.profile }].concat(A.family);
   A.focusId = A.store.get('d-focus', 'me');
   A.setFocus = id => { A.focusId = id; A.store.set('d-focus', id); };
-  A.focusPerson = () => A.family.length ? (A.familyRows().find(r => r.id === A.focusId) || A.familyRows()[0]) : null;
+  A.focusPerson = () => A.famOn() ? (A.activeRows().find(r => r.id === A.focusId) || A.activeRows()[0]) : null;
+  /* Na zakupy: osoby wyłączone (np. dziś kupujesz tylko dla siebie albo tylko dla dziecka) nie liczą się przy produkcie ani na listach.
+     Można wyłączyć każdego, także siebie, ale ktoś musi zostać. Klucz d-shopoff: lista wyłączonych id. */
+  A.shopOff = (raw => Array.isArray(raw) ? raw.map(String) : [])(A.store.get('d-shopoff', []));
+  A.isShopOn = id => !A.shopOff.includes(id);
+  A.activeRows = () => {
+    const all = A.familyRows();
+    if (!A.family.length) return all;
+    const on = all.filter(r => A.isShopOn(r.id));
+    return on.length ? on : all;
+  };
+  A.offRows = () => { if (!A.family.length) return []; const on = new Set(A.activeRows().map(r => r.id)); return A.familyRows().filter(r => !on.has(r.id)); };
+  /* Tryb rodziny: są domownicy i liczymy kogoś poza Tobą. Sam „Ty” = zwykły widok jednej osoby. */
+  A.famOn = () => { if (!A.family.length) return false; const on = A.activeRows(); return !(on.length === 1 && on[0].id === 'me'); };
+  A.setShopOn = (id, on) => {
+    const ids = A.familyRows().map(r => r.id);
+    if (!ids.includes(id)) return false;
+    const next = on ? A.shopOff.filter(x => x !== id) : [...new Set(A.shopOff.concat(id))].filter(x => ids.includes(x));
+    if (next.length >= ids.length) return false; // ktoś musi zostać
+    A.shopOff = next; A.store.set('d-shopoff', next); return true;
+  };
+  A.shopAll = () => { A.shopOff = []; A.store.set('d-shopoff', []); };
   const profSize = p => p.watch.length + ['allergens', 'diet', 'avoid', 'custom'].reduce((s, g) => s + p[g].length, 0);
   const low = s => String(s || '').toLowerCase();
 
@@ -44,9 +65,9 @@
 
   /* Widok rodziny przy produkcie. pick: osoba wybrana przy tym produkcie (stuknięcie), inaczej pierwsza z problemem, inaczej najważniejsza. */
   A.familyView = (prod, an, pick) => {
-    if (!A.family.length || prod.kind === 'cosmetic') return null;
+    if (!A.famOn() || prod.kind === 'cosmetic') return null;
     const noScores = !!A.profile.noScores;
-    const rows = A.familyRows().map((r, i) => Object.assign({ i }, r, A.personState(prod, an, r.p)))
+    const rows = A.activeRows().map((r, i) => Object.assign({ i }, r, A.personState(prod, an, r.p)))
       .sort((a, b) => RANK[a.st] - RANK[b.st] || a.i - b.i);
     // Inicjały: jedna litera, dwie, gdy się powtarza (Ania i Adam → An, Ad).
     const first = r => (r.name.trim()[0] || '?').toUpperCase();
@@ -60,15 +81,15 @@
     let head, sub;
     if (tone === 'ok') {
       const w = rows.reduce((a, b) => b.pm.pct < a.pm.pct ? b : a);
-      head = n === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim';
-      sub = noScores ? `${n} z ${n} osób` : `Najsłabiej ${w.pm.pct}% · ${w.name}`;
+      head = n === 1 ? 'Pasuje: ' + w.name : n === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim';
+      sub = n === 1 ? (noScores ? 'liczymy tylko dla tej osoby' : `${w.pm.pct}% · liczymy tylko dla tej osoby`) : noScores ? `${n} z ${n} osób` : `Najsłabiej ${w.pm.pct}% · ${w.name}`;
     } else {
       head = { bad: 'Nie dla: ', unk: 'Nie wiemy dla: ', mid: 'Uwaga: ' }[tone] + same.map(r => r.name).join(', ');
       sub = same.map(r => r.name + ': ' + r.why).join(' · ') + (tone === 'unk' ? ' · sprawdź etykietę' : '');
     }
     const picked = pick && rows.find(r => r.id === pick);
-    const focus = picked || (tone !== 'ok' ? rows[0] : rows.find(r => r.id === A.focusId) || rows.find(r => r.id === 'me'));
-    return { rows, n, tone, head, sub, focus, level: { ok: 'great', mid: 'poor', bad: 'bad', unk: 'unknown' }[tone] };
+    const focus = picked || (tone !== 'ok' ? rows[0] : rows.find(r => r.id === A.focusId) || rows.find(r => r.id === 'me') || rows[0]);
+    return { rows, n, tone, head, sub, focus, off: A.offRows(), level: { ok: 'great', mid: 'poor', bad: 'bad', unk: 'unknown' }[tone] };
   };
 
   const MARK = {
@@ -77,7 +98,7 @@
   };
   /* Skrót odpowiedzi dla rodziny na półkę: { t: 'bad', h: 'Nie dla: Kuba' } albo null bez domowników. */
   A.familyShort = (prod, an, fv) => {
-    const v = fv || (A.family.length && prod && prod.kind !== 'cosmetic' ? A.familyView(prod, an || analyze(prod)) : null);
+    const v = fv || (A.famOn() && prod && prod.kind !== 'cosmetic' ? A.familyView(prod, an || analyze(prod)) : null);
     return v ? { t: v.tone, h: v.head } : null;
   };
   /* Odpowiedź dla rodziny (obok zdjęcia). */
@@ -86,13 +107,19 @@
   A.familyCirclesHtml = fv => {
     if (!fv) return '';
     const noScores = !!A.profile.noScores;
-    return `<div class="fam-circles" role="group" aria-label="Domownicy">${fv.rows.map(r => {
+    const note = A.offNoteHtml();
+    return `${note ? '<div class="fam-box">' : ''}<div class="fam-circles" role="group" aria-label="Domownicy">${fv.rows.map(r => {
       const on = fv.focus && fv.focus.id === r.id;
       const deg = r.st === 'bad' || r.st === 'unk' ? 0 : noScores ? 360 : Math.max(24, Math.round(r.pm.pct * 3.6));
       return `<button type="button" class="fam-c${on ? ' on' : ''}" data-st="${r.st}"${r.st === 'bad' ? ` style="--c:${A.scoreColor(0)}"` : (r.st === 'ok' || r.st === 'mid') && !noScores ? ` style="--c:${A.scoreColor(r.pm.pct)}"` : ''} data-act="fam-focus" data-id="${esc(r.id)}" aria-pressed="${on}" aria-label="${esc(r.name)}: ${esc(r.st === 'bad' ? 'nie pasuje, ' + r.why : r.st === 'unk' ? 'nie wiemy, ' + r.why : r.word)}${on ? ', wyjaśnienie poniżej' : ''}">
         <span class="fam-ring" style="--deg:${deg}deg${r.st === 'ok' || r.st === 'mid' ? (noScores ? '' : ';--c:' + A.scoreColor(r.pm.pct)) : r.st === 'bad' ? ';--c:' + A.scoreColor(0) : ''}"><span class="fam-ini${r.label.length > 1 ? ' two' : ''}">${esc(r.label)}</span><span class="fam-mark"><svg viewBox="0 0 24 24" aria-hidden="true">${MARK[r.st]}</svg></span></span>
         <span class="fam-nm">${esc(r.name)}</span><span class="fam-wd">${esc(r.word)}</span></button>`;
-    }).join('')}</div>`;
+    }).join('')}</div>${note ? note + '</div>' : ''}`;
+  };
+  /* Kogo teraz nie liczymy, z szybkim powrotem do wszystkich. */
+  A.offNoteHtml = () => {
+    const off = A.offRows();
+    return off.length ? `<p class="small muted fam-off" id="famOff">Nie liczymy: ${esc(off.map(r => r.id === 'me' ? 'Ciebie' : r.name).join(', '))}. <button type="button" class="linkbtn small" data-act="shop-all">Licz wszystkich</button></p>` : '';
   };
   /* Zamiennik, który pasuje całej rodzinie (z produktów tej samej kategorii). */
   A.familyAltPick = (prod, list) => {
@@ -102,7 +129,7 @@
       const an = analyze(x);
       if (an.score == null) return;
       let min = 101;
-      for (const r of A.familyRows()) {
+      for (const r of A.activeRows()) {
         const s = A.personState(x, an, r.p);
         if (s.st !== 'ok') return;
         min = Math.min(min, s.pm.pct);
@@ -116,7 +143,7 @@
     if (!fv || !alt) return '';
     const n = fv.n, img = A.safeImg(alt.pr.image);
     return `<a class="fam-alt" href="#/p/${esc(alt.pr.code)}">${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : '<span class="fam-alt-ok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>'}
-      <span class="grow"><small>${n === 2 ? 'PASUJE WAM OBOJGU' : 'PASUJE WSZYSTKIM'} W TEJ KATEGORII</small><b>${esc(alt.pr.name)}</b><span>${esc([alt.pr.brand, alt.my ? 'jest w: ' + A.storeLabel(A.inMyStore(alt.pr)) : '', `${n} z ${n}` + (A.profile.noScores ? '' : ` · najsłabiej ${alt.min}%`)].filter(Boolean).join(' · '))}</span></span>
+      <span class="grow"><small>${n === 1 ? 'PASUJE: ' + esc(fv.rows[0].name.toUpperCase()) : n === 2 ? 'PASUJE WAM OBOJGU' : 'PASUJE WSZYSTKIM'} W TEJ KATEGORII</small><b>${esc(alt.pr.name)}</b><span>${esc([alt.pr.brand, alt.my ? 'jest w: ' + A.storeLabel(A.inMyStore(alt.pr)) : '', n === 1 ? (A.profile.noScores ? '' : alt.min + '%') : `${n} z ${n}` + (A.profile.noScores ? '' : ` · najsłabiej ${alt.min}%`)].filter(Boolean).join(' · '))}</span></span>
       <svg class="fam-alt-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>`;
   };
 })();

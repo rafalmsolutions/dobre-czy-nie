@@ -68,6 +68,12 @@
       case 'gal-demo': A.galleryDemo(el); break;
       case 'disc-vote': A.discVote(el); break;
       case 'prof-of': if (A.editProfileOf) A.editProfileOf(el.dataset.id); break;
+      case 'shop-on': {
+        const id = el.dataset.id, on = el.getAttribute('aria-checked') !== 'true';
+        if (!A.setShopOn(id, on)) { A.toast('Przynajmniej jedna osoba musi zostać włączona.'); break; }
+        A.render(); { const b = document.querySelector(`[data-act=shop-on][data-id="${id}"]`); if (b) b.focus(); } break;
+      }
+      case 'shop-all': A.shopAll(); if (A.current.screen === 'product' && A.rerenderProduct) A.rerenderProduct(); else A.render(); break;
       case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
