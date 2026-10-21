@@ -212,6 +212,7 @@
     const lvl = pm.level;
     const ringColor = { great: '#2E9A3E', good: '#7CBF3A', poor: '#F0B021', bad: '#D9412B' }[lvl] || '#C9CFD6';
     parts.push('<div class="d-side">');
+    if (A.cmpSuggestHtml && !cur.local) parts.push(A.cmpSuggestHtml(prod));
     if (cur.fam && cur.fam.tone !== 'ok') parts.push(`<div id="famAlt">${cur.famAltHtml || ''}</div>`);
     const fp = cur.fam ? cur.fam.focus : null, other = fp && fp.id !== 'me';
     const bpm = other ? fp.pm : pm;
@@ -229,9 +230,11 @@
       parts.push(`<div class="panel stack qchg${less ? ' less' : ''}" id="qchgBox"><b>${less ? 'Mniej w opakowaniu' : 'Więcej w opakowaniu'}</b><p class="small">Według bazy Open Food Facts opakowanie zmieniło się z <b>${esc(a[2])}</b> (${esc(mon(a[0]))}) na <b>${esc(z[2])}</b> (${esc(mon(z[0]))}), czyli o ${pct}%.${less ? ' Sprawdź cenę za kilogram lub litr.' : ''}</p><p class="small muted">Gramaturę wpisują użytkownicy bazy, więc może zawierać błędy.</p></div>`);
     }
     const onShelf = Shelf.hasCode(A.shelves, prod.code);
+    const inCmp = A.inCmp && A.inCmp(prod.code), canCmp = A.cmpAdd && prod.code && prod.kind !== 'cosmetic';
     parts.push(`<div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <button class="btn btn-green" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na półce' : 'Na półkę (+5 pkt)'}</button>
-      <button class="btn btn-white" type="button" data-act="scan">Skanuj kolejny</button></div>`);
+      ${canCmp ? `<button class="btn btn-white" type="button" data-act="cmp-prod" aria-pressed="${!!inCmp}">${inCmp ? (A.cmp.length > 1 ? 'Pokaż porównanie' : 'W porównaniu ✓') : 'Porównaj'}</button>` : ''}
+      <button class="btn btn-white" type="button" data-act="scan"${canCmp ? ' style="grid-column:1 / -1"' : ''}>Skanuj kolejny</button></div>`);
     parts.push('</div>');
     // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
     const miss = missingParts(prod, cur.snapshot);

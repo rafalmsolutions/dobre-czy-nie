@@ -14,6 +14,20 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Szukaj po nazwie, porównaj 2–3 produkty, nowe dźwięki nagród (21.10.2026, wersja 2.4.0)
+
+- **Szukaj** (`#/szukaj/<zapytanie>`, pole na górze „Dla Ciebie”): pośrednik `/search?q=` (wyszukiwarka Open Food Facts, słowa łączone przez AND,
+  tylko produkty z Polski, zapytanie oczyszczone do liter i cyfr, pamięć Cloudflare 12 h). Wyniki przeliczone na pełnych danych z `/details`, ułożone według
+  wyniku osób na zakupach (`A.groupMatch`); te, które komuś nie pasują, na końcu z powodem. Najpierw od razu produkty z telefonu, skróty do pasujących kategorii,
+  ostatnio szukane (`d-recentq`), przy braku wyniku zachęta do dodania produktu.
+- **Porównaj** (`#/porownaj`, `ui-compare.js`): 2–3 produkty obok siebie. Wynik kolumny = ten sam co wszędzie (najniższy wśród włączonych osób) albo wybranej osoby;
+  korona „Lepszy wybór” (produkt, który komuś nie pasuje, nie wygrywa; różnica < 5 pkt = „Podobnie”). Tabele „Dla kogo” i „Co je różni” (najpierw to, czego ktoś
+  pilnuje i czego nie je, potem białko, dodatki E, NOVA, ocena składu). Wejścia: podpowiedź po drugim skanie z tej samej kategorii (15 min), przycisk „Porównaj”
+  przy produkcie, ⇄ na listach i w wynikach. Pasek „Porównujesz 2 produkty · Pokaż” nad menu. Produkty zapisane w telefonie (`d-cmp`).
+- **Dźwięki nagród** od nowa: dzwonki FM, fanfara, wzlot, „bum”, iskierki w stereo, pogłos i kompresor (Web Audio, bez plików). `A.renderSound(nazwa)` renderuje dźwięk do bufora (podgląd, testy).
+- Odznaka „Mój profil” ma ikonę suwaków zamiast znaku zapytania.
+- Testy: `tests/e2e-d-compare.mjs`, nowe przypadki w `tests/worker-test.mjs` (`/search`).
+
 ## Jeden wynik dla osób na zakupach (21.10.2026, wersja 2.3.4)
 
 - **Zasada:** gdy liczysz kilka osób, wynik produktu to **najniższy** wynik wśród włączonych osób (nie średnia): produkt jest tak dobry,

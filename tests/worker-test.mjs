@@ -82,6 +82,19 @@ ok(p1.additives_tags === null && p1.nova_group === null, 'kategoria: brak skład
 ok(r.h.get('Access-Control-Allow-Origin') === 'https://app.test', 'kategoria: CORS');
 r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts"%20OR%201' }); ok(r.status === 400, 'kategoria: zły tag');
 r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts', origin: 'https://zly.test' }); ok(r.status === 403, 'kategoria: obca strona');
+// Wyszukiwanie po nazwie.
+r = await run(null, { method: 'GET', path: '/search?q=' + encodeURIComponent('Jogurt  Naturalny "OR" *:*') });
+let sc2 = calls.find(c => c.url.startsWith('https://search.openfoodfacts.org/'));
+let sq2 = sc2 ? new URL(sc2.url).searchParams.get('q') : '';
+ok(r.status === 200 && r.j.ok && r.j.products.length === 2 && r.j.q === 'jogurt naturalny or', 'szukaj: wynik i oczyszczone zapytanie (' + (r.j && r.j.q) + ')');
+ok(sq2 === 'jogurt AND naturalny AND or AND countries_tags:"en:poland"', 'szukaj: słowa przez AND, tylko Polska (' + sq2 + ')');
+ok(sc2 && /langs=pl/.test(sc2.url) && /page_size=60/.test(sc2.url), 'szukaj: język polski, 60 wyników');
+r = await run(null, { method: 'GET', path: '/search?q=płatki%20owsiane' }); sc2 = calls.find(c => c.url.startsWith('https://search.openfoodfacts.org/'));
+ok(r.status === 200 && new URL(sc2.url).searchParams.get('q').startsWith('płatki AND owsiane'), 'szukaj: polskie litery zostają');
+r = await run(null, { method: 'GET', path: '/search?q=%22%3A' }); ok(r.status === 400, 'szukaj: same znaki specjalne → 400');
+r = await run(null, { method: 'GET', path: '/search?q=jogurt', origin: 'https://zly.test' }); ok(r.status === 403, 'szukaj: obca strona');
+r = await run(null, { method: 'POST', path: '/search?q=jogurt' }); ok(r.status === 405, 'szukaj: tylko GET');
+searchDown = true; r = await run(null, { method: 'GET', path: '/search?q=jogurt' }); ok(r.status === 502, 'szukaj: awaria wyszukiwarki → 502'); searchDown = false;
 searchDown = true; r = await run(null, { method: 'GET', path: '/category?tag=en:yogurts' }); ok(r.status === 502 && calls.filter(c => c.url.includes('search.openfoodfacts')).length === 2, 'kategoria: awaria wyszukiwarki, jedna ponowna próba'); searchDown = false;
 // Uzupełnianie: OCR, zdjęcie, skład i wartości
 let existing = { ingredients_text_pl: '', nutriments: {} };

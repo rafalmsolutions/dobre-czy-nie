@@ -37,7 +37,7 @@
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 15.6 6.6 18.5l1.2-6L3.3 8.3l6.1-.7z" fill="#FFC93C" stroke="#C27700" stroke-width="1.2" stroke-linejoin="round"/></symbol>
   <symbol id="i-drop" viewBox="0 0 16 20"><path d="M8 1C5 6 2 9.5 2 13a6 6 0 0 0 12 0c0-3.5-3-7-6-12z" fill="#4D9BFF" stroke="#1F5FC4" stroke-width="1.4"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
 </svg>
 
@@ -54,6 +54,8 @@
   <section class="screen" id="scr-album" aria-label="Album odkryć"></section>
   <section class="screen" id="scr-albumpage" aria-label="Strona albumu"></section>
   <section class="screen" id="scr-discoveries" aria-label="Twoje odkrycia"></section>
+  <section class="screen" id="scr-compare" aria-label="Porównanie"></section>
+  <section class="screen" id="scr-search" aria-label="Szukaj produktu"></section>
 </main>
 
 <nav class="tabbar" aria-label="Główne menu">
@@ -150,6 +152,7 @@
 </dialog>
 
 <div class="rwbar" id="rwBar" hidden role="status" aria-live="polite"></div>
+<div class="rwbar cmpbar" id="cmpBar" hidden></div>
 <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
 
 <script defer src="config.js"></script>
@@ -168,6 +171,7 @@
 <script defer src="ui-progress.js"></script>
 <script defer src="ui-complete.js"></script>
 <script defer src="ui-album.js"></script>
+<script defer src="ui-compare.js"></script>
 <script defer src="ui-main.js"></script>
 </body>
 </html>

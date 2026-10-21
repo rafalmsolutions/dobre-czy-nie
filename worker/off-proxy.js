@@ -8,6 +8,9 @@
       i porównanie po skanie). Korzysta z szybkiej wyszukiwarki search.openfoodfacts.org, która nie przyjmuje
       zapytań prosto z przeglądarki, i zapamiętuje wynik na dobę w pamięci podręcznej Cloudflare.
 
+   3. GET /search?q=jogurt naturalny – wyszukiwanie po nazwie i marce (produkty sprzedawane w Polsce), pamięć 12 h.
+   4. GET /details?codes=… – pełne dane do 40 produktów naraz (listy, wyszukiwanie, porównanie).
+
    Ustawienia (Cloudflare → Workers → Settings → Variables):
    - OFF_USER, OFF_PASS  – login i hasło konta aplikacji w Open Food Facts (jako „Secret”, nigdy w kodzie);
    - OFF_BASE            – https://world.openfoodfacts.org (produkcja) albo https://world.openfoodfacts.net (testy);
@@ -22,7 +25,7 @@ const MAX_PHOTO = 6 * 1024 * 1024;
 const PHOTOS = { front: 'front', ingredients: 'ingredients', nutrition: 'nutrition' };
 const RATE = { perHour: 40, hits: new Map() }; // ochrona przed zalewem (w obrębie jednej instancji)
 const SEARCH = 'https://search.openfoodfacts.org/search';
-const CAT_TTL = 24 * 3600;
+const CAT_TTL = 24 * 3600, SEARCH_TTL = 12 * 3600;
 /* Sklepy, które aplikacja może dopisać do produktu (pole „stores” w Open Food Facts, dopisywane przez add_stores – bez kasowania innych). */
 const STORE_NAMES = { biedronka: 'Biedronka', lidl: 'Lidl', aldi: 'Aldi', kaufland: 'Kaufland', auchan: 'Auchan', carrefour: 'Carrefour', netto: 'Netto', dino: 'Dino', stokrotka: 'Stokrotka', zabka: 'Żabka', lewiatan: 'Lewiatan', polomarket: 'Polomarket', intermarche: 'Intermarché', rossmann: 'Rossmann', hebe: 'Hebe', spar: 'Spar' };
 const storeLabel = v => STORE_NAMES[String(v || '').toLowerCase()] || '';
@@ -91,6 +94,16 @@ export default {
       const tag = url.searchParams.get('tag') || '';
       if (!/^[a-z]{2}:[a-z0-9-]{2,60}$/.test(tag)) return reply(400, { ok: false, error: 'tag' });
       const r = await category(tag, env);
+      return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': r.status === 200 ? 'public, max-age=3600' : 'no-store' }, cors) });
+    }
+    // Wyszukiwanie po nazwie albo marce. Zapytanie czyścimy do liter, cyfr i spacji (bez składni wyszukiwarki), łączymy słowa przez AND
+    // i ograniczamy do produktów sprzedawanych w Polsce.
+    if (url.pathname === '/search') {
+      if (request.method !== 'GET') return reply(405, { ok: false, error: 'method' });
+      if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
+      const q = cleanQuery(url.searchParams.get('q'));
+      if (q.length < 2) return reply(400, { ok: false, error: 'q' });
+      const r = await search(q, env);
       return new Response(r.body, { status: r.status, headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': r.status === 200 ? 'public, max-age=3600' : 'no-store' }, cors) });
     }
     // Pełne dane wielu produktów naraz (do 40). Wyszukiwarka OFF, z której biorą się listy, bywa niepełna (np. bez wartości odżywczych),
@@ -320,6 +333,30 @@ async function category(tag, env) {
   const products = j.hits.filter(h => h && /^\d{6,14}$/.test(String(h.code || ''))).map(compact);
   const body = JSON.stringify({ ok: true, tag, count: j.count, at: new Date().toISOString(), products });
   if (cache && products.length) await cache.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${CAT_TTL}` } }));
+  return { status: 200, body };
+}
+/* Zapytanie do wyszukiwania: małe litery, tylko litery (także polskie), cyfry i spacje, najwyżej 6 słów i 60 znaków. */
+function cleanQuery(v) {
+  return String(v || '').toLowerCase().normalize('NFC').replace(/[^0-9a-ząćęłńóśźżäöüéèàâçñ ]+/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).slice(0, 6).join(' ').slice(0, 60).trim();
+}
+async function search(q, env) {
+  const key = new Request('https://cache.dcn/search/' + encodeURIComponent(q));
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  if (cache) { const hit = await cache.match(key); if (hit) return { status: 200, body: await hit.text() }; }
+  const query = q.split(' ').join(' AND ') + ' AND countries_tags:"en:poland"';
+  const headers = { 'User-Agent': `${APP_NAME}/1.0 (${env.CONTACT_EMAIL || 'rafalmsolutions@gmail.com'})`, Accept: 'application/json' };
+  let j = null, status = 0;
+  for (let attempt = 0; attempt < 2 && !j; attempt++) {
+    try {
+      const r = await fetch(`${SEARCH}?q=${encodeURIComponent(query)}&langs=pl,en&page_size=60&fields=${CAT_FIELDS}`, { headers });
+      status = r.status;
+      if (r.ok) j = await r.json().catch(() => null);
+    } catch (e) { status = 0; }
+  }
+  if (!j || !Array.isArray(j.hits)) return { status: 502, body: JSON.stringify({ ok: false, error: 'search', upstream: status }) };
+  const products = j.hits.filter(h => h && /^\d{6,14}$/.test(String(h.code || ''))).map(compact);
+  const body = JSON.stringify({ ok: true, q, count: j.count, products });
+  if (cache) await cache.put(key, new Response(body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${SEARCH_TTL}` } }));
   return { status: 200, body };
 }
 // Pełne dane produktu: tylko pola z DET_FIELDS, teksty przycięte.

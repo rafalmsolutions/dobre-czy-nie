@@ -128,29 +128,112 @@ const App = {};
   /* ---------- Wersja D: dźwięki i wibracje ----------
      Dźwięki są generowane w przeglądarce (Web Audio), bez plików. Wyłącza je przełącznik w profilu.
      Przeglądarka pozwala grać dopiero po pierwszym dotknięciu ekranu, więc wtedy przygotowujemy dźwięk. */
-  let ac = null, master = null;
+  let ac = null, master = null, verb = null;
+  // Łańcuch: głosy → master (+ pogłos) → kompresor → głośnik. Kompresor wyrównuje głośność, pogłos daje „przestrzeń” nagrodom.
+  function build(c) {
+    const comp = c.createDynamicsCompressor(); comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
+    const out = c.createGain(); out.gain.value = 0.9; out.connect(comp); comp.connect(c.destination);
+    const m = c.createGain(); m.gain.value = 0.55; m.connect(out);
+    // Pogłos z wygenerowanej odpowiedzi impulsowej (szum gasnący przez ok. 1,8 s, osobno lewy i prawy kanał).
+    const len = Math.round(c.sampleRate * 1.8), ir = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let seed = ch ? 7 : 3; for (let i = 0; i < len; i++) { seed = (seed * 16807) % 2147483647; d[i] = ((seed / 2147483647) * 2 - 1) * Math.pow(1 - i / len, 3.2); } }
+    const conv = c.createConvolver(); conv.buffer = ir; const wet = c.createGain(); wet.gain.value = 0.32; conv.connect(wet); wet.connect(out);
+    return { m, verb: conv };
+  }
   const audio = () => {
-    if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); master = ac.createGain(); master.gain.value = 0.35; master.connect(ac.destination); }
+    if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); ({ m: master, verb } = build(ac)); }
     if (ac.state === 'suspended') ac.resume().catch(() => { });
     return ac;
   };
   ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (A.settings.sound !== false) audio(); }, { once: true, passive: true }));
+  const env = (g, t, vol, attack, dur) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
+  const out = (node, send) => { node.connect(master); if (send && verb) { const s = ac.createGain(); s.gain.value = send; node.connect(s); s.connect(verb); } };
+  const pan = (node, p) => { if (!p || !ac.createStereoPanner) return node; const sp = ac.createStereoPanner(); sp.pan.value = p; node.connect(sp); return sp; };
+  // Prosty ton (zostawiony dla zgodności).
   function tone(t, freq, dur, o = {}) {
     const osc = ac.createOscillator(), g = ac.createGain();
     osc.type = o.type || 'sine'; osc.frequency.setValueAtTime(freq, t);
     if (o.glide) osc.frequency.exponentialRampToValueAtTime(o.glide, t + dur * 0.8);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(o.vol || 0.2, t + (o.attack || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(g); g.connect(master); osc.start(t); osc.stop(t + dur + 0.03);
+    env(g, t, o.vol || 0.2, o.attack || 0.006, dur);
+    osc.connect(g); out(pan(g, o.pan), o.send || 0); osc.start(t); osc.stop(t + dur + 0.05);
   }
+  // Dzwonek (synteza FM): jasny atak, który szybko łagodnieje – brzmi jak moneta, dzwoneczek, celesta.
+  function bell(t, f, dur, vol = 0.18, o = {}) {
+    const car = ac.createOscillator(), mod = ac.createOscillator(), mg = ac.createGain(), g = ac.createGain();
+    car.frequency.value = f; mod.frequency.value = f * (o.ratio || 3.5);
+    mg.gain.setValueAtTime(f * (o.index || 2.2), t); mg.gain.exponentialRampToValueAtTime(f * 0.05, t + dur * 0.6);
+    mod.connect(mg); mg.connect(car.frequency); car.connect(g); env(g, t, vol, 0.004, dur);
+    out(pan(g, o.pan), o.send ?? 0.5); car.start(t); mod.start(t); car.stop(t + dur + 0.05); mod.stop(t + dur + 0.05);
+  }
+  // Blacha (dwa rozstrojone piły przez filtr, który się otwiera) – na fanfary.
+  function brass(t, f, dur, vol = 0.09, o = {}) {
+    const g = ac.createGain(), lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2;
+    lp.frequency.setValueAtTime(f * 1.2, t); lp.frequency.exponentialRampToValueAtTime(f * 6, t + 0.06); lp.frequency.exponentialRampToValueAtTime(f * 2.5, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.035); g.gain.setValueAtTime(vol, t + Math.max(0.05, dur - 0.18)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    [-6, 6].forEach(cents => { const o2 = ac.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f; o2.detune.value = cents; o2.connect(lp); o2.start(t); o2.stop(t + dur + 0.05); });
+    lp.connect(g); out(pan(g, o.pan), o.send ?? 0.35);
+  }
+  // Szum przez filtr: „wzlot” przed nagrodą, iskierki, talerz.
+  let noiseBuf = null;
+  function noise(t, dur, vol, o = {}) {
+    if (!noiseBuf || noiseBuf.sampleRate !== ac.sampleRate) { const n = ac.sampleRate * 2; noiseBuf = ac.createBuffer(1, n, ac.sampleRate); const d = noiseBuf.getChannelData(0); let s = 11; for (let i = 0; i < n; i++) { s = (s * 16807) % 2147483647; d[i] = (s / 2147483647) * 2 - 1; } }
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = noiseBuf; f.type = o.type || 'bandpass'; f.Q.value = o.q || 1.2;
+    f.frequency.setValueAtTime(o.f1 || 1000, t); if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, t + dur);
+    if (o.swell) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur * 0.85); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+    else env(g, t, vol, o.attack || 0.004, dur);
+    src.connect(f); f.connect(g); out(pan(g, o.pan), o.send ?? 0.3); src.start(t); src.stop(t + dur + 0.05);
+  }
+  // Miękkie „bum” pod nagrodą.
+  function thump(t, vol = 0.5) { const o2 = ac.createOscillator(), g = ac.createGain(); o2.frequency.setValueAtTime(140, t); o2.frequency.exponentialRampToValueAtTime(48, t + 0.18); env(g, t, vol, 0.004, 0.32); o2.connect(g); out(g, 0.05); o2.start(t); o2.stop(t + 0.4); }
+  // Iskierki: szybki deszcz wysokich dzwoneczków rozłożonych w stereo.
+  function sparkle(t, n = 7, base = 2637, vol = 0.05) { const st = [0, 3, 7, 12, 5, 10, 15, 9, 14, 19]; for (let i = 0; i < n; i++) bell(t + i * 0.045, base * Math.pow(2, st[i % st.length] / 12), 0.35, vol * (1 - i / (n * 1.6)), { pan: ((i % 4) - 1.5) / 2, index: 1.2, ratio: 4.1, send: 0.7 }); }
   const SOUNDS = {
-    scan: t => tone(t, 1568, 0.09, { vol: 0.25 }),
-    right: t => { tone(t, 784, 0.13, { type: 'triangle', vol: 0.3 }); tone(t + 0.09, 1175, 0.24, { type: 'triangle', vol: 0.3 }); },
-    wrong: t => { tone(t, 392, 0.16, { vol: 0.22 }); tone(t + 0.12, 330, 0.28, { vol: 0.2 }); },
-    shelf: t => tone(t, 520, 0.13, { vol: 0.3, glide: 880 }),
-    badge: t => { [1047, 1319, 1568, 2093].forEach((f, i) => tone(t + i * 0.085, f, 0.5, { type: 'triangle', vol: 0.22 })); tone(t + 0.34, 3136, 0.6, { vol: 0.05 }); },
-    gold: t => { SOUNDS.badge(t); [2637, 3136, 4186].forEach((f, i) => tone(t + 0.42 + i * 0.07, f, 0.5, { vol: 0.07 })); },
-    level: t => { [523, 659, 784].forEach((f, i) => tone(t + i * 0.11, f, 0.22, { type: 'square', vol: 0.06 })); [523, 659, 784, 1047].forEach(f => tone(t + 0.36, f, 1.1, { type: 'triangle', vol: 0.12 })); },
-    challenge: t => { [659, 784, 988, 1319].forEach((f, i) => tone(t + i * 0.1, f, 0.4, { type: 'triangle', vol: 0.2 })); }
+    scan: t => { bell(t, 1760, 0.16, 0.16, { index: 1, send: 0.15 }); tone(t, 880, 0.06, { type: 'triangle', vol: 0.08 }); },
+    // Trafione: dwa jasne dzwonki w górę i iskierka.
+    right: t => { bell(t, 1175, 0.35, 0.2); bell(t + 0.09, 1568, 0.5, 0.22); sparkle(t + 0.16, 4, 3136, 0.04); },
+    // Pudło: łagodne, nie karzące „hmm” w dół.
+    wrong: t => { tone(t, 466, 0.18, { type: 'triangle', vol: 0.16 }); tone(t + 0.13, 392, 0.34, { type: 'triangle', vol: 0.15, send: 0.2 }); },
+    // Na półkę: „pyk” z dzwoneczkiem.
+    shelf: t => { tone(t, 420, 0.12, { vol: 0.28, glide: 980 }); bell(t + 0.07, 1319, 0.4, 0.14); },
+    // Odznaka: wzlot, bum, arpeggio dzwonków, ciepły akord i iskierki.
+    badge: t => {
+      noise(t, 0.32, 0.18, { f1: 500, f2: 5000, q: 1.6, swell: true, send: 0.2 });
+      const h = t + 0.3; thump(h, 0.45);
+      [1047, 1319, 1568, 2093].forEach((f, i) => bell(h + i * 0.075, f, 0.9, 0.17, { pan: (i - 1.5) / 3 }));
+      [523, 659, 784].forEach(f => brass(h + 0.3, f, 0.9, 0.035));
+      sparkle(h + 0.36, 8, 2637, 0.05);
+    },
+    // Złoto: jak odznaka, plus fanfara i dłuższy deszcz iskier.
+    gold: t => {
+      SOUNDS.badge(t); const h = t + 0.3;
+      [[784, 0], [1047, 0.14], [1319, 0.28]].forEach(([f, d]) => brass(h + 0.55 + d, f, 0.2, 0.07));
+      [1047, 1319, 1568].forEach(f => brass(h + 0.97, f, 1.2, 0.06)); thump(h + 0.97, 0.4);
+      sparkle(h + 1.0, 10, 3136, 0.05); noise(h + 0.97, 1.4, 0.05, { type: 'highpass', f1: 7000, q: 0.7, send: 0.5 });
+    },
+    // Nowy poziom / pełna strona: narastający wzlot, fanfara „ta-da-da-DAM”, talerz i iskry.
+    level: t => {
+      noise(t, 0.5, 0.2, { f1: 300, f2: 6000, q: 1.4, swell: true, send: 0.2 });
+      const h = t + 0.48; thump(h, 0.5);
+      [[523, 0, 0.13], [659, 0.13, 0.13], [784, 0.26, 0.13]].forEach(([f, d, l]) => brass(h + d, f, l + 0.05, 0.08));
+      [523, 659, 784, 1047].forEach(f => brass(h + 0.42, f, 1.4, 0.055)); thump(h + 0.42, 0.55);
+      [1047, 1319, 1568, 2093].forEach((f, i) => bell(h + 0.42 + i * 0.06, f, 1.2, 0.12, { pan: (i - 1.5) / 3 }));
+      noise(h + 0.42, 1.6, 0.06, { type: 'highpass', f1: 6500, q: 0.7, send: 0.5 }); sparkle(h + 0.6, 10, 2637, 0.05);
+    },
+    // Wyzwanie ukończone: krótka fanfara z dzwonkami.
+    challenge: t => {
+      thump(t, 0.4); brass(t, 784, 0.14, 0.08); brass(t + 0.14, 784, 0.1, 0.07);
+      [523, 659, 784, 1047].forEach(f => brass(t + 0.28, f, 1.0, 0.055)); thump(t + 0.28, 0.5);
+      [1319, 1568, 2093].forEach((f, i) => bell(t + 0.28 + i * 0.07, f, 0.9, 0.13)); sparkle(t + 0.45, 7, 2637, 0.05);
+    }
+  };
+  // Podgląd dźwięku bez głośnika (testy i nagrania): renderuje dźwięk do bufora.
+  A.renderSound = async (name, seconds = 3.2) => {
+    const C = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!C || !SOUNDS[name]) return null;
+    const off = new C(2, Math.round(44100 * seconds), 44100), keep = [ac, master, verb];
+    ac = off; ({ m: master, verb } = build(off));
+    try { SOUNDS[name](0.02); } finally { [ac, master, verb] = keep; }
+    return off.startRendering();
   };
   const BUZZ = { scan: 40, right: [25, 40, 25], wrong: 60, badge: [30, 50, 30, 50, 80], gold: [30, 40, 30, 40, 30, 40, 120], level: [60, 60, 120], challenge: [40, 40, 80] };
   A.sound = name => {
@@ -387,6 +470,8 @@ const App = {};
     else if (h === '#/odkrycia') screen = 'discoveries';
     else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
+    else if (h === '#/porownaj') screen = 'compare';
+    else if ((m = h.match(/^#\/szukaj(?:\/(.{1,60}))?$/))) { screen = 'search'; arg = m[1] || null; }
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
