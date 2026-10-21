@@ -9,9 +9,10 @@ const D1 = { prepare(sql) { let args = []; const st = { bind(...a) { args = a; r
 const env = { ALLOWED_ORIGINS: 'https://app.test', DISC: D1, DISC_SALT: 'test' };
 const ean = p => { const d = p.split('').map(Number); const s = d.reverse().reduce((a, n, i) => a + n * (i % 2 === 0 ? 3 : 1), 0); return p + ((10 - s % 10) % 10); };
 const dev = n => 'device-' + String(n).padStart(12, '0');
+let ipSeq = 0; // każde zapytanie POST z innego adresu (losowe adresy czasem się powtarzały i test bywał niestabilny)
 async function call(path, fields, o = {}) {
   let req;
-  if (fields) { const f = new FormData(); Object.entries(fields).forEach(([k, v]) => f.append(k, v)); req = new Request('https://p.test' + path, { method: 'POST', body: f, headers: { Origin: o.origin || 'https://app.test', 'CF-Connecting-IP': o.ip || '10.0.0.' + Math.floor(Math.random() * 250) } }); }
+  if (fields) { const f = new FormData(); Object.entries(fields).forEach(([k, v]) => f.append(k, v)); req = new Request('https://p.test' + path, { method: 'POST', body: f, headers: { Origin: o.origin || 'https://app.test', 'CF-Connecting-IP': o.ip || '10.0.' + Math.floor(++ipSeq / 250) + '.' + (ipSeq % 250) } }); }
   else req = new Request('https://p.test' + path, { headers: { Origin: o.origin || 'https://app.test', 'CF-Connecting-IP': o.ip || '10.0.1.1' } });
   const r = await worker.fetch(req, o.env || env);
   return { status: r.status, j: await r.json().catch(() => null) };
@@ -46,7 +47,7 @@ for (let i = 0; i < 5; i++) {
   await call('/disc/vote', { device: dev(30 + i), code, vote: 'yes' }); await call('/disc/vote', { device: dev(40 + i), code, vote: 'yes' });
 }
 r = await call(`/disc/mine?device=${dev(20)}`);
-ok(r.j.level === 'trusted' && r.j.streak === 5 && r.j.need === 10, 'po 5 potwierdzonych: zaufany odkrywca, 10 do strażnika');
+ok(r.j.level === 'trusted' && r.j.streak === 5 && r.j.need === 10, 'po 5 potwierdzonych: zaufany odkrywca, 10 do strażnika ' + JSON.stringify(Object.assign({}, r.j, { items: r.j.items.map(x => x.status) })));
 const origRandom = Math.random; Math.random = () => 0.5;
 r = await call('/disc/submit', { device: dev(20), code: Cc, name: 'Szósty', checks: JSON.stringify({ barcode: 'match' }) });
 ok(r.j.status === 'confirmed' && r.j.trusted, 'zaufany: od razu potwierdzony');
