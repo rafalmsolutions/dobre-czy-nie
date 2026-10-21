@@ -4,8 +4,8 @@ Aplikacja webowa (PWA): skanujesz kod kreskowy i od razu widzisz, czy produkt pa
 Od 21.10.2026 główną aplikacją jest dawna wersja D „Wystawa”: jasnoszare tło, produkt na okrągłym „talerzu”, nazwa w dwóch grubościach,
 album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile rodziny, historia gramatur. Bez maskotki.
 
-- Adres: https://rafalmsolutions.github.io/dobre-czy-nie/
-- Archiwum (dawna główna aplikacja z Ziarenkiem): https://rafalmsolutions.github.io/dobre-czy-nie/archiwum/ (folder `archiwum/`, opis w `archiwum/README.md`).
+- Adres: https://lupka.app/ (od 21.10.2026; domena kupiona w Cloudflare, DNS bez proxy wskazuje na GitHub Pages, HTTPS wymuszone). Dawny adres https://rafalmsolutions.github.io/dobre-czy-nie/ przekierowuje automatycznie (GitHub Pages); dane zapisane pod dawnym adresem zostają tam.
+- Archiwum (dawna główna aplikacja z Ziarenkiem): https://lupka.app/archiwum/ (folder `archiwum/`, opis w `archiwum/README.md`).
 - Stary adres `/d/` przenosi na główny (z zachowaniem `#/…`), a stary service worker z `/d/` usuwa się sam (`d/index.html`, `d/sw.js`).
 - Obie wersje korzystają z tej samej kopii bazy (`data/`, budowana w GitHub Actions) i plików `config/`; profil, historia, półki i punkty są w tej samej pamięci przeglądarki
   (klucze nowej aplikacji: `dcn-d-…`; przy pierwszym uruchomieniu profil przenosi się z dawnej głównej).
@@ -16,7 +16,7 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 
 ## Lupka: nazwa, znak i jeden kolor dopasowania (21.10.2026, wersja 2.3.0)
 
-- Nazwa aplikacji: **Lupka**, hasło „Przyjrzyj się. Wybierz lepiej.” (EN: „Look closer. Pick better.”). Adres i repozytorium bez zmian; docelowa domena: lupka.app.
+- Nazwa aplikacji: **Lupka**, hasło „Przyjrzyj się. Wybierz lepiej.” (EN: „Look closer. Pick better.”). Repozytorium bez zmian; od 21.10.2026 adres https://lupka.app/.
   Tytuł, manifest, polityka prywatności, teksty udostępniania i zgłoszeń, lista zakupów. Klucze pamięci (`dcn-…`) bez zmian, więc dane użytkowników zostają.
 - Znak F2: lupa z obręczą z trzech łuków z przerwami (zielony, czerwony, żółty), napis Montserrat 800. Symbol `#i-lupka` w `index.html` (górny pasek),
   ikony `icon.svg`, `icon-180/192/512.png`, `icon-maskable-512.png`. Ekran ładowania: łuki się rysują i obracają, wyskakuje rączka, potem napis i hasło (bez ruchu przy „ogranicz animacje”).

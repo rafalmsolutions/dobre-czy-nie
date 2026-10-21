@@ -20,8 +20,8 @@ jobs:
         run: |
           mkdir -p out runs
           for page in start produkt; do
-            url="https://rafalmsolutions.github.io/dobre-czy-nie/"
-            [ "$page" = produkt ] && url="https://rafalmsolutions.github.io/dobre-czy-nie/#/p/5900197012723"
+            url="https://lupka.app/"
+            [ "$page" = produkt ] && url="https://lupka.app/#/p/5900197012723"
             # 3 przebiegi, bo maszyny GitHuba mają zmienną moc – bierzemy przebieg ze środkowym wynikiem szybkości.
             for n in 1 2 3; do
               npx --yes lighthouse@12 "$url" --quiet --output=json --output-path="runs/$page-$n.json" \
