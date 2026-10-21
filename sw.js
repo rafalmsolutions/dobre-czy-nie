@@ -1,6 +1,6 @@
 /* Lupka (dawniej „Dobre czy nie?”) – service worker głównej aplikacji (od 21.10.2026 to dawna wersja D).
    Usuwa stare pamięci podręczne („dcn-…”, także dawnej głównej i folderu d/), ale nie rusza archiwum („dcn-arch-…”). */
-const VERSION = 'dcn-d-2.3.3';
+const VERSION = 'dcn-d-2.3.4';
 const IMG_CACHE = 'dcn-img'; // zdjęcia produktów (przez pośrednika); wspólne dla wersji, najwyżej IMG_MAX sztuk
 const IMG_MAX = 400;
 const SHELL = ['./', 'index.html', 'styles.css', 'd.css', 'config.js', 'data.js', 'core.js', 'game.js', 'shelf.js', 'art.js',

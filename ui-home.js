@@ -109,8 +109,16 @@
     const pct = nextPts ? Math.round((A.game.points - lv.minPoints) / (nextPts - lv.minPoints) * 100) : 100;
     const ch = Game.challengeProgress(A.game, A.cfg, new Date());
     const chips = A.profileChips();
-    const hist = A.store.get('history', []).filter(h => h && h.code);
-    const swap = hist.find(h => h.alt && h.pct != null && h.pct < 50 && !Shelf.hasCode(A.shelves, h.alt.code));
+    const hist0 = A.store.get('history', []).filter(h => h && h.code);
+    // „Ostatnio sprawdzone”: wynik liczony na nowo dla osób włączonych teraz (najniższy wynik, jak obręcz talerza i lista),
+    // z danych produktu zapamiętanych w telefonie. Bez danych (stary wpis) – wynik z chwili skanu.
+    const pcache = A.store.get('cache', {});
+    const hist = hist0.map(h => {
+      const p = (pcache[h.code] && pcache[h.code].p) || (A.detailCached && A.detailCached(h.code));
+      if (!p || !A.groupMatch) return h;
+      try { const g = A.groupMatch(p, analyze(p)); return Object.assign({}, h, { pct: g.pct, level: g.level }); } catch (e) { return h; }
+    });
+    const swap = hist0.find(h => h.alt && h.pct != null && h.pct < 50 && !Shelf.hasCode(A.shelves, h.alt.code));
     const slots = ch ? Array.from({ length: Math.min(ch.target, 7) }, (_, i) => i < ch.have ? '<span class="slot done"><svg width="20" height="20" style="color:#7A4A1F"><use href="#i-check"/></svg></span>' : `<span class="slot todo">${i + 1}</span>`).join('') : '';
     A.$('scr-home').innerHTML = `<div class="wrap">
       <div class="d-head"><span class="d-word"><svg width="28" height="28" aria-hidden="true"><use href="#i-lupka"/></svg><b>lupka</b></span>${A.hudPill()}</div>
@@ -194,15 +202,7 @@
     if (who === 'me') return personalMatch(pr, an, A.profile);
     const rows = A.activeRows();
     if (who !== 'all') { const r = rows.find(x => x.id === who); return personalMatch(pr, an, r ? r.p : A.profile); }
-    const st = rows.map(r => ({ r, s: A.personState(pr, an, r.p) }));
-    const bad = st.filter(x => x.s.st === 'bad'), unk = st.filter(x => x.s.st === 'unk'), known = st.filter(x => x.s.st === 'ok' || x.s.st === 'mid');
-    const names = a => a.map(x => whoName(x.r)).join(', ');
-    const weakest = (bad.length ? bad : known).slice().sort((a, b) => (a.s.pm.pct ?? 0) - (b.s.pm.pct ?? 0))[0];
-    const pct = weakest ? (weakest.s.pm.pct ?? 0) : null;
-    if (bad.length) return { pct, status: 'fail', level: 'bad', label: 'Nie dla: ' + names(bad) };
-    if (unk.length) return { pct, status: 'unknown', level: weakest ? weakest.s.pm.level : 'unknown', label: 'Nie wiemy dla: ' + names(unk) };
-    if (!weakest) return { pct: null, status: 'none', level: 'unknown', label: 'Za mało danych' };
-    return { pct, status: 'ok', level: weakest.s.pm.level, label: known.every(x => x.s.st === 'ok') ? 'Pasuje wszystkim' : 'Najsłabiej: ' + whoName(weakest.r) };
+    return A.groupMatch(pr, an); // ta sama zasada co obręcz talerza i „Ostatnio sprawdzone”: najniższy wynik wśród włączonych osób
   }
   /* Pełne dane produktów. Wyszukiwarka OFF (źródło list) bywa niepełna, np. bez wartości odżywczych albo składu, więc wynik liczony
      na jej danych różnił się od ekranu produktu. Pełne dane bierzemy przez pośrednika (/details, kopia w Cloudflare 3 dni) i pamiętamy
@@ -218,6 +218,7 @@
   A.detailOne = async code => { await loadDetails([code]); return DET.get(code) || null; };
   const withDetail = pr => { const d = DET.get(pr.code); return d ? Object.assign({}, d, { stores: d.stores && d.stores.length ? d.stores : pr.stores, name: d.name || pr.name }) : pr; };
   A.withDetail = withDetail;
+  A.detailCached = code => DET.get(code) || null;
   // Wczytuje pełne dane podanych produktów (najpierw z telefonu, potem przez pośrednika). Zwraca true, gdy mamy wszystkie.
   const detInflight = new Map(); // kod → trwające pobieranie (dwa wywołania naraz nie pobierają dwa razy)
   async function loadDetails(codes) {

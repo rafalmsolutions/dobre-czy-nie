@@ -643,3 +643,6 @@ img.noimg{object-fit:cover}
 @media (prefers-reduced-motion:reduce){.fam-sw,.fam-sw i{transition:none}}
 .fam-box{grid-area:fam;display:flex;flex-direction:column;gap:6px;min-width:0;width:100%}
 .fam-box .fam-circles{grid-area:auto}
+/* 2.3.4: z rodziną kwadrat z jednym wynikiem dla włączonych osób (najniższy) nad odpowiedzią; ten sam wynik ma obręcz talerza. */
+.fam-verdict{align-self:stretch}
+.d-verdict .d-badge span{max-width:92%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}

@@ -51,6 +51,19 @@ ok(/Kuba, Ola/.test(await page.innerText('#famOff').catch(() => '')), 'tylko Ty:
 await page.click('#famOff [data-act=shop-all]'); await page.waitForTimeout(400);
 ok(await page.locator('#scr-product .fam-circles .fam-c').count() === 3 && await page.locator('#famOff').count() === 0, '„Licz wszystkich” przywraca całą rodzinę');
 
+// „Ostatnio sprawdzone” liczy się dla włączonych osób, tak samo jak kwadrat i obręcz na ekranie produktu.
+const famPct = async () => page.$eval('#scr-product .fam-verdict .d-badge b', e => parseInt(e.textContent)).catch(() => null);
+const myPct = async () => page.$eval('#scr-product .d-verdict .d-badge b', e => parseInt(e.textContent)).catch(() => null);
+const hist = async () => { await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(500); return page.$$eval('#scr-home .list .item', it => { const x = it.find(e => /Krem orzechowy/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; }); };
+await page.goto('http://localhost:8790/index.html#/p/' + C.nutella); await page.waitForTimeout(1200); await closeCel();
+const fAll = await famPct(), hAll = await hist();
+ok(fAll != null && fAll <= 10 && hAll === fAll, `cała rodzina (Kuba: orzechy): kwadrat ${fAll}% = „Ostatnio sprawdzone” ${hAll}%`);
+await page.evaluate(() => { App.setShopOn('f1', false); App.setShopOn('f2', false); });
+await page.goto('http://localhost:8790/index.html#/p/' + C.nutella); await page.waitForTimeout(1200); await closeCel();
+const mOnly = await myPct(), hMe = await hist();
+ok(mOnly != null && mOnly !== fAll && hMe === mOnly, `tylko Ty: kwadrat ${mOnly}% = „Ostatnio sprawdzone” ${hMe}%`);
+await page.evaluate(() => App.shopAll());
+
 // Lista: przy wyłączonej Oli wybór osób bez Oli, „Wszyscy wybrani”.
 await page.evaluate(() => App.setShopOn('f2', false));
 await page.goto('http://localhost:8790/index.html#/lista/en:sweet-spreads'); await page.waitForTimeout(2500);

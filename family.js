@@ -62,6 +62,27 @@
     return { pm, st: 'mid', why: worst ? low(worst.title) + (worst.word ? ' ' + low(worst.word) : '') : 'słabo pasuje' };
   };
   const RANK = { bad: 0, unk: 1, mid: 2, ok: 3 };
+  /* Jeden wynik dla osób, dla których robisz zakupy (włączonych). Zasada: liczy się NAJNIŻSZY wynik, nie średnia –
+     produkt jest tak dobry, jak dla osoby, której pasuje najsłabiej (średnia ukryłaby np. gluten u jednej osoby).
+     Ten sam wynik pokazują: obręcz talerza i kwadrat z procentem na ekranie produktu, „Ostatnio sprawdzone” i lista „Wszyscy”.
+     Zwraca to samo co personalMatch (pct, status, level, label) plus who: nazwa osoby z najniższym wynikiem. */
+  A.groupMatch = (prod, an) => {
+    const rows = A.family.length ? A.activeRows() : [{ id: 'me', name: 'Ty', p: A.profile }];
+    if (rows.length === 1 || !prod || prod.kind === 'cosmetic') {
+      const r = rows.length === 1 ? rows[0] : rows.find(x => x.id === 'me') || rows[0];
+      return Object.assign({}, personalMatch(prod, an, r.p), { who: r.id === 'me' ? 'Ty' : r.name, n: 1 });
+    }
+    const nm = r => r.id === 'me' ? 'Ty' : r.name;
+    const st = rows.map(r => ({ r, s: A.personState(prod, an, r.p) }));
+    const bad = st.filter(x => x.s.st === 'bad'), unk = st.filter(x => x.s.st === 'unk'), known = st.filter(x => x.s.st === 'ok' || x.s.st === 'mid');
+    const names = a => a.map(x => nm(x.r)).join(', ');
+    const weakest = (bad.length ? bad : known).slice().sort((a, b) => (a.s.pm.pct ?? 0) - (b.s.pm.pct ?? 0))[0];
+    const base = { personal: true, n: rows.length, who: weakest ? nm(weakest.r) : '' };
+    if (bad.length) return Object.assign(base, { pct: weakest.s.pm.pct ?? 0, status: 'fail', level: 'bad', label: 'Nie dla: ' + names(bad) });
+    if (unk.length) return Object.assign(base, { pct: null, status: 'unknown', level: 'unknown', label: 'Nie wiemy dla: ' + names(unk) });
+    if (!weakest) return Object.assign(base, { pct: null, status: 'none', level: 'unknown', label: 'Za mało danych' });
+    return Object.assign(base, { pct: weakest.s.pm.pct, status: 'ok', level: weakest.s.pm.level, label: known.every(x => x.s.st === 'ok') ? (rows.length === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim') : 'Najsłabiej: ' + nm(weakest.r) });
+  };
 
   /* Widok rodziny przy produkcie. pick: osoba wybrana przy tym produkcie (stuknięcie), inaczej pierwsza z problemem, inaczej najważniejsza. */
   A.familyView = (prod, an, pick) => {
@@ -89,7 +110,7 @@
     }
     const picked = pick && rows.find(r => r.id === pick);
     const focus = picked || (tone !== 'ok' ? rows[0] : rows.find(r => r.id === A.focusId) || rows.find(r => r.id === 'me') || rows[0]);
-    return { rows, n, tone, head, sub, focus, off: A.offRows(), level: { ok: 'great', mid: 'poor', bad: 'bad', unk: 'unknown' }[tone] };
+    return { rows, n, tone, head, sub, focus, off: A.offRows(), level: { ok: 'great', mid: 'poor', bad: 'bad', unk: 'unknown' }[tone], gm: A.groupMatch(prod, an) };
   };
 
   const MARK = {

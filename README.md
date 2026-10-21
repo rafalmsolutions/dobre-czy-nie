@@ -14,6 +14,15 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Jeden wynik dla osób na zakupach (21.10.2026, wersja 2.3.4)
+
+- **Zasada:** gdy liczysz kilka osób, wynik produktu to **najniższy** wynik wśród włączonych osób (nie średnia): produkt jest tak dobry,
+  jak dla osoby, której pasuje najsłabiej, a średnia ukryłaby np. gluten u jednej osoby. Jedna funkcja `A.groupMatch` w `family.js`.
+- Ten sam wynik pokazują: obręcz talerza i nowy kwadrat z procentem nad odpowiedzią dla rodziny (podpis: „rodzina”, „2 osoby”, imię),
+  „Ostatnio sprawdzone” (liczone na nowo z zapamiętanych danych produktu przy każdej zmianie osób albo profili) i lista „Cała rodzina / Wszyscy wybrani”.
+  Stuknięcie osoby w kółkach zmienia tylko rachunek „Dlaczego dla: …”, nie wynik.
+- Testy: `tests/e2e-d-list.mjs` (obręcz = kwadrat = lista = historia), `tests/e2e-d-shop.mjs` (historia po wyłączeniu osób).
+
 ## Stabilne listy, osoby na zakupy, obręcz osoby w fokusie, pełne dane zamiast kopii (21.10.2026, wersja 2.3.3)
 
 - **Lista liczona raz, na pełnych danych:** po pobraniu kategorii aplikacja bierze 80 najlepszych kandydatów i jednym zapytaniem `/details?codes=` (pośrednik, do 40 kodów, pamięć Cloudflare 3 dni)

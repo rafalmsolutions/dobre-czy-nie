@@ -144,10 +144,10 @@
     const lvl = (pm && pm.pct != null && pm.level) || 'unknown';
     const nm = p.name || 'Produkt bez nazwy';
     // Zdjęcie produktu z bazy ma pierwszeństwo; miska kategorii jest wtedy małym znaczkiem w rogu z nazwą kategorii.
-    // Obręcz talerza pokazuje wynik (jak znak Lupki). Z domownikami: wynik osoby zaznaczonej w kółkach – tej samej, dla której jest
-    // rachunek „Dlaczego dla: …” (stuknięcie w inną osobę zmienia obręcz); bez liczb w profilu: sama szara obręcz.
-    const fam = pm && cur.fam ? cur.fam : null, focus = fam ? fam.focus : null;
-    const ringPct = A.profile.noScores || !pm ? null : fam ? (focus && focus.st !== 'unk' && focus.pm && focus.pm.pct != null ? focus.pm.pct : null) : pm.pct;
+    // Obręcz talerza pokazuje wynik (jak znak Lupki). Z domownikami: jeden wynik dla włączonych osób = najniższy (A.groupMatch),
+    // ten sam co w kwadracie obok, w „Ostatnio sprawdzone” i na liście „Wszyscy”. Bez liczb w profilu: sama szara obręcz.
+    const fam = pm && cur.fam ? cur.fam : null;
+    const ringPct = A.profile.noScores || !pm ? null : fam ? fam.gm.pct : pm.pct;
     const ring = ringPct != null ? ` has-score" style="--sc:${A.scoreColor(ringPct)};--pdeg:${Math.max(4, Math.round(ringPct * 3.6))}deg` : '';
     const main = img ? `<button class="prod-img-btn d-plate${ring}" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
@@ -155,7 +155,10 @@
     const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
     // Domownicy: obok zdjęcia odpowiedź dla całej rodziny, pod spodem kółka osób (najpierw te z problemem).
     const fv = pm && cur.fam ? cur.fam : null;
-    const verdict = fv ? A.familyAnswerHtml(fv) : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
+    const gm = fv && fv.gm, gWho = fv ? (fv.n === 1 ? (fv.rows[0].id === 'me' ? 'dla Ciebie' : fv.rows[0].name) : fv.off.length ? fv.n + (fv.n < 5 ? ' osoby' : ' osób') : 'rodzina') : '';
+    const famBadge = gm ? (gm.pct != null ? `<div class="d-badge" data-level="${esc(gm.level)}"${A.pctStyle(gm.pct)} role="img" aria-label="Dopasowanie (${esc(gWho)}): ${gm.pct} procent${fv.n > 1 ? ', najniższy wynik: ' + esc(gm.who) : ''}"><b>${gm.pct}%</b><span>${esc(gWho)}</span></div>`
+      : `<div class="d-badge" data-level="unknown"><b>?</b><span>${esc(gWho)}</span></div>`) : '';
+    const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
       <div class="d-hside">${chip}${verdict}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}

@@ -45,7 +45,7 @@ ok(await page.locator('.list-who [data-who]').count() === 3, 'wybór osoby: Cał
 ok(await page.locator('.list-who [aria-pressed=true]').innerText() === 'Cała rodzina', 'domyślnie cała rodzina');
 let r = await rows();
 ok(!r.some(x => /orzech/i.test(x.name)), 'cała rodzina: bez produktu z orzechami (Kuba ma alergię)');
-ok(r.some(x => /Szynka/.test(x.name) && /Pasuje wszystkim/.test(x.t2)), 'cała rodzina: „Pasuje wszystkim” przy szynce');
+ok(r.some(x => /Szynka/.test(x.name) && /Pasuje (wszystkim|Wam obojgu)/.test(x.t2)), "cała rodzina: „Pasuje Wam obojgu” przy szynce");
 const gul = r.find(x => /Gulasz/.test(x.name));
 // Przełączanie osób wiele razy: zawsze te same listy, bez nowych pobrań, „Cała rodzina” ⊆ lista każdej osoby.
 const snap = async who => { await page.$eval(`.list-who [data-who="${who}"]`, e => e.click()); await page.waitForTimeout(250); return (await rows()).map(x => x.name + ' ' + x.pct).join('|'); };
@@ -67,14 +67,25 @@ const bill = (await page.locator('#scr-product .bill-sum b').first().innerText()
 const pctDetail = (bill.match(/\d+%/) || [])[0];
 ok(gulMe && pctDetail && gulMe.pct.trim() === pctDetail, `gulasz: lista ${gulMe && gulMe.pct} = szczegóły ${pctDetail}`);
 ok(!/Alkohol/.test(await page.locator('#scr-product').innerText()), 'gulasz z octem spirytusowym: bez „Alkohol nie pasuje”');
-// Obręcz talerza przy rodzinie = wynik osoby zaznaczonej w kółkach (ten sam co w rachunku „Dlaczego dla”).
-const ring = async () => page.evaluate(() => { const p = document.querySelector('#scr-product .d-plate'); const s = p && p.getAttribute('style') || ''; const m = s.match(/--pdeg:(\d+)deg/); const b = document.querySelector('#scr-product .bill-sum b'); return { deg: m ? +m[1] : null, bill: b ? parseInt(b.textContent) : null }; });
+// Jeden wynik dla włączonych osób (najniższy): obręcz talerza = kwadrat z procentem = lista „Cała rodzina” = „Ostatnio sprawdzone”.
+const ring = async () => page.evaluate(() => { const p = document.querySelector('#scr-product .d-plate'); const s = p && p.getAttribute('style') || ''; const m = s.match(/--pdeg:(\d+)deg/); const b = document.querySelector('#scr-product .fam-verdict .d-badge b'); return { deg: m ? +m[1] : null, pct: b ? parseInt(b.textContent) : null }; });
+const gulAll = (first.all.split('|').find(x => /Gulasz/.test(x)) || '').match(/(\d+)%$/);
 let rg = await ring();
-ok(rg.deg != null && rg.bill != null && Math.abs(rg.deg - Math.max(4, Math.round(rg.bill * 3.6))) <= 1, `obręcz = rachunek osoby w fokusie (${rg.deg}° ↔ ${rg.bill}%)`);
+ok(rg.pct != null && Math.abs(rg.deg - Math.max(4, Math.round(rg.pct * 3.6))) <= 1, `obręcz = kwadrat z wynikiem rodziny (${rg.deg}° ↔ ${rg.pct}%)`);
+ok(gulAll && +gulAll[1] === rg.pct, `kwadrat = lista „Cała rodzina” (${gulAll && gulAll[1]}% ↔ ${rg.pct}%)`);
 const other = await page.$$eval('#scr-product .fam-c', b => { const x = b.find(e => !e.classList.contains('on')); return x ? x.dataset.id : null; });
 if (other) { await page.$eval(`#scr-product .fam-c[data-id="${other}"]`, e => e.click()); await page.waitForTimeout(400); }
 const rg2 = await ring();
-ok(other && rg2.bill != null && Math.abs(rg2.deg - Math.max(4, Math.round(rg2.bill * 3.6))) <= 1, `po stuknięciu innej osoby obręcz pokazuje jej wynik (${rg2.deg}° ↔ ${rg2.bill}%)`);
+ok(other && rg2.deg === rg.deg && rg2.pct === rg.pct, `stuknięcie osoby zmienia tylko rachunek, wynik rodziny zostaje (${rg2.deg}°, ${rg2.pct}%)`);
+await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(700);
+const histPct = async () => page.$$eval('#scr-home .list .item', it => { const x = it.find(e => /Gulasz/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; });
+ok(await histPct() === rg.pct, `„Ostatnio sprawdzone” = wynik rodziny (${await histPct()}% ↔ ${rg.pct}%)`);
+// Tylko Ty na zakupach: wszędzie Twój wynik.
+await page.evaluate(() => App.setShopOn('f1', false)); await page.goto('http://localhost:8790/index.html#/p/5900000002001'); await page.waitForTimeout(400);
+await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(500);
+ok(await histPct() === parseInt(gulMe.pct), `tylko Ty: „Ostatnio sprawdzone” = Twój wynik (${await histPct()}% ↔ ${gulMe.pct})`);
+await page.evaluate(() => App.shopAll());
+await page.goto('http://localhost:8790/index.html#/p/5900000002001'); await page.waitForTimeout(1200);
 const fit = await page.$eval('#scr-product .d-title h1', h => ({ sw: h.scrollWidth, cw: h.clientWidth }));
 ok(fit.sw <= fit.cw + 1, `długa nazwa mieści się bez łamania słowa (${fit.sw} ≤ ${fit.cw})`);
 await page.setViewportSize({ width: 1280, height: 900 }); await page.reload(); await page.waitForTimeout(1500);
