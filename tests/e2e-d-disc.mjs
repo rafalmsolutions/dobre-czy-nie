@@ -88,6 +88,8 @@ ok(await pts() >= p2 + 53 && await pts() <= p2 + 53 + 60, 'ponowna synchronizacj
 S.mine = Object.assign({}, S.mine, { trusted: true, level: 'trusted', streak: 5, need: 10, confirmed: 5 });
 const p3 = await pts();
 await page.evaluate(() => App.discSync(true)); await page.waitForTimeout(600);
+if (await page.locator('#rwBar').isVisible()) { await page.click('#rwBar [data-act=rw-open]'); await page.waitForTimeout(400); } // na ekranie produktu gratulacje czekają na pasku
+for (let i = 0; i < 8 && await page.locator('#celebrate').isVisible() && !(await txt('#celebrate')).includes('Zaufany odkrywca'); i++) { await page.click('#celebrate [data-act=cel-ok]'); await page.waitForTimeout(150); }
 ok(await page.locator('#celebrate').isVisible() && (await txt('#celebrate')).includes('Zaufany odkrywca'), 'awans: odznaka „Zaufany odkrywca” na pełny ekran');
 await page.screenshot({ path: shots + 'disc-trusted.png' });
 await closeCel();

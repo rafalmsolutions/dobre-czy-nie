@@ -41,7 +41,8 @@
     const ch = Game.challengeProgress(g, cfg, now);
     const inv = Object.entries(g.inventory || {}).filter(([, n]) => n > 0);
     A.$('scr-progress').innerHTML = `<div class="wrap">
-      <div class="topbar"><h1>Twoje postępy</h1>${A.hudPill()}</div>
+      <div class="d-head"><h1 class="al-h"><span class="w-light">Twoja</span> <span class="w-bold">kolekcja</span></h1>${A.hudPill()}</div>
+      ${A.collTabs('badges')}
       <div class="panel stack">
         <div class="row">${A.mascot('detective', 80)}<div class="grow stack" style="gap:5px"><span class="reward-chip green" style="align-self:flex-start">POZIOM ${lv.level}</span><b style="font-family:var(--f-display);font-size:1.35rem;line-height:1.05">${esc(lv.name)}</b>
           <span class="xp"><i style="width:${pct}%"></i><span>${g.points}${nextPts ? ' / ' + nextPts : ''} pkt</span></span></div></div>

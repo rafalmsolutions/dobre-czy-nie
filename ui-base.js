@@ -24,7 +24,9 @@ const App = {};
   };
   // Wersja D ma własny profil („Nie jem” + „Pilnuję”). Za pierwszym razem przenosimy ustawienia z głównej aplikacji.
   A.profile = A.store.get('d-profile', null) ? cleanProfile(A.store.get('d-profile', {})) : migrateProfileD(A.store.get('profile', {}));
-  A.settings = Object.assign({ guess: true }, A.store.get('settings', {}));
+  A.settings = Object.assign({ guess: false }, A.store.get('settings', {}));
+  // 21.10.2026: „Zgadnij” domyślnie wyłączone – po skanie od razu wynik. Kto chce, włącza grę w profilu.
+  if (A.store.get('settings-v', 1) < 2) { A.settings.guess = false; A.store.set('settings', A.settings); A.store.set('settings-v', 2); }
   A.game = Game.load(A.store.get('game', null));
   A.shelves = Shelf.load(A.store.get('shelves', null));
   A.saveProfile = () => A.store.set('d-profile', A.profile);
@@ -172,10 +174,15 @@ const App = {};
   A.hudPill = () => `<a class="pill" href="#/postepy"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Punkty: </span><span data-hud="points">${A.game.points}</span><span class="sr"> – przejdź do postępów</span></a>`;
 
   const celQueue = [];
+  /* Na ekranie produktu gratulacje nie zasłaniają wyniku: czekają na pasku nagród (A.rewardBar), aż ktoś go stuknie. */
+  A.holdRewards = () => A.current && A.current.screen === 'product';
   A.celebrate = events => {
     events.forEach(e => celQueue.push(e));
+    if (A.holdRewards() || (A.$('reveal') && !A.$('reveal').hidden)) { if (A.rewardBar) A.rewardBar(); return; }
     if (A.$('celebrate').hidden) A.nextCelebration();
   };
+  A.heldCelebrations = () => celQueue.slice();
+  A.dropCelebrations = () => { celQueue.length = 0; };
   A.rewardChips = reward => {
     if (!reward) return '';
     if (typeof reward === 'string') return `<span class="reward-chip green">${A.esc(reward)}</span>`;
@@ -189,7 +196,7 @@ const App = {};
   A.nextCelebration = () => {
     const box = A.$('celebrate');
     const e = celQueue.shift();
-    if (!e) { box.hidden = true; box.innerHTML = ''; document.body.style.overflow = ''; if (celReturnFocus && celReturnFocus.focus) celReturnFocus.focus(); return; }
+    if (!e) { box.hidden = true; box.innerHTML = ''; document.body.style.overflow = ''; if (celReturnFocus && celReturnFocus.focus) celReturnFocus.focus(); if (A.rewardBar) A.rewardBar(); return; }
     if (box.hidden) celReturnFocus = document.activeElement;
     let ribbon, head, sub, emblem;
     if (e.type === 'achievement') {
@@ -339,7 +346,7 @@ const App = {};
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
-    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' || screen === 'progress' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };

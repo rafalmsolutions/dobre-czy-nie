@@ -2,9 +2,24 @@
 'use strict';
 (() => {
   const A = App, esc = A.esc;
-  let ui = { adding: false, renaming: false, confirmDelete: false, msg: '', shelfMsg: '' };
+  let ui = { adding: false, renaming: false, confirmDelete: false, msg: '', shelfMsg: '', qty: null };
 
-  A.route('shelves', () => { ui = { adding: false, renaming: false, confirmDelete: false, msg: '', shelfMsg: '' }; render(); });
+  A.route('shelves', () => { ui = { adding: false, renaming: false, confirmDelete: false, msg: '', shelfMsg: '', qty: null }; render(); });
+  /* Ocena przy rzeczy: z domownikami odpowiedź dla całej rodziny (zapamiętana przy ostatnim sprawdzeniu produktu), bez nich mój procent. */
+  const FAM_IC = { ok: '✓', mid: '!', bad: '✕', unk: '?' };
+  function scoreHtml(i) {
+    if (A.family.length && i.fam) {
+      const who = i.fam.t === 'ok' ? 'wszyscy' : i.fam.h.replace(/^[^:]*:\s*/, '');
+      return `<span class="famchip" data-t="${esc(i.fam.t)}" title="${esc(i.fam.h)}" aria-label="${esc(i.fam.h)}"><b aria-hidden="true">${FAM_IC[i.fam.t]}</b><span aria-hidden="true">${esc(who)}</span></span>`;
+    }
+    return i.pct != null ? `<span class="pct ${i.pct >= 75 ? 'great' : i.pct >= 50 ? 'good' : i.pct >= 25 ? 'poor' : 'bad'} alt-score" aria-label="Dopasowanie dla Ciebie ${i.pct}%">${i.pct}%</span>` : '';
+  }
+  function itemHtml(i) {
+    const q = Shelf.fmtQty(i);
+    const row = `<div class="sitem${i.checked ? ' checked' : ''}" data-id="${esc(i.id)}"><label><input type="checkbox" data-act="item-toggle" data-id="${esc(i.id)}"${i.checked ? ' checked' : ''}><span class="grow"><span class="t1" style="font-weight:800;display:block">${esc(i.name)}</span>${i.code ? `<a class="small" href="#/p/${esc(i.code)}">szczegóły</a>` : ''}</span></label><button class="qtybtn" type="button" data-act="item-qty" data-id="${esc(i.id)}" aria-label="Ilość: ${esc(q)}. Zmień">${esc(q)}</button>${scoreHtml(i)}<button class="x" type="button" data-act="item-remove" data-id="${esc(i.id)}" aria-label="Usuń ${esc(i.name)}">×</button></div>`;
+    if (ui.qty !== i.id) return row;
+    return row + `<form class="inline-form qty-form" id="qtyForm" data-id="${esc(i.id)}" novalidate><button class="btn btn-white iconbtn" type="button" data-act="qty-minus" aria-label="Mniej">−</button><input class="field" id="qtyInput" inputmode="decimal" value="${esc(String(i.qty).replace('.', ','))}" aria-label="Ilość"><button class="btn btn-white iconbtn" type="button" data-act="qty-plus" aria-label="Więcej">+</button><select class="field" id="qtyUnit" aria-label="Jednostka">${Shelf.UNITS.map(u => `<option value="${u}"${u === i.unit ? ' selected' : ''}>${u === 'szt' ? 'szt.' : u}</option>`).join('')}</select><button class="btn btn-green btn-sm" type="submit">OK</button></form>`;
+  }
 
   const active = () => A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
   function render(focusSel) {
@@ -22,10 +37,10 @@
         ${ui.renaming ? `<form class="inline-form" id="renameForm" novalidate><input class="field" id="renameInput" maxlength="30" value="${esc(sh.name)}" aria-label="Nowa nazwa półki"><button class="btn btn-green btn-sm" type="submit">Zapisz</button></form>`
           : `<div class="row"><h2 class="grow" style="font-size:1.35rem">${esc(sh.name)}</h2><button class="btn btn-white iconbtn" type="button" data-act="shelf-rename" aria-label="Zmień nazwę półki"><svg><use href="#i-edit"/></svg></button></div>`}
         ${pr.total ? `<div class="row small" style="justify-content:space-between;font-weight:800"><span>W koszyku: ${pr.done} z ${pr.total}</span><span class="muted">ułożone wg działów sklepu</span></div><span class="xp green" role="progressbar" aria-valuenow="${pr.done}" aria-valuemin="0" aria-valuemax="${pr.total}" aria-label="Postęp zakupów"><i style="width:${pct}%"></i></span>` : ''}
-        <form class="inline-form" id="addItemForm" novalidate><input class="field" id="addItemInput" maxlength="60" autocomplete="off" placeholder="Dodaj rzecz, np. ziemniaki" aria-label="Dodaj rzecz do listy"><button class="btn btn-green btn-sm" type="submit" aria-label="Dodaj"><svg><use href="#i-plus"/></svg></button></form>
+        <form class="inline-form" id="addItemForm" novalidate><input class="field" id="addItemInput" maxlength="60" autocomplete="off" placeholder="Dodaj rzecz, np. 2 kg ziemniaki" aria-label="Dodaj rzecz do listy"><button class="btn btn-green btn-sm" type="submit" aria-label="Dodaj"><svg><use href="#i-plus"/></svg></button></form>
         <p class="msg" role="status" id="itemMsg">${esc(ui.msg)}</p>
       </div>
-      ${groups.length ? `<div class="stack" style="gap:8px" id="shelfItems">${groups.map(g => `<div class="dept-h"><span class="di">${art(g.icon, 30)}</span>${esc(g.label)}</div>${g.items.map(i => `<div class="sitem${i.checked ? ' checked' : ''}" data-id="${esc(i.id)}"><label><input type="checkbox" data-act="item-toggle" data-id="${esc(i.id)}"${i.checked ? ' checked' : ''}><span class="grow"><span class="t1" style="font-weight:800;display:block">${esc(i.name)}</span>${i.code ? `<a class="small" href="#/p/${esc(i.code)}">szczegóły</a>` : ''}</span></label>${i.pct != null ? `<span class="pct ${i.pct >= 75 ? 'great' : i.pct >= 50 ? 'good' : i.pct >= 25 ? 'poor' : 'bad'} alt-score">${i.pct}%</span>` : ''}<button class="x" type="button" data-act="item-remove" data-id="${esc(i.id)}" aria-label="Usuń ${esc(i.name)}">×</button></div>`).join('')}`).join('')}</div>`
+      ${groups.length ? `<div class="stack" style="gap:8px" id="shelfItems">${groups.map(g => `<div class="dept-h"><span class="di">${art(g.icon, 30)}</span>${esc(g.label)}</div>${g.items.map(itemHtml).join('')}`).join('')}</div>${A.family.length && sh.items.some(i => i.fam) ? '<p class="small muted" id="famNote">Przy produktach odpowiedź dla całej rodziny: ✓ pasuje wszystkim, ! uwaga, ✕ nie dla tej osoby, ? nie wiemy. Odświeża się, gdy otworzysz produkt.</p>' : ''}`
         : `<div class="empty stack" style="align-items:center">${A.mascot('smile', 70)}<b style="font-family:var(--f-display);color:var(--ink)">Pusta półka</b><span>Dodaj produkty ze skanu („Na półkę”), z listy „Najlepsze dla Ciebie” albo wpisz zwykłą rzecz, np. „ziemniaki”.</span></div>`}
       <div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <button class="btn btn-green" type="button" data-act="shelf-share" ${pr.total ? '' : 'disabled'}><svg><use href="#i-share"/></svg>Udostępnij</button>
@@ -55,6 +70,12 @@
       }
       render(`[data-act=item-toggle][data-id="${el.dataset.id}"]`);
     }
+    else if (act === 'item-qty') { ui.qty = ui.qty === el.dataset.id ? null : el.dataset.id; render(ui.qty ? '#qtyInput' : `[data-act=item-qty][data-id="${el.dataset.id}"]`); }
+    else if (act === 'qty-minus' || act === 'qty-plus') {
+      const inp = A.$('qtyInput'), unit = A.$('qtyUnit').value, step = unit === 'g' || unit === 'ml' ? 100 : unit === 'kg' || unit === 'l' ? 0.5 : 1;
+      const v = parseFloat(String(inp.value).replace(',', '.')) || 0, n = Math.max(step, Math.round((v + (act === 'qty-plus' ? step : -step)) * 1000) / 1000);
+      inp.value = String(n).replace('.', ',');
+    }
     else if (act === 'item-remove') { A.shelves = Shelf.removeItem(A.shelves, active().id, el.dataset.id).state; A.saveShelves(); render('#addItemInput'); }
     else if (act === 'shelf-clear') { const r = Shelf.clearChecked(A.shelves, active().id); A.shelves = r.state; A.saveShelves(); render(); A.toast(`Usunięto ${r.removed} ${plural(r.removed, 'kupioną rzecz', 'kupione rzeczy', 'kupionych rzeczy')}.`); }
     else if (act === 'shelf-share') shareShelf();
@@ -68,6 +89,10 @@
       const r = Shelf.renameShelf(A.shelves, active().id, A.$('renameInput').value);
       if (r.error) { ui.shelfMsg = ERR[r.error] || 'Nie udało się zmienić nazwy.'; render('#renameInput'); return; }
       A.shelves = r.state; A.saveShelves(); ui.renaming = false; ui.shelfMsg = ''; render('[data-act=shelf-rename]');
+    } else if (form.id === 'qtyForm') {
+      const id = form.dataset.id, r = Shelf.setQty(A.shelves, active().id, id, A.$('qtyInput').value, A.$('qtyUnit').value);
+      if (!r.error) { A.shelves = r.state; A.saveShelves(); }
+      ui.qty = null; render(`[data-act=item-qty][data-id="${id}"]`);
     } else if (form.id === 'addItemForm') {
       const val = A.$('addItemInput').value;
       const r = Shelf.addItem(A.shelves, active().id, { name: val });

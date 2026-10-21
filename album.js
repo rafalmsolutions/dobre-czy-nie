@@ -126,11 +126,16 @@
     if (bad) return { ok: false, why: `${bad.label.toLowerCase()}: ${bad.word}` };
     return { ok: true };
   };
+  const brandKey = b => String(b || '').split(',')[0].trim().toLowerCase();
   const profSig = () => { const p = A.profile || {}; return JSON.stringify([p.diet, p.allergens, p.avoid, p.custom, p.watch]); };
 
   A.slotTest = (slot, prod) => {
     if (!slot || !prod) return false;
-    if (slot.id.startsWith('any')) return true;
+    if (slot.id.startsWith('any')) return true; // dawne miejsca „dowolny produkt” (tylko już zajęte)
+    if (slot.id.startsWith('b:')) { // „Nowa marka”: marka, której jeszcze nie ma na tej stronie
+      const br = brandKey(prod.brand), key = A.pageKeyOf(prod);
+      return !!br && !Object.values(A.album.cards).some(c => c.k === key && !c.legacy && brandKey(c.b) === br);
+    }
     if (slot.id.startsWith('s:')) return (prod.categories || []).includes(slot.id.slice(2));
     const c = COND_BY_ID[slot.id.slice(2)];
     return !!(c && c.test(prod));
@@ -168,16 +173,19 @@
       }
     };
     const out = (keep || []).slice();
-    if (!out.some(s => s.id === 'any')) out.unshift({ id: 'any', label: 'Dowolny produkt', h: '', share: 1, hits: n, n, tier: 'zwykla' });
-    const want = { zwykla: 3, rzadka: 3, epicka: 2, legendarna: 1 };
+    // Bez darmowego „dowolnego produktu”: każde miejsce coś wymaga. Najwięcej miejsc rzadkich i epickich.
+    const want = { zwykla: 1, rzadka: 4, epicka: 3, legendarna: 2 };
     out.forEach(s => { if (want[s.tier]) want[s.tier]--; });
     ['legendarna', 'epicka', 'rzadka', 'zwykla'].forEach(t => pickFrom(t, Math.max(0, want[t]), out));
     ['rzadka', 'epicka', 'zwykla', 'legendarna'].forEach(t => pickFrom(t, SLOTS - out.length, out));
-    let extra = 2;
-    while (out.length < SLOTS) out.push({ id: 'any' + extra, label: 'Kolejny dowolny produkt', h: '', share: 1, hits: n, n, tier: 'zwykla' }), extra++;
+    // Słabe strony (mało danych w bazie): brakujące miejsca to „Nowa marka” – inna marka niż te, które już są na stronie.
+    let extra = 1;
+    while (out.length < SLOTS) {
+      out.push({ id: 'b:' + extra, label: 'Nowa marka', h: 'marka, której nie masz jeszcze na tej stronie', share: Math.min(0.6, 0.15 * extra), hits: n, n, tier: 'rzadka' }); extra++;
+    }
     // Tajne miejsce: rzadkie albo epickie (nigdy legendarne), najlepiej rodzaj produktu albo znak na opakowaniu.
     if (!out.some(s => s.secret)) {
-      const sec = out.filter(s => (s.tier === 'rzadka' || s.tier === 'epicka') && !s.id.startsWith('any')).sort((a, b) => (a.id.startsWith('s:') ? 0 : 1) - (b.id.startsWith('s:') ? 0 : 1))[0];
+      const sec = out.filter(s => (s.tier === 'rzadka' || s.tier === 'epicka') && !s.id.startsWith('any') && !s.id.startsWith('b:')).sort((a, b) => (a.id.startsWith('s:') ? 0 : 1) - (b.id.startsWith('s:') ? 0 : 1))[0];
       if (sec) sec.secret = true;
     }
     const rank = s => TIER_ORDER.indexOf(s.tier) * 10 + (s.secret ? 5 : 0) + (s.id.startsWith('any') ? -1 : 0);
@@ -220,7 +228,7 @@
   A.ensurePage = async key => {
     if (!A.isHuntPage(key)) return null;
     const pg = A.album.pages[key];
-    if (pg && pg.sig === profSig() && !Object.values(A.album.cards).some(c => c.k === key && c.legacy)) return pg;
+    if (pg && pg.sig === profSig() && pg.v === 2 && !Object.values(A.album.cards).some(c => c.k === key && c.legacy)) return pg;
     if (building[key]) return building[key];
     building[key] = (async () => {
       let list = [];
@@ -228,7 +236,8 @@
       const cur = A.album.pages[key];
       if (!list.length) return cur || null; // bez danych nie zamrażamy strony – spróbujemy przy następnej wizycie
       const keep = cur ? cur.slots.filter(s => A.slotCard(key, s.id)) : [];
-      if (!cur || cur.sig !== profSig()) A.album.pages[key] = { slots: buildSlots(key, list, keep), sig: profSig(), at: Date.now() };
+      // v2 (21.10.2026): bez wolnych miejsc „dowolny produkt”; zajęte miejsca zostają.
+      if (!cur || cur.sig !== profSig() || cur.v !== 2) A.album.pages[key] = { slots: buildSlots(key, list, keep), sig: profSig(), at: Date.now(), v: 2 };
       await migrateLegacy(key, list);
       save();
       return A.album.pages[key];
@@ -322,5 +331,5 @@
   };
   // „1 na N” zaokrąglamy w górę, żeby liczba zgadzała się ze stopniem (rzadkie zawsze od „1 na 4”).
   A.oneIn = share => Math.max(1, Math.ceil(1 / Math.max(share, 0.001) - 0.05));
-  A.oddsText = s => s.id.startsWith('any') ? 'pasuje każdy' : `pasuje 1 na ${A.oneIn(s.share)}`;
+  A.oddsText = s => s.id.startsWith('any') ? 'pasuje każdy' : s.id.startsWith('b:') ? 'inna marka niż na tej stronie' : `pasuje 1 na ${A.oneIn(s.share)}`;
 })();

@@ -74,9 +74,50 @@
 
   /* ---------- Odsłonięcie karty po skanie ---------- */
   let rv = null; // { res, flipped, rewarded, step }
+  /* ---------- Pasek nagród ----------
+     Po skanie wynik jest najważniejszy, więc nowa karta, odznaka czy poziom nie zasłaniają ekranu.
+     Pokazujemy je na pasku nad dolnym menu; odsłonięcie karty i gratulacje dopiero po stuknięciu „Odbierz”. */
+  A.pendingCard = null;
+  A.rewardBar = () => {
+    const bar = A.$('rwBar'); if (!bar) return;
+    const res = A.pendingCard, cels = A.heldCelebrations ? A.heldCelebrations() : [];
+    const busy = !A.$('reveal').hidden || !A.$('celebrate').hidden;
+    if ((!res && !cels.length) || busy) { bar.hidden = true; bar.innerHTML = ''; document.body.classList.remove('has-rwbar'); return; }
+    const badge = e => e.type === 'achievement' ? 'odznaka „' + e.name + '”' : e.type === 'level' ? 'nowy poziom' : 'wyzwanie ukończone';
+    let ic, t1, t2;
+    if (res) {
+      const c = res.card, slot = (A.slotsOf(c.k) || []).find(s => s.id === c.slot), page = A.pageInfo(c.k) || { label: '' };
+      ic = `<span class="rw-card" style="background:${BACK[c.r] || BACK.zwykla}" aria-hidden="true">?</span>`;
+      t1 = c.h ? 'Nowa karta ✦ błyszcząca' : `Nowa karta · ${RARITY_WORD[c.r] || 'miejsce'}`;
+      t2 = [slot ? (slot.secret ? 'tajne miejsce' : '„' + slot.label + '”') : '', page.label].filter(Boolean).join(' · ') + (cels.length ? ' · + ' + cels.map(badge).join(', ') : '');
+    } else {
+      ic = '<span class="rw-medal" aria-hidden="true">★</span>';
+      t1 = cels[0].type === 'achievement' ? 'Nowa odznaka' : cels[0].type === 'level' ? 'Nowy poziom' : 'Wyzwanie ukończone';
+      t2 = cels.map(e => e.name).join(', ');
+    }
+    bar.innerHTML = `${ic}<span class="grow"><b>${esc(t1)}</b><span>${esc(t2)}</span></span><button class="btn btn-gold btn-sm" type="button" data-act="rw-open">Odbierz</button><button class="rw-x" type="button" data-act="rw-close" aria-label="Później"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+    bar.hidden = false; document.body.classList.add('has-rwbar');
+  };
+  const RARITY_WORD = { zwykla: 'zwykłe miejsce', rzadka: 'rzadkie miejsce', epicka: 'epickie miejsce', legendarna: 'legendarne miejsce' };
+  A.rewardAction = act => {
+    if (act === 'rw-open') {
+      const res = A.pendingCard; A.pendingCard = null;
+      if (res) A.showReveal(res); else A.nextCelebration();
+    } else { // „Później”: karta i odznaki zostają w albumie, tylko bez pokazu
+      A.pendingCard = null; if (A.dropCelebrations) A.dropCelebrations();
+    }
+    A.rewardBar();
+  };
+  /* Po skanie: punkty od razu, karta czeka na pasku. */
+  A.albumGot = res => {
+    if (!res || !res.isNew || res.quiet) return;
+    A.pendingCard = res; // poprzednia nieodebrana karta i tak jest już w albumie
+    A.albumReward(res); res.rewarded = true;
+    A.rewardBar();
+  };
   A.showReveal = res => {
     if (!res || !res.isNew) return;
-    rv = { res, flipped: false, rewarded: false, step: 'card', ret: document.activeElement };
+    rv = { res, flipped: false, rewarded: !!res.rewarded, step: 'card', ret: document.activeElement };
     const box = A.$('reveal');
     box.hidden = false; document.body.style.overflow = 'hidden';
     renderReveal();
@@ -90,7 +131,7 @@
     const have = A.filledCount(c.k);
     const R = A.RARITY[c.r], h1 = c.h ? ['Błyszcząca', 'karta ✦'] : slot.secret ? ['Tajne', 'miejsce!'] : R.h1;
     const prof = A.hasProfile && A.hasProfile();
-    const odds = slot.id.startsWith('any') ? 'Pierwsze kroki na tej stronie. Trudniejsze miejsca czekają.' : `Ten warunek spełnia mniej więcej 1 na ${A.oneIn(slot.share)} popularnych produktów z tej kategorii${prof ? ' zgodnych z Twoim profilem' : ''}.`;
+    const odds = slot.id.startsWith('any') ? 'Pierwsze kroki na tej stronie. Trudniejsze miejsca czekają.' : slot.id.startsWith('b:') ? 'Nowa marka na tej stronie albumu. Różnorodność się opłaca.' : `Ten warunek spełnia mniej więcej 1 na ${A.oneIn(slot.share)} popularnych produktów z tej kategorii${prof ? ' zgodnych z Twoim profilem' : ''}.`;
     const text = (slot.secret ? `Warunek był ukryty: „${slot.label}”. ` : '') + odds;
     const extra = [c.h ? 'Błysk trafia się mniej więcej raz na 20 kart.' : '', c.w ? 'Polowanie tygodnia: złota ramka i +30 pkt.' : '', c.s ? 'W bazie brakuje danych tego produktu. Uzupełnij je, a karta nabierze kolorów.' : ''].filter(Boolean).join(' ');
     const gal = A.gallery(c.k);
@@ -124,6 +165,8 @@
     const box = A.$('reveal'); box.hidden = true; box.innerHTML = ''; document.body.style.overflow = '';
     if (rv && rv.ret && rv.ret.focus && document.contains(rv.ret)) rv.ret.focus();
     rv = null;
+    // Odznaki zdobyte przy tej karcie pokazujemy zaraz po niej.
+    if (A.heldCelebrations && A.heldCelebrations().length) A.nextCelebration(); else A.rewardBar();
   };
   A.revealAction = (act, el) => {
     if (!rv) return;
@@ -152,6 +195,12 @@
     }
   };
 
+  /* ---------- Kolekcja: karty (album) i odznaki w jednym miejscu, przełącznik na górze ---------- */
+  A.collTabs = on => {
+    const achs = ((A.cfg.achievements && A.cfg.achievements.achievements) || []), got = achs.filter(a => A.game.unlocked && A.game.unlocked[a.id]).length;
+    const n = A.albumStats().cards;
+    return `<nav class="coll-tabs" aria-label="Kolekcja"><a href="#/album"${on === 'cards' ? ' aria-current="page"' : ''}>Karty <span>${n}</span></a><a href="#/postepy"${on === 'badges' ? ' aria-current="page"' : ''}>Odznaki i poziom <span>${got}</span></a></nav>`;
+  };
   /* ---------- Album ---------- */
   A.route('album', () => {
     const st = A.albumStats(), wk = A.weekCard();
@@ -161,7 +210,8 @@
     const newest = Object.values(A.album.cards).sort((a, b) => b.t - a.t)[0];
     const near = pages.filter(p => !p.full && p.n >= 7 && A.slotsOf(p.key)).slice(0, 2);
     A.$('scr-album').innerHTML = `<div class="wrap"><span class="d-arc d-arc-album" aria-hidden="true"></span>
-      <div class="d-head"><h1 class="al-h"><span class="w-light">Album</span> <span class="w-bold">odkryć</span></h1>${A.hudPill()}</div>
+      <div class="d-head"><h1 class="al-h"><span class="w-light">Twoja</span> <span class="w-bold">kolekcja</span></h1>${A.hudPill()}</div>
+      ${A.collTabs('cards')}
       <div class="al-stats"><div><b>${st.cards}</b><span>${plural(st.cards, 'karta', 'karty', 'kart')}</span></div><div><b>${st.pages}</b><span>pełne strony</span></div><div class="legend"><b>${st.legend}</b><span>legendarne</span></div><div class="holo"><b>${st.holo} ✦</b><span>błyszczące</span></div></div>
       <a class="al-week${wk.done ? ' done' : ''}" href="#/album/${esc(wk.key)}">${wk.img ? `<img src="${esc(wk.img)}" alt="">` : ''}<span class="grow"><span class="al-week-k">POLOWANIE TYGODNIA</span><b>Wolne miejsce na stronie: ${esc(wk.label.toLowerCase())}</b><span>${wk.done ? 'Zdobyte w tym tygodniu ✓' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')} · złota ramka i +30 pkt`}</span></span><span aria-hidden="true">›</span></a>
       ${A.discOn && A.discOn() ? (() => { const its = Object.values(A.disc.items), conf = its.filter(i => i.status === 'confirmed').length; return `<a class="al-disc" href="#/odkrycia"><span class="disc-gold" aria-hidden="true">★</span><span class="grow"><b>Twoje odkrycia</b><span>${its.length ? `${its.length} ${plural(its.length, 'dodany', 'dodane', 'dodanych')} · ${conf} ${plural(conf, 'potwierdzony', 'potwierdzone', 'potwierdzonych')}` : 'Dodaj produkt, którego nie ma w bazie: +50 pkt i złota karta'}</span></span><span aria-hidden="true">›</span></a>`; })() : ''}
@@ -169,7 +219,6 @@
       ${st.cards ? '' : '<div class="empty stack" style="align-items:center"><b>Twój album jest jeszcze pusty</b><span>Każda strona ma 10 miejsc do zdobycia, np. „gorzka”, „bio”, „mało cukru”. Zeskanuj produkt, a zajmie pierwsze pasujące miejsce.</span><button class="btn btn-green" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj produkt</button></div>'}
       <div class="sec-head"><h2>Strony albumu</h2><span class="small muted" style="font-weight:700">${st.started} z ${A.albumPages().length} rozpoczętych</span></div>
       <div class="al-grid">${pages.concat(extra).map(p => `<a class="al-page${p.full ? ' full' : p.n ? '' : ' empty-page'}" href="#/album/${esc(p.key)}">${A.gallery(p.key) ? A.galleryHtml(p.key, A.slotsOf(p.key) ? openIdx(p.key) : [], { size: 'mini' }) : p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="al-noimg">${A.dIcon(p.key === 'cosmetics' ? 'healthy' : 'processing', 34)}</span>`}<b>${esc(p.label)}</b>${A.isHuntPage(p.key) ? `<span class="xp"><i style="width:${Math.min(100, p.n * 10)}%"></i></span><span class="al-n">${p.full ? 'pełna strona' : p.n ? p.n + ' z ' + A.ALBUM_SLOTS : A.gallery(p.key) ? 'plakat do odkrycia' : 'jeszcze pusta'}</span>` : `<span class="al-n">${p.n} ${plural(p.n, 'karta', 'karty', 'kart')}</span>`}${p.full ? '<span class="al-star">★</span>' : ''}${newest && newest.k === p.key && Date.now() - newest.t < 864e5 ? '<span class="al-new">NOWA</span>' : ''}</a>`).join('')}</div>
-      <a class="al-link" href="#/postepy">Odznaki i poziom ›</a>
     </div>`;
   });
 

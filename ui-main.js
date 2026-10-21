@@ -6,7 +6,7 @@
   let nameTimer;
 
   /* ---------- Kliknięcia ---------- */
-  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share'];
+  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
@@ -53,6 +53,7 @@
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
       case 'cel-ok': A.nextCelebration(); break;
+      case 'rw-open': case 'rw-close': A.rewardAction(act); break;
       case 'reveal-flip': case 'reveal-close': case 'reveal-page': case 'reveal-album': A.revealAction(act, el); break;
       case 'share-page': A.sharePage(el.dataset.k); break;
       case 'gal-demo': A.galleryDemo(el); break;
@@ -74,7 +75,7 @@
     switch (f.id) {
       case 'homeForm': e.preventDefault(); A.openCode(A.$('homeCode').value, A.$('homeMsg')); break;
       case 'scanForm': e.preventDefault(); { const raw = A.$('scanCode').value; if (!A.codeProblem(raw)) { A.closeScanner(true); A.$('scanCode').value = ''; } A.openCode(raw, A.$('scanMsg')); } break;
-      case 'newShelfForm': case 'renameForm': case 'addItemForm': e.preventDefault(); A.shelfSubmit(f); break;
+      case 'newShelfForm': case 'renameForm': case 'addItemForm': case 'qtyForm': e.preventDefault(); A.shelfSubmit(f); break;
       case 'addForm': e.preventDefault(); A.submitAdd(); break;
       case 'reportForm': A.submitReport(e); break;
       case 'profileForm': A.saveProfileForm(e); break;

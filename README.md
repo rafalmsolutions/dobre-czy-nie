@@ -14,6 +14,14 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
 
+## Poprawki po pierwszym teście (21.10.2026, wersja 2.1.0)
+
+- Po skanie od razu wynik dla Ciebie i rodziny: „Zgadnij” domyślnie wyłączone (włączenie w Profilu; jednorazowo wyłączone także u osób, które miały je zapisane, klucz `settings-v`).
+- Nowa karta, odznaka, poziom nie zasłaniają wyniku: pasek nad dolnym menu (`#rwBar`, `A.rewardBar`) „Nowa karta · rzadkie miejsce · Odbierz”. Punkty za kartę od razu po skanie; odsłonięcie karty i gratulacje po stuknięciu „Odbierz”, „×” zostawia je w albumie bez pokazu. Na ekranie produktu gratulacje czekają w kolejce (`A.holdRewards`).
+- Wolniej: bez darmowego miejsca „Dowolny produkt” (strony v2 przebudowują wolne miejsca), rozkład miejsc 1 zwykłe / 4 rzadkie / 3 epickie / 2 legendarne, na słabych stronach „Nowa marka” zamiast „Kolejny dowolny produkt”. Wyższe progi odznak (np. Detektyw 25/100/300, Półka 10/40/120).
+- Karty i odznaki w jednej zakładce „Kolekcja” z przełącznikiem „Karty | Odznaki i poziom”; ikona punktów prowadzi do tej samej zakładki.
+- Półka: ilość z jednostką (szt., g, kg, ml, l; domyślnie 1 szt.; „2 kg ziemniaki” rozpoznawane przy wpisywaniu) i przy produktach odpowiedź dla rodziny (✓ wszyscy, ! uwaga, ✕ imię, ? nie wiemy) zamiast samego Twojego procentu; odświeża się po otwarciu produktu.
+
 ## Historia wersji D (do 20.10.2026 pod adresem /d/)
 
 - Nowy wygląd: `d.css` (nakłada się na `styles.css`). Zmiany w kodzie ekranów: `ui-product.js` (nagłówek produktu, kwadrat oceny,

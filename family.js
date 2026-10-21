@@ -75,6 +75,11 @@
     ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', mid: '<path d="M12 6v8"/><path d="M12 19v.5"/>',
     bad: '<path d="M7 7l10 10M17 7L7 17"/>', unk: '<path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.3"/><path d="M12 18.5v.5"/>'
   };
+  /* Skrót odpowiedzi dla rodziny na półkę: { t: 'bad', h: 'Nie dla: Kuba' } albo null bez domowników. */
+  A.familyShort = (prod, an, fv) => {
+    const v = fv || (A.family.length && prod && prod.kind !== 'cosmetic' ? A.familyView(prod, an || analyze(prod)) : null);
+    return v ? { t: v.tone, h: v.head } : null;
+  };
   /* Odpowiedź dla rodziny (obok zdjęcia). */
   A.familyAnswerHtml = fv => fv ? `<div class="fam-ans" data-tone="${fv.tone}" role="status"><b>${esc(fv.head)}</b><span>${esc(fv.sub)}</span></div>` : '';
   /* Kółka domowników pod zdjęciem: pierścień = dopasowanie (pusty przy „nie pasuje” i „nie wiemy”), znak ✓ ! ✕ ?. */

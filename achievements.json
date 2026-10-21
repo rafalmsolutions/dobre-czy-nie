@@ -76,9 +76,9 @@
       "name": "Łowca rzadkości",
       "category": "album",
       "icon": "gem",
-      "description": "Zdobądź 1 epicką kartę.",
+      "description": "Zdobądź 3 epickie karty.",
       "metric": "epic_cards",
-      "target": 1,
+      "target": 3,
       "reward": {
         "points": 10
       },
@@ -121,9 +121,9 @@
       "name": "Błysk",
       "category": "album",
       "icon": "sparkle",
-      "description": "Zdobądź 1 błyszczącą kartę.",
+      "description": "Zdobądź 2 błyszczące karty.",
       "metric": "holo_cards",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -136,9 +136,9 @@
       "name": "Błysk",
       "category": "album",
       "icon": "sparkle",
-      "description": "Zdobądź 3 błyszczące karty.",
+      "description": "Zdobądź 5 błyszczących kart.",
       "metric": "holo_cards",
-      "target": 3,
+      "target": 5,
       "reward": {
         "points": 25
       },
@@ -151,9 +151,9 @@
       "name": "Błysk",
       "category": "album",
       "icon": "sparkle",
-      "description": "Zdobądź 10 błyszczących kart.",
+      "description": "Zdobądź 12 błyszczących kart.",
       "metric": "holo_cards",
-      "target": 10,
+      "target": 12,
       "reward": {
         "points": 50
       },
@@ -211,9 +211,9 @@
       "name": "Detektyw składów",
       "category": "odkrywanie",
       "icon": "magnifier",
-      "description": "Sprawdź 10 produktów.",
+      "description": "Sprawdź 25 produktów.",
       "metric": "products_checked",
-      "target": 10,
+      "target": 25,
       "reward": {
         "points": 10
       },
@@ -226,9 +226,9 @@
       "name": "Detektyw składów",
       "category": "odkrywanie",
       "icon": "magnifier",
-      "description": "Sprawdź 50 produktów.",
+      "description": "Sprawdź 100 produktów.",
       "metric": "products_checked",
-      "target": 50,
+      "target": 100,
       "reward": {
         "points": 25
       },
@@ -241,9 +241,9 @@
       "name": "Detektyw składów",
       "category": "odkrywanie",
       "icon": "magnifier",
-      "description": "Sprawdź 200 produktów.",
+      "description": "Sprawdź 300 produktów.",
       "metric": "products_checked",
-      "target": 200,
+      "target": 300,
       "reward": {
         "points": 50
       },
@@ -256,9 +256,9 @@
       "name": "Trafny typ",
       "category": "odkrywanie",
       "icon": "target",
-      "description": "Zgadnij trafnie 5 razy.",
+      "description": "Zgadnij trafnie 10 razy.",
       "metric": "guesses_right",
-      "target": 5,
+      "target": 10,
       "reward": {
         "points": 10
       },
@@ -271,9 +271,9 @@
       "name": "Trafny typ",
       "category": "odkrywanie",
       "icon": "target",
-      "description": "Zgadnij trafnie 25 razy.",
+      "description": "Zgadnij trafnie 50 razy.",
       "metric": "guesses_right",
-      "target": 25,
+      "target": 50,
       "reward": {
         "points": 25
       },
@@ -286,9 +286,9 @@
       "name": "Trafny typ",
       "category": "odkrywanie",
       "icon": "target",
-      "description": "Zgadnij trafnie 100 razy.",
+      "description": "Zgadnij trafnie 150 razy.",
       "metric": "guesses_right",
-      "target": 100,
+      "target": 150,
       "reward": {
         "points": 50
       },
@@ -301,9 +301,9 @@
       "name": "Czytelnik etykiet",
       "category": "odkrywanie",
       "icon": "label",
-      "description": "Otwórz wyjaśnienie oceny 5 razy.",
+      "description": "Otwórz wyjaśnienie oceny 10 razy.",
       "metric": "explanations_opened",
-      "target": 5,
+      "target": 10,
       "reward": {
         "points": 10
       },
@@ -316,9 +316,9 @@
       "name": "Czytelnik etykiet",
       "category": "odkrywanie",
       "icon": "label",
-      "description": "Otwórz wyjaśnienie oceny 25 razy.",
+      "description": "Otwórz wyjaśnienie oceny 40 razy.",
       "metric": "explanations_opened",
-      "target": 25,
+      "target": 40,
       "reward": {
         "points": 25
       },
@@ -331,9 +331,9 @@
       "name": "Czytelnik etykiet",
       "category": "odkrywanie",
       "icon": "label",
-      "description": "Otwórz wyjaśnienie oceny 100 razy.",
+      "description": "Otwórz wyjaśnienie oceny 120 razy.",
       "metric": "explanations_opened",
-      "target": 100,
+      "target": 120,
       "reward": {
         "points": 50
       },
@@ -346,9 +346,9 @@
       "name": "Znawca E-numerów",
       "category": "odkrywanie",
       "icon": "e",
-      "description": "Przeczytaj opis 5 różnych dodatków E.",
+      "description": "Przeczytaj opis 10 różnych dodatków E.",
       "metric": "additives_read",
-      "target": 5,
+      "target": 10,
       "reward": {
         "points": 10
       },
@@ -361,9 +361,9 @@
       "name": "Znawca E-numerów",
       "category": "odkrywanie",
       "icon": "e",
-      "description": "Przeczytaj opis 20 różnych dodatków E.",
+      "description": "Przeczytaj opis 30 różnych dodatków E.",
       "metric": "additives_read",
-      "target": 20,
+      "target": 30,
       "reward": {
         "points": 25
       },
@@ -376,9 +376,9 @@
       "name": "Znawca E-numerów",
       "category": "odkrywanie",
       "icon": "e",
-      "description": "Przeczytaj opis 50 różnych dodatków E.",
+      "description": "Przeczytaj opis 80 różnych dodatków E.",
       "metric": "additives_read",
-      "target": 50,
+      "target": 80,
       "reward": {
         "points": 50
       },
@@ -391,9 +391,9 @@
       "name": "Cukrowy detektyw",
       "category": "odkrywanie",
       "icon": "sugar",
-      "description": "Sprawdź, skąd cukier, w 3 produktach.",
+      "description": "Sprawdź, skąd cukier, w 5 produktach.",
       "metric": "sugar_explanations_read",
-      "target": 3,
+      "target": 5,
       "reward": {
         "points": 10
       },
@@ -406,9 +406,9 @@
       "name": "Cukrowy detektyw",
       "category": "odkrywanie",
       "icon": "sugar",
-      "description": "Sprawdź, skąd cukier, w 10 produktach.",
+      "description": "Sprawdź, skąd cukier, w 15 produktach.",
       "metric": "sugar_explanations_read",
-      "target": 10,
+      "target": 15,
       "reward": {
         "points": 25
       },
@@ -421,9 +421,9 @@
       "name": "Cukrowy detektyw",
       "category": "odkrywanie",
       "icon": "sugar",
-      "description": "Sprawdź, skąd cukier, w 30 produktach.",
+      "description": "Sprawdź, skąd cukier, w 40 produktach.",
       "metric": "sugar_explanations_read",
-      "target": 30,
+      "target": 40,
       "reward": {
         "points": 50
       },
@@ -436,9 +436,9 @@
       "name": "Odkrywca półek",
       "category": "odkrywanie",
       "icon": "pin",
-      "description": "Sprawdź produkty z 5 różnych kategorii.",
+      "description": "Sprawdź produkty z 8 różnych kategorii.",
       "metric": "categories_explored",
-      "target": 5,
+      "target": 8,
       "reward": {
         "points": 10
       },
@@ -451,9 +451,9 @@
       "name": "Odkrywca półek",
       "category": "odkrywanie",
       "icon": "pin",
-      "description": "Sprawdź produkty z 15 różnych kategorii.",
+      "description": "Sprawdź produkty z 20 różnych kategorii.",
       "metric": "categories_explored",
-      "target": 15,
+      "target": 20,
       "reward": {
         "points": 25
       },
@@ -466,9 +466,9 @@
       "name": "Odkrywca półek",
       "category": "odkrywanie",
       "icon": "pin",
-      "description": "Sprawdź produkty z 30 różnych kategorii.",
+      "description": "Sprawdź produkty z 40 różnych kategorii.",
       "metric": "categories_explored",
-      "target": 30,
+      "target": 40,
       "reward": {
         "points": 50
       },
@@ -526,9 +526,9 @@
       "name": "Łowca perełek",
       "category": "wybory",
       "icon": "trophy",
-      "description": "Znajdź 3 produkty z bardzo dobrym dopasowaniem.",
+      "description": "Znajdź 5 produktów z bardzo dobrym dopasowaniem.",
       "metric": "great_finds",
-      "target": 3,
+      "target": 5,
       "reward": {
         "points": 10
       },
@@ -541,9 +541,9 @@
       "name": "Łowca perełek",
       "category": "wybory",
       "icon": "trophy",
-      "description": "Znajdź 15 produktów z bardzo dobrym dopasowaniem.",
+      "description": "Znajdź 20 produktów z bardzo dobrym dopasowaniem.",
       "metric": "great_finds",
-      "target": 15,
+      "target": 20,
       "reward": {
         "points": 25
       },
@@ -556,9 +556,9 @@
       "name": "Łowca perełek",
       "category": "wybory",
       "icon": "trophy",
-      "description": "Znajdź 50 produktów z bardzo dobrym dopasowaniem.",
+      "description": "Znajdź 60 produktów z bardzo dobrym dopasowaniem.",
       "metric": "great_finds",
-      "target": 50,
+      "target": 60,
       "reward": {
         "points": 50
       },
@@ -571,9 +571,9 @@
       "name": "Mistrz zamian",
       "category": "wybory",
       "icon": "swap",
-      "description": "Zamień produkt na lepszy 1 raz.",
+      "description": "Zamień produkt na lepszy 2 razy.",
       "metric": "swap_to_better",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -586,9 +586,9 @@
       "name": "Mistrz zamian",
       "category": "wybory",
       "icon": "swap",
-      "description": "Zamień produkt na lepszy 5 razy.",
+      "description": "Zamień produkt na lepszy 8 razy.",
       "metric": "swap_to_better",
-      "target": 5,
+      "target": 8,
       "reward": {
         "points": 25
       },
@@ -601,9 +601,9 @@
       "name": "Mistrz zamian",
       "category": "wybory",
       "icon": "swap",
-      "description": "Zamień produkt na lepszy 20 razy.",
+      "description": "Zamień produkt na lepszy 25 razy.",
       "metric": "swap_to_better",
-      "target": 20,
+      "target": 25,
       "reward": {
         "points": 50
       },
@@ -616,9 +616,9 @@
       "name": "Dobra półka",
       "category": "wybory",
       "icon": "check",
-      "description": "Odłóż 5 produktów na półkę.",
+      "description": "Odłóż 10 produktów na półkę.",
       "metric": "shelf_add",
-      "target": 5,
+      "target": 10,
       "reward": {
         "points": 10
       },
@@ -631,9 +631,9 @@
       "name": "Dobra półka",
       "category": "wybory",
       "icon": "check",
-      "description": "Odłóż 25 produktów na półkę.",
+      "description": "Odłóż 40 produktów na półkę.",
       "metric": "shelf_add",
-      "target": 25,
+      "target": 40,
       "reward": {
         "points": 25
       },
@@ -646,9 +646,9 @@
       "name": "Dobra półka",
       "category": "wybory",
       "icon": "check",
-      "description": "Odłóż 100 produktów na półkę.",
+      "description": "Odłóż 120 produktów na półkę.",
       "metric": "shelf_add",
-      "target": 100,
+      "target": 120,
       "reward": {
         "points": 50
       },
@@ -661,9 +661,9 @@
       "name": "Pełny koszyk",
       "category": "wybory",
       "icon": "cart",
-      "description": "Odhacz całą listę zakupów 1 raz.",
+      "description": "Odhacz całą listę zakupów 2 razy.",
       "metric": "lists_completed",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -676,9 +676,9 @@
       "name": "Pełny koszyk",
       "category": "wybory",
       "icon": "cart",
-      "description": "Odhacz całą listę zakupów 5 razy.",
+      "description": "Odhacz całą listę zakupów 8 razy.",
       "metric": "lists_completed",
-      "target": 5,
+      "target": 8,
       "reward": {
         "points": 25
       },
@@ -691,9 +691,9 @@
       "name": "Pełny koszyk",
       "category": "wybory",
       "icon": "cart",
-      "description": "Odhacz całą listę zakupów 20 razy.",
+      "description": "Odhacz całą listę zakupów 25 razy.",
       "metric": "lists_completed",
-      "target": 20,
+      "target": 25,
       "reward": {
         "points": 50
       },
@@ -706,9 +706,9 @@
       "name": "Śniadaniowy as",
       "category": "wybory",
       "icon": "bowl",
-      "description": "Miej na półce 1 produkt na śniadanie z dobrym dopasowaniem.",
+      "description": "Miej na półce 2 produkty na śniadanie z dobrym dopasowaniem.",
       "metric": "breakfast_on_shelf",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -721,9 +721,9 @@
       "name": "Śniadaniowy as",
       "category": "wybory",
       "icon": "bowl",
-      "description": "Miej na półce 3 produkty na śniadanie z dobrym dopasowaniem.",
+      "description": "Miej na półce 4 produkty na śniadanie z dobrym dopasowaniem.",
       "metric": "breakfast_on_shelf",
-      "target": 3,
+      "target": 4,
       "reward": {
         "points": 25
       },
@@ -736,9 +736,9 @@
       "name": "Śniadaniowy as",
       "category": "wybory",
       "icon": "bowl",
-      "description": "Miej na półce 5 produktów na śniadanie z dobrym dopasowaniem.",
+      "description": "Miej na półce 7 produktów na śniadanie z dobrym dopasowaniem.",
       "metric": "breakfast_on_shelf",
-      "target": 5,
+      "target": 7,
       "reward": {
         "points": 50
       },
@@ -751,9 +751,9 @@
       "name": "Uzupełniacz",
       "category": "baza",
       "icon": "heart",
-      "description": "Uzupełnij skład lub wartości odżywcze 1 raz.",
+      "description": "Uzupełnij skład lub wartości odżywcze 2 razy.",
       "metric": "data_completed",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -766,9 +766,9 @@
       "name": "Uzupełniacz",
       "category": "baza",
       "icon": "heart",
-      "description": "Uzupełnij skład lub wartości odżywcze 5 razy.",
+      "description": "Uzupełnij skład lub wartości odżywcze 8 razy.",
       "metric": "data_completed",
-      "target": 5,
+      "target": 8,
       "reward": {
         "points": 25
       },
@@ -781,9 +781,9 @@
       "name": "Uzupełniacz",
       "category": "baza",
       "icon": "heart",
-      "description": "Uzupełnij skład lub wartości odżywcze 20 razy.",
+      "description": "Uzupełnij skład lub wartości odżywcze 25 razy.",
       "metric": "data_completed",
-      "target": 20,
+      "target": 25,
       "reward": {
         "points": 50
       },
@@ -796,9 +796,9 @@
       "name": "Fotograf etykiet",
       "category": "baza",
       "icon": "camera",
-      "description": "Dodaj 1 zdjęcie etykiety.",
+      "description": "Dodaj 2 zdjęcia etykiety.",
       "metric": "photos_added",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -811,9 +811,9 @@
       "name": "Fotograf etykiet",
       "category": "baza",
       "icon": "camera",
-      "description": "Dodaj 5 zdjęć etykiety.",
+      "description": "Dodaj 8 zdjęć etykiety.",
       "metric": "photos_added",
-      "target": 5,
+      "target": 8,
       "reward": {
         "points": 25
       },
@@ -826,9 +826,9 @@
       "name": "Fotograf etykiet",
       "category": "baza",
       "icon": "camera",
-      "description": "Dodaj 20 zdjęć etykiety.",
+      "description": "Dodaj 25 zdjęć etykiety.",
       "metric": "photos_added",
-      "target": 20,
+      "target": 25,
       "reward": {
         "points": 50
       },
@@ -841,9 +841,9 @@
       "name": "Strażnik danych",
       "category": "baza",
       "icon": "shield",
-      "description": "Zgłoś 1 błąd w danych.",
+      "description": "Zgłoś 2 błędy w danych.",
       "metric": "reports_sent",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -856,9 +856,9 @@
       "name": "Strażnik danych",
       "category": "baza",
       "icon": "shield",
-      "description": "Zgłoś 3 błędy w danych.",
+      "description": "Zgłoś 5 błędów w danych.",
       "metric": "reports_sent",
-      "target": 3,
+      "target": 5,
       "reward": {
         "points": 25
       },
@@ -871,9 +871,9 @@
       "name": "Strażnik danych",
       "category": "baza",
       "icon": "shield",
-      "description": "Zgłoś 10 błędów w danych.",
+      "description": "Zgłoś 15 błędów w danych.",
       "metric": "reports_sent",
-      "target": 10,
+      "target": 15,
       "reward": {
         "points": 50
       },
@@ -886,9 +886,9 @@
       "name": "Mój profil",
       "category": "profil",
       "icon": "quiz",
-      "description": "Ustaw 1 pozycję w profilu (Pilnuję lub Nie jem).",
+      "description": "Ustaw 2 pozycje w profilu (Pilnuję lub Nie jem).",
       "metric": "profile_items",
-      "target": 1,
+      "target": 2,
       "reward": {
         "points": 10
       },
@@ -901,9 +901,9 @@
       "name": "Mój profil",
       "category": "profil",
       "icon": "quiz",
-      "description": "Ustaw 3 pozycje w profilu (Pilnuję lub Nie jem).",
+      "description": "Ustaw 4 pozycje w profilu (Pilnuję lub Nie jem).",
       "metric": "profile_items",
-      "target": 3,
+      "target": 4,
       "reward": {
         "points": 25
       },

@@ -30,7 +30,7 @@ await page.goto('http://localhost:8790/index.html#/album/en:yogurts'); await pag
 await page.screenshot({ path: shots + 'hunt-page.png', fullPage: true });
 const slots = await page.evaluate(() => App.slotsOf('en:yogurts'));
 ok(slots && slots.length === 10, 'strona ma 10 miejsc');
-ok(slots[0].id === 'any', 'pierwsze miejsce: dowolny produkt');
+ok(!slots.some(s => s.id.startsWith('any')) && slots.filter(s => s.tier === 'zwykla').length <= 2, 'bez darmowego „dowolnego produktu”, najwyżej 2 zwykłe miejsca: ' + slots.map(s => s.tier).join(','));
 ok(slots.filter(s => s.secret).length === 1 && !slots.find(s => s.secret).tier.startsWith('leg'), 'jedno tajne miejsce, nie legendarne');
 ok(new Set(slots.map(s => s.id)).size === 10, 'miejsca się nie powtarzają');
 ok(slots.some(s => s.tier === 'rzadka') && slots.some(s => s.tier === 'epicka'), 'są miejsca rzadkie i epickie: ' + slots.map(s => s.label + '/' + s.tier).join(', '));
@@ -49,14 +49,19 @@ const target = await page.evaluate(raw => {
 ok(target && target.share < 1, 'skan trafi na najtrudniejsze pasujące miejsce: ' + (target && target.label));
 
 // 3. Skan → odsłonięcie → pełna strona → plakat
+const pts0 = await page.evaluate(() => App.game.points);
 await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1800);
-ok(await page.locator('#reveal').isVisible(), 'po skanie: nakładka nowego miejsca');
+ok(!(await page.locator('#reveal').isVisible()) && !(await page.locator('#celebrate').isVisible()), 'po skanie: nic nie zasłania wyniku');
+ok(await page.locator('#rwBar').isVisible() && /Nowa karta/.test(await page.innerText('#rwBar')), 'po skanie: pasek „Nowa karta · Odbierz”: ' + (await page.innerText('#rwBar').catch(() => '')).replace(/\n/g, ' | '));
+ok(await page.locator('#scr-product .fam-ans, #scr-product .d-badge').count() >= 1, 'wynik widoczny od razu');
+ok(await page.evaluate(() => App.game.points) > pts0, 'punkty za kartę od razu po skanie');
+await page.screenshot({ path: shots + 'hunt-bar.png' });
+await page.click('#rwBar [data-act=rw-open]'); await page.waitForTimeout(400);
+ok(await page.locator('#reveal').isVisible(), '„Odbierz”: odsłonięcie karty');
 ok((await page.innerText('#reveal')).includes(target.secret ? '???' : target.label), 'na odwrocie karty nazwa miejsca');
 await page.screenshot({ path: shots + 'hunt-back.png' });
-await closeCel(); const pts0 = await page.evaluate(() => App.game.points);
-await page.click('[data-act=reveal-flip]', { force: true }); await page.waitForTimeout(300); await closeCel(); await page.waitForTimeout(900);
+await page.click('[data-act=reveal-flip]', { force: true }); await page.waitForTimeout(300); await page.waitForTimeout(900);
 await page.screenshot({ path: shots + 'hunt-front.png' });
-ok(await page.evaluate(() => App.game.points) > pts0, 'odsłonięcie daje punkty');
 ok(await page.evaluate(([c, t]) => App.album.cards[c] && App.album.cards[c].slot === t, [C.milk, target.id]), 'karta zajęła właściwe miejsce');
 ok((await page.innerText('#reveal')).includes('1 na'), 'opis rzadkości „1 na …”');
 ok(await page.locator('[data-act=reveal-page]').count() === 1, 'ostatnie miejsce: przycisk „Dalej” do pełnej strony');

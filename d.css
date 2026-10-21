@@ -544,3 +544,34 @@ body.no-scores .bill-pts,body.no-scores .bill-sum{display:none}
 .fam-alt-go{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 #famAlt:empty{display:none}
 @media (prefers-reduced-motion: no-preference){.fam-ring{transition:background .3s}}
+
+/* Pasek nagród: nowa karta, odznaka, poziom – nad dolnym menu, nie zasłania wyniku. */
+.rwbar{position:fixed;z-index:70;left:12px;right:12px;bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom,0px));max-width:516px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:8px 6px 8px 10px;border-radius:18px;background:#2B2C30;color:#fff;box-shadow:0 12px 28px rgba(0,0,0,.25);animation:rwin .35s cubic-bezier(.3,.9,.3,1)}
+.rwbar .grow{display:flex;flex-direction:column;min-width:0}
+.rwbar b{font-size:14px;line-height:1.2}
+.rwbar .grow>span{font-size:12px;font-weight:600;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rwbar .btn{flex:0 0 auto;min-height:40px}
+.rw-card{flex:0 0 auto;width:34px;height:46px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:900;font-size:20px;color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.5)}
+.rw-medal{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:#F5D36B;color:#2B2C30;display:flex;align-items:center;justify-content:center;font-size:20px}
+.rw-x{flex:0 0 auto;width:40px;height:40px;border:0;border-radius:50%;background:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+body.has-rwbar .toast{bottom:calc(var(--nav-h) + 86px + env(safe-area-inset-bottom,0px))}
+body.has-rwbar .wrap{padding-bottom:calc(var(--nav-h) + 110px + env(safe-area-inset-bottom,0px))}
+body.no-nav .rwbar{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+@keyframes rwin{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.rwbar{animation:none}}
+
+/* Kolekcja: przełącznik Karty | Odznaki i poziom */
+.coll-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.7);position:relative}
+.coll-tabs a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:999px;text-decoration:none;color:var(--ink);font-weight:800;font-size:14px}
+.coll-tabs a[aria-current]{background:var(--ink);color:#fff}
+.coll-tabs span{font-size:12px;font-weight:800;padding:1px 7px;border-radius:999px;background:rgba(43,44,48,.1)}
+.coll-tabs a[aria-current] span{background:rgba(255,255,255,.2)}
+
+/* Półka: ilość i odpowiedź dla rodziny */
+.qtybtn{flex:0 0 auto;min-height:40px;min-width:52px;padding:0 10px;border:0;border-radius:12px;background:#ECEDEF;color:var(--ink);font:inherit;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
+.qty-form{padding:6px 8px;border-radius:16px;background:rgba(255,255,255,.8);flex-wrap:wrap}
+.qty-form #qtyInput{width:72px;flex:0 0 auto;text-align:center}
+.qty-form #qtyUnit{width:auto;flex:0 0 auto}
+.famchip{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;max-width:96px;min-height:30px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:800;background:#ECEDEF;color:#2B2C30}
+.famchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.famchip[data-t="ok"]{background:#E3F4E8;color:#14502A}.famchip[data-t="mid"]{background:#FFF2D6;color:#5A3B00}.famchip[data-t="bad"]{background:#FDE6E1;color:#7A1A13}

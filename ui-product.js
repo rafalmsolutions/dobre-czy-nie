@@ -112,7 +112,7 @@
         if (!res) return;
         const here = cur && cur.prod && cur.prod.code === prod.code;
         if (res.isNew && res.quiet) return;
-        if (res.isNew) setTimeout(() => { if (here && cur && cur.prod && cur.prod.code === prod.code) A.showReveal(res); else A.albumReward(res); }, 350);
+        if (res.isNew) A.albumGot(res); // pasek „Nowa karta · Odbierz” pod wynikiem, bez zasłaniania ekranu
         else if (res.revived) { A.toast('Karta ożyła! Dane produktu są już pełne.'); A.sound('badge'); }
         else if (here && (res.noSlot || res.incompatible)) setTimeout(() => A.albumNote(res), 900);
       }).catch(() => { });
@@ -160,6 +160,11 @@
     const { prod, an, pm } = cur;
     const added = cur.local && prod.added;
     cur.fam = cur.guess !== null && A.familyView ? A.familyView(prod, an, cur.famPick) : null;
+    // Produkt jest na półce: odświeżamy tam dopasowanie i odpowiedź dla rodziny.
+    if (cur.guess !== null && prod.code && Shelf.hasCode(A.shelves, prod.code)) {
+      const up = Shelf.updateInfo(A.shelves, prod.code, { pct: pm.pct, fam: A.familyShort ? A.familyShort(prod, an, cur.fam) : null });
+      if (up.changed) { A.shelves = up.state; A.saveShelves(); }
+    }
     const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt'), prodCard(prod, cur.guess === null ? null : pm)];
     if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
@@ -356,7 +361,8 @@
   /* ---------- Półka i zamiana ---------- */
   A.addToShelf = (prod, pm, quiet) => {
     const sh = A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
-    const r = Shelf.addItem(A.shelves, sh.id, { name: prod.name || ('Produkt ' + prod.code), code: prod.code, pct: pm ? pm.pct : null, categories: prod.categories });
+    const fam = A.familyShort ? A.familyShort(prod, cur && cur.prod === prod ? cur.an : null, cur && cur.prod === prod ? cur.fam : null) : null;
+    const r = Shelf.addItem(A.shelves, sh.id, { name: prod.name || ('Produkt ' + prod.code), code: prod.code, pct: pm ? pm.pct : null, categories: prod.categories, qty: 1, unit: 'szt', fam });
     if (r.error === 'duplicate') { if (!quiet) A.toast(`Ten produkt już jest na półce „${sh.name}”.`); return false; }
     if (r.error === 'full') { A.toast('Ta półka jest pełna. Usuń kupione rzeczy albo wybierz inną półkę.'); return false; }
     if (r.error) { A.toast('Nie udało się dodać produktu.'); return false; }
