@@ -22,8 +22,34 @@
   }
 
   const active = () => A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
+  /* Ulubione (serce przy produkcie) i „często kupujesz” (rzeczy odhaczane w sklepie co najmniej 2 razy): szybkie dodawanie na półkę. */
+  const favs = () => (v => Array.isArray(v) ? v.filter(x => x && x.name) : [])(A.store.get('d-fav', []));
+  const bkey = i => i.code ? i.code : 'n:' + fold(i.name);
+  A.isFav = code => favs().some(f => f.code === code);
+  A.toggleFav = (prod, pm) => {
+    const list = favs(), on = list.some(f => f.code === prod.code);
+    A.store.set('d-fav', on ? list.filter(f => f.code !== prod.code) : [{ code: prod.code, name: prod.name || 'Produkt ' + prod.code, categories: (prod.categories || []).slice(0, 8), pct: pm && pm.pct != null ? pm.pct : null, at: Date.now() }].concat(list).slice(0, 60));
+    return !on;
+  };
+  function rememberBought(i) {
+    const b = A.store.get('d-bought', {}), k = bkey(i), cur = b[k] || { name: i.name, code: i.code || null, n: 0 };
+    b[k] = Object.assign(cur, { name: i.name, pct: i.pct, n: cur.n + 1, at: Date.now() });
+    const keys = Object.keys(b); if (keys.length > 120) keys.sort((x, y) => b[x].at - b[y].at).slice(0, keys.length - 120).forEach(x => delete b[x]);
+    A.store.set('d-bought', b);
+  }
+  function quickList(sh) {
+    const onShelf = new Set(sh.items.filter(i => !i.checked).map(bkey)), out = [], seen = new Set();
+    favs().forEach(f => { const k = bkey(f); if (!onShelf.has(k) && !seen.has(k)) { seen.add(k); out.push(Object.assign({ k, fav: true }, f)); } });
+    const b = A.store.get('d-bought', {});
+    Object.entries(b).filter(([, x]) => x && x.n >= 2).sort((x, y) => y[1].n - x[1].n).forEach(([k, x]) => { if (!onShelf.has(k) && !seen.has(k)) { seen.add(k); out.push(Object.assign({ k }, x)); } });
+    return out.slice(0, 14);
+  }
+  const quickHtml = sh => {
+    const q = quickList(sh); if (!q.length) return '';
+    return `<div class="stack quick-add" style="gap:6px"><span class="small" style="font-weight:800">Szybko dodaj <span class="muted">♥ ulubione · ↻ często kupujesz</span></span><div class="chips">${q.map(x => `<button class="chip qadd" type="button" data-act="qadd" data-k="${esc(x.k)}"><span aria-hidden="true">${x.fav ? '♥' : '↻'}</span> ${esc(x.name)}</button>`).join('')}</div></div>`;
+  };
   function render(focusSel) {
-    const sh = active(), pr = Shelf.progress(sh), groups = Shelf.grouped(sh);
+    const sh = active(), pr = Shelf.progress(sh), groups = Shelf.grouped({ items: sh.items.filter(i => !i.checked) }), bought = sh.items.filter(i => i.checked);
     const pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
     const tabs = A.shelves.shelves.map(s => `<button class="shelf-tab" type="button" data-act="shelf-pick" data-id="${esc(s.id)}" aria-pressed="${s.id === sh.id}">${esc(s.name)}<span class="n">${s.items.filter(i => !i.checked).length}</span></button>`).join('');
     const canAdd = A.shelves.shelves.length < Shelf.FREE_LIMIT;
@@ -39,8 +65,10 @@
         ${pr.total ? `<div class="row small" style="justify-content:space-between;font-weight:800"><span>W koszyku: ${pr.done} z ${pr.total}</span><span class="muted">ułożone wg działów sklepu</span></div><span class="xp green" role="progressbar" aria-valuenow="${pr.done}" aria-valuemin="0" aria-valuemax="${pr.total}" aria-label="Postęp zakupów"><i style="width:${pct}%"></i></span>` : ''}
         <form class="inline-form" id="addItemForm" novalidate><input class="field" id="addItemInput" maxlength="60" autocomplete="off" placeholder="Dodaj rzecz, np. 2 kg ziemniaki" aria-label="Dodaj rzecz do listy"><button class="btn btn-green btn-sm" type="submit" aria-label="Dodaj"><svg><use href="#i-plus"/></svg></button></form>
         <p class="msg" role="status" id="itemMsg">${esc(ui.msg)}</p>
+        ${quickHtml(sh)}
       </div>
-      ${groups.length ? `<div class="stack" style="gap:8px" id="shelfItems">${groups.map(g => `<div class="dept-h"><span class="di">${art(g.icon, 30)}</span>${esc(g.label)}</div>${g.items.map(itemHtml).join('')}`).join('')}</div>${A.family.length && sh.items.some(i => i.fam) ? '<p class="small muted" id="famNote">Przy produktach odpowiedź dla całej rodziny: ✓ pasuje wszystkim, ! uwaga, ✕ nie dla tej osoby, ? nie wiemy. Odświeża się, gdy otworzysz produkt.</p>' : ''}`
+      ${sh.items.length ? `<div class="stack" style="gap:8px" id="shelfItems">${groups.length ? groups.map(g => `<div class="dept-h"><span class="di">${art(g.icon, 30)}</span>${esc(g.label)}</div>${g.items.map(itemHtml).join('')}`).join('') : '<div class="empty" id="allBought"><b style="font-family:var(--f-display);color:var(--ink)">Wszystko w koszyku ✓</b></div>'}</div>
+        ${bought.length ? `<details class="bought" id="boughtBox"${ui.showBought ? ' open' : ''}><summary>W koszyku: ${bought.length} <span class="muted">· ${ui.showBought ? 'zwiń' : 'pokaż'}</span></summary><div class="stack" style="gap:8px;margin-top:8px">${bought.map(itemHtml).join('')}</div></details>` : ''}${A.family.length && sh.items.some(i => i.fam) ? '<p class="small muted" id="famNote">Przy produktach odpowiedź dla całej rodziny: ✓ pasuje wszystkim, ! uwaga, ✕ nie dla tej osoby, ? nie wiemy. Odświeża się, gdy otworzysz produkt.</p>' : ''}`
         : `<div class="empty stack" style="align-items:center">${A.mascot('smile', 70)}<b style="font-family:var(--f-display);color:var(--ink)">Pusta półka</b><span>Dodaj produkty ze skanu („Na półkę”), z listy „Najlepsze dla Ciebie” albo wpisz zwykłą rzecz, np. „ziemniaki”.</span></div>`}
       <div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <button class="btn btn-green" type="button" data-act="shelf-share" ${pr.total ? '' : 'disabled'}><svg><use href="#i-share"/></svg>Udostępnij</button>
@@ -49,6 +77,7 @@
       <div class="center">${ui.confirmDelete ? `<span class="small" style="font-weight:700">Na pewno usunąć półkę „${esc(sh.name)}” razem z listą?</span> <button class="btn btn-red btn-sm" type="button" data-act="shelf-delete-yes">Usuń</button> <button class="btn btn-white btn-sm" type="button" data-act="shelf-delete-no">Zostaw</button>` : `<button class="linkbtn small" type="button" data-act="shelf-delete">Usuń tę półkę</button>`}</div>
     </div>`;
     if (focusSel) { const f = A.$('scr-shelves').querySelector(focusSel); if (f) f.focus(); }
+    const bb = A.$('boughtBox'); if (bb) bb.addEventListener('toggle', () => { ui.showBought = bb.open; const m = bb.querySelector('summary .muted'); if (m) m.textContent = '· ' + (bb.open ? 'zwiń' : 'pokaż'); });
   }
 
   const ERR = { name: 'Wpisz nazwę.', duplicate: 'Taka nazwa już jest na liście.', full: 'Ta półka jest pełna (200 rzeczy). Usuń kupione albo wybierz inną.', limit: 'Masz już maksymalną liczbę darmowych półek.' };
@@ -64,11 +93,18 @@
       const r = Shelf.toggleItem(A.shelves, active().id, el.dataset.id);
       if (r.error) return;
       A.shelves = r.state; A.saveShelves();
+      if (r.item && r.item.checked) rememberBought(r.item);
       if (r.completed) {
         const g = A.award('list_completed', { shelfId: active().id });
         A.toast(g.gained ? 'Cała lista kupiona! Brawo!' : 'Cała lista kupiona!');
       }
       render(`[data-act=item-toggle][data-id="${el.dataset.id}"]`);
+    }
+    else if (act === 'qadd') {
+      const x = quickList(active()).find(q => q.k === el.dataset.k); if (!x) return;
+      const r = Shelf.addItem(A.shelves, active().id, { name: x.name, code: x.code || undefined, pct: x.pct, categories: x.categories, qty: 1, unit: 'szt' });
+      if (r.error) { ui.msg = r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render(); return; }
+      A.shelves = r.state; A.saveShelves(); ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
     }
     else if (act === 'item-qty') { ui.qty = ui.qty === el.dataset.id ? null : el.dataset.id; render(ui.qty ? '#qtyInput' : `[data-act=item-qty][data-id="${el.dataset.id}"]`); }
     else if (act === 'qty-minus' || act === 'qty-plus') {

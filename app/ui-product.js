@@ -18,7 +18,9 @@
   const whoSig = () => JSON.stringify([A.profile, A.family, A.shopOff]);
 
   function screen(html) { A.$('scr-product').innerHTML = `<div class="wrap">${html}</div>`; A.fitTitle(A.$('scr-product').querySelector('.d-title h1')); }
-  const topbar = (title) => `<div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><span class="grow small muted" style="font-weight:800">${esc(title)}</span>${A.hudPill()}</div>`;
+  const topbar = (title, extra) => `<div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><span class="grow small muted" style="font-weight:800">${esc(title)}</span>${extra || ''}${A.hudPill()}</div>`;
+  // Serce: ulubione (szybkie dodawanie na półkę). Wypełnione = w ulubionych.
+  const favBtn = p => { const on = A.isFav && A.isFav(p.code); return `<button class="btn btn-white iconbtn fav-btn${on ? ' on' : ''}" type="button" data-act="fav-toggle" aria-pressed="${on}" aria-label="${on ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>`; };
 
   async function openProduct(code) {
     const token = {}; pendingToken = token; cur = null;
@@ -91,7 +93,8 @@
   }
   // Czego brakuje? Kopia bazy nie ma tekstu składu, ale wie, czy skład istnieje (lista dodatków nie jest wtedy pusta/null).
   function missingParts(prod, snapshot) {
-    return { ingr: !prod.ingredients && !(snapshot && prod.additiveTags != null), nut: !Object.values(prod.nutriments || {}).some(v => v != null) };
+    return { ingr: !prod.ingredients && !(snapshot && prod.additiveTags != null), nut: !Object.values(prod.nutriments || {}).some(v => v != null),
+      name: !prod.name, front: !prod.image, cat: !(prod.categories || []).length };
   }
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
@@ -192,7 +195,7 @@
       const up = Shelf.updateInfo(A.shelves, prod.code, { pct: pm.pct, fam: A.familyShort ? A.familyShort(prod, an, cur.fam) : null });
       if (up.changed) { A.shelves = up.state; A.saveShelves(); }
     }
-    const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt'), prodCard(prod, cur.guess === null ? null : pm)];
+    const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt', prod.kind === 'food' ? favBtn(prod) : ''), prodCard(prod, cur.guess === null ? null : pm)];
     if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
     if (cur.guess === null) {
@@ -238,12 +241,14 @@
     parts.push('</div>');
     // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
     const miss = missingParts(prod, cur.snapshot);
-    if (A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added) && (miss.ingr || miss.nut)) {
-      const what = [miss.ingr && 'składu', miss.nut && 'wartości odżywczych'].filter(Boolean).join(' i ');
+    if (A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added) && (miss.ingr || miss.nut || miss.name)) {
+      const what = [miss.name && 'nazwy', miss.name && miss.front && 'zdjęcia', miss.ingr && 'składu', miss.nut && 'wartości odżywczych'].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' i $1');
       parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button></div></div>`);
     }
     parts.push(detailsHtml(prod, an, !pm.personal));
     screen(parts.join(''));
+    // Skan „do porównania” (Skanuj drugi): produkt od razu w porównaniu, a przy dwóch – ekran porównania.
+    if (A.cmpAfterScan && A.cmpAfterScan(prod)) return;
     // Wejście z „Uzupełnij dane”: od razu otwieramy uzupełnianie (zdjęcia są w bazie, odczyt robi się sam).
     if (A.fillAuto === prod.code && A.$('completeBox')) { A.fillAuto = null; A.startComplete(); setTimeout(() => { const b = A.$('completeBox'); if (b) b.scrollIntoView({ block: 'start' }); }, 60); }
     if (A.discFill) A.discFill(prod.code);
@@ -464,6 +469,9 @@
       parts.push(`<div class="panel stack center" id="notFound" data-reason="${esc(reason)}" style="align-items:center">${A.mascot('sad', 80)}<h1 style="font-size:1.4rem">${esc(err[0])}</h1><p class="small muted">${esc(err[1])}</p><button class="btn btn-gold" type="button" data-act="retry" data-code="${esc(code)}">Spróbuj ponownie</button></div>`);
     } else {
       parts.push(`<div class="row" id="notFound" data-reason="missing" style="align-items:center">${A.mascot('wow', 84)}<div class="stack" style="gap:6px"><h1 style="font-size:1.4rem">Ojej! Tego produktu jeszcze nie znamy</h1><p class="small muted">${badChecksum ? 'Cyfry tego kodu się nie zgadzają (zła suma kontrolna), więc pewnie jedna jest błędna. Sprawdź je z opakowaniem. ' : ''}Możesz być pierwszą osobą, która go doda. Dzięki Tobie inni też zobaczą jego ocenę.</p></div></div>`);
+      // Na wygiętych puszkach i w słabym świetle aparat bywa pomyli cyfry: najpierw prosimy o sprawdzenie kodu.
+      parts.push(`<form class="card stack fixcode" id="fixCodeForm" novalidate><span class="small"><b>Sprawdź kod.</b> Zeskanowaliśmy <b class="mono">${esc(code)}</b>. Jeśli cyfry pod kreskami są inne, popraw je i szukaj ponownie.</span>
+        <div class="inline-form"><input class="field mono" id="fixCode" inputmode="numeric" autocomplete="off" maxlength="20" value="${esc(code)}" aria-label="Cyfry spod kodu kreskowego"><button class="btn btn-dark btn-sm" type="submit">Szukaj</button></div><p class="msg" id="fixMsg" role="status"></p></form>`);
       parts.push(`<div class="panel stack" style="position:relative;margin-top:14px;padding-top:30px" id="addCta">
         <div style="position:absolute;left:0;right:0;top:-24px">${ribbonSvg('Nagroda odkrywcy', 250, ['#FFE27A', '#F0B021', '#8A5A0A'])}</div>
         <div class="reward-grid"><div class="card"><svg width="40" height="40"><use href="#i-star"/></svg><b style="font-family:var(--f-display)">+10 od razu</b><span class="small muted">+50, gdy 2 osoby potwierdzą</span></div>
@@ -572,8 +580,10 @@
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;
     const miss = missingParts(p, cur.snapshot), nmKnown = !miss.nut;
-    A.openComplete(el, { code: p.code, name: p.name, drink: !!p.drink, storeDone: !!A.inMyStore(p) || A.storeTagged(p.code), needIngr: miss.ingr, needNut: miss.nut, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
+    A.openComplete(el, { code: p.code, name: p.name, drink: !!p.drink, storeDone: !!A.inMyStore(p) || A.storeTagged(p.code), needIngr: miss.ingr, needNut: miss.nut, needName: miss.name, needFront: miss.name && miss.front, needCat: miss.name && miss.cat, images: { ingredients: p.imageIngredients, nutrition: p.imageNutrition }, onDone: saved => {
       const local = A.store.get('local', {})[p.code] || {};
+      if (local.name && !p.name) p.name = local.name;
+      if (local.category && !(p.categories || []).length) { p.categories = local.categories || [local.category]; p.category = local.category; }
       if (local.ingredients && !p.ingredients) p.ingredients = local.ingredients;
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
       cur.an = analyze(p); cur.pm = personalMatch(p, cur.an, A.profile); A.remember(p, cur.an, cur.pm);

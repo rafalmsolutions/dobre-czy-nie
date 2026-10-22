@@ -181,10 +181,11 @@ export default {
       const nut = parseNutriments(form.get('nutriments'));
       const store = storeLabel(form.get('store'));
       const pname = cleanText(form.get('product_name'), 80); // polska nazwa przepisana z opakowania
+      const ecat = String(form.get('category') || ''), addCat = /^en:[a-z0-9-]{2,60}$/.test(ecat) ? ecat : '';
       if (nut === 'bad') return reply(400, { ok: false, error: 'nutriments' });
       if (form.get('store') && !store) return reply(400, { ok: false, error: 'store' });
       if (form.get('product_name') && pname.length < 3) return reply(400, { ok: false, error: 'name' });
-      if (!ingredients && !nut && !store && !pname) return reply(400, { ok: false, error: 'empty' });
+      if (!ingredients && !nut && !store && !pname && !addCat) return reply(400, { ok: false, error: 'empty' });
       if (ingredients && ingredients.length < 3) return reply(400, { ok: false, error: 'ingredients' });
       let current = null;
       try {
@@ -204,6 +205,7 @@ export default {
         saved.push('nutrition');
       }
       if (pname && !String(current['product_name_' + lang] || '').trim()) { fields['product_name_' + lang] = pname; saved.push('name'); }
+      if (addCat) { fields.add_categories = addCat; saved.push('category'); } // dopisanie kategorii nie usuwa innych
       if (store) { fields.add_stores = store; saved.push('store'); } // dopisanie sklepu nie usuwa innych
       if (!saved.length) return reply(409, { ok: false, error: 'exists' });
       const fd = new FormData();
@@ -417,7 +419,7 @@ async function search(q, env) {
   let j = null, status = 0;
   for (let attempt = 0; attempt < 2 && !j; attempt++) {
     try {
-      const r = await fetch(`${SEARCH}?q=${encodeURIComponent(query)}&langs=pl,en&page_size=60&fields=${CAT_FIELDS}`, { headers });
+      const r = await fetch(`${SEARCH}?q=${encodeURIComponent(query)}&langs=pl,en&page_size=100&fields=${CAT_FIELDS}`, { headers });
       status = r.status;
       if (r.ok) j = await r.json().catch(() => null);
     } catch (e) { status = 0; }

@@ -135,8 +135,9 @@
      się odczytują), photos:{ingredients,nutrition} (Bloby), images:{ingredients,nutrition} (adresy z bazy), onDone, onNext } */
   A.openComplete = (el, opts) => {
     if (!el || !proxy()) return;
-    const both = !!(opts.needIngr && opts.needNut);
-    const st = Object.assign({ step: both ? 'both' : opts.needIngr ? 'ingr' : 'nut', saved: [], per: opts.drink ? 'ml' : 'g', nutRead: null }, opts);
+    const both = !!(opts.needIngr && opts.needNut), basic = !!(opts.needName || opts.needFront);
+    const dataStep = () => both ? 'both' : opts.needIngr ? 'ingr' : opts.needNut ? 'nut' : null;
+    const st = Object.assign({ step: basic ? 'basic' : dataStep(), saved: [], per: opts.drink ? 'ml' : 'g', nutRead: null }, opts);
     // Sklep jedzie razem z pierwszym zapisem (bez osobnego kroku). Pomijamy, gdy produkt ma już Twój sklep albo sklep już dopisano.
     st.store = !opts.storeDone && A.myStores().length ? A.myStores()[0] : null; st.storeAsk = !!st.store;
     const storeField = () => st.store && st.storeAsk ? { store: st.store } : {};
@@ -144,16 +145,29 @@
     const perText = () => st.per === 'ml' ? 'na 100 ml' : 'na 100 g';
     const urls = {};
     ['ingredients', 'nutrition'].forEach(k => { if (st.photos && st.photos[k]) urls[k] = URL.createObjectURL(st.photos[k]); else if (st.images && A.safeImg(st.images[k])) urls[k] = A.safeImg(st.images[k]); });
-    const total = both ? 1 : (opts.needIngr ? 1 : 0) + (opts.needNut ? 1 : 0);
-    const stepNo = () => (st.step === 'ingr' ? 1 : opts.needIngr ? 2 : 1);
+    const total = (basic ? 1 : 0) + (both ? 1 : (opts.needIngr ? 1 : 0) + (opts.needNut ? 1 : 0));
+    const stepNo = () => st.step === 'basic' ? 1 : (basic ? 1 : 0) + (st.step === 'ingr' || st.step === 'both' ? 1 : opts.needIngr ? 2 : 1);
     const head = title => `<div class="sec-head"><b style="font-family:var(--f-display);font-size:1.15rem">${title}</b>${total > 1 ? `<span class="small muted">Krok ${stepNo()} z ${total}</span>` : ''}</div>${st.storeAsk ? A.storePickHtml('cmpStore', st.store) : ''}`;
     const photo = k => urls[k] ? `<img src="${esc(urls[k])}" alt="Zdjęcie: ${k === 'ingredients' ? 'skład' : 'wartości odżywcze'}" class="complete-photo">` : '';
     const photoBtn = (k, label) => `<span class="btn btn-blue btn-sm filebtn" style="align-self:flex-start"><svg><use href="#i-photo"/></svg>${label}<input type="file" accept="image/*" capture="environment" data-complete-photo="${k}" aria-label="${label}"></span>`;
     const pts = n => `(+${n} pkt)`;
 
     function next() {
+      if (st.step === 'basic' && dataStep()) { st.step = dataStep(); rerender(false); return; }
       if (st.step === 'ingr' && opts.needNut) { st.step = 'nut'; renderNut(); return; }
       finish();
+    }
+    // Produkt bez nazwy albo bez zdjęcia przodu: najpierw to (bez tego nikt go nie rozpozna na liście).
+    function renderBasic() {
+      const cat = opts.needCat ? `<label for="cmpCat" style="font-weight:800">Kategoria <span class="small muted">podpowiadamy z nazwy</span></label><select class="field" id="cmpCat"><option value="">Wybierz kategorię</option>${SHOP_GROUPS.map(g => `<optgroup label="${esc(g.label)}">${SHOP_CATEGORIES.filter(c => c.group === g.key).map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('')}</optgroup>`).join('')}<option value="other">Inna, nie ma jej na liście</option></select>` : '';
+      el.innerHTML = `<div class="panel stack" id="completeBasic">${head(opts.needName ? 'Nazwa produktu' : 'Zdjęcie przodu')}
+        <p class="small">${opts.needName ? 'W bazie ten produkt nie ma nazwy, więc nikt go nie rozpozna. Przepisz nazwę z opakowania.' : 'W bazie nie ma zdjęcia przodu opakowania.'}</p>
+        ${opts.needName ? `<label for="cmpName" style="font-weight:800">Nazwa z opakowania</label><input class="field" id="cmpName" maxlength="80" autocomplete="off" placeholder="np. Jogurt naturalny 2%">${cat}` : ''}
+        ${opts.needFront ? (urls.front ? `<img src="${esc(urls.front)}" alt="Zdjęcie przodu" class="complete-photo">` : photoBtn('front', 'Zdjęcie przodu')) : ''}
+        <p class="msg" id="cmpBasicMsg" role="status"></p>
+        <div class="actions"><button class="btn btn-gold" type="button" data-cmp="save-basic">Zapisz</button><button class="btn btn-white" type="button" data-cmp="skip">Pomiń</button></div></div>`;
+      const nm = A.$('cmpName'), cs = A.$('cmpCat');
+      if (nm && cs && A.guessCategory) { cs.addEventListener('change', () => { cs.dataset.touched = '1'; }); nm.addEventListener('input', () => { if (!cs.dataset.touched) { const g = A.guessCategory(nm.value); cs.value = g || ''; cs.classList.toggle('ocr', !!g); } }); }
     }
     function finish() {
       Object.values(urls).forEach(u => { if (u.startsWith('blob:')) URL.revokeObjectURL(u); });
@@ -215,7 +229,7 @@
       el.innerHTML = `<div class="panel stack" id="completeNut">${head('Wartości odżywcze')}${nutHtml(read)}
         <div class="actions"><button class="btn btn-gold" type="button" data-cmp="save-nut">Zapisz wartości ${pts(10)}</button><button class="btn btn-white" type="button" data-cmp="skip">Pomiń</button></div></div>`;
     }
-    const rerender = (afterPhoto) => st.step === 'both' ? renderBoth(afterPhoto) : st.step === 'ingr' ? renderIngr(afterPhoto) : renderNut();
+    const rerender = (afterPhoto) => st.step === 'basic' ? renderBasic() : st.step === 'both' ? renderBoth(afterPhoto) : st.step === 'ingr' ? renderIngr(afterPhoto) : renderNut();
     function setPer(v) {
       st.per = v; const per = perText();
       el.querySelectorAll('.nut-per-label').forEach(t => { t.textContent = per; });
@@ -260,6 +274,25 @@
         const r = await post('/edit', Object.assign({ code: opts.code, ingredients_text: text, nutriments: JSON.stringify(clean) }, storeField()));
         if (r.ok || r.error === 'exists') { afterSave(r, [['ingredients', 'ingredients_added', 'skład'], ['nutrition', 'nutrition_added', 'wartości']], text, clean); finish(); }
         else { b.disabled = false; b.textContent = label; A.$('cmpNutMsg').textContent = failText(r); }
+      }
+      if (act === 'save-basic') {
+        const msg = A.$('cmpBasicMsg'), nmEl = A.$('cmpName'), csEl = A.$('cmpCat');
+        const name = nmEl ? nmEl.value.replace(/\s+/g, ' ').trim() : '';
+        if (opts.needName) {
+          const problem = name.length < 3 ? 'Wpisz nazwę z opakowania (co najmniej 3 znaki).' : A.nameProblem ? A.nameProblem(name) : '';
+          if (problem) { msg.textContent = problem; nmEl.focus(); return; }
+          if (csEl && !csEl.value) { msg.textContent = 'Wybierz kategorię. Dzięki niej produkt trafi do porównań i zamienników.'; csEl.focus(); return; }
+        }
+        if (opts.needFront && !urls.front && !opts.needName) { msg.textContent = 'Zrób zdjęcie przodu albo wybierz „Pomiń”.'; return; }
+        if (opts.needName) {
+          b.disabled = true; b.textContent = 'Zapisuję…';
+          const cat = csEl && csEl.value && csEl.value !== 'other' ? csEl.value : '';
+          const r = await post('/edit', Object.assign({ code: opts.code, product_name: name }, cat ? { category: cat } : {}, storeField()));
+          if (!(r.ok || r.error === 'exists')) { b.disabled = false; b.textContent = label; msg.textContent = failText(r); return; }
+          storeSaved(r); saveLocal(opts.code, Object.assign({ name }, cat ? { categories: ['en:food', cat], category: cat } : {}));
+          if (r.ok && (r.saved || []).includes('name')) { st.saved.push('name'); A.award('name_added', { code: opts.code }); }
+        }
+        next(); return;
       }
       if (act === 'save-ingr') {
         const text = ingrValue(); if (text == null) return;

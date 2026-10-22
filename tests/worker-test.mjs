@@ -92,7 +92,7 @@ let sc2 = calls.find(c => c.url.startsWith('https://search.openfoodfacts.org/'))
 let sq2 = sc2 ? new URL(sc2.url).searchParams.get('q') : '';
 ok(r.status === 200 && r.j.ok && r.j.products.length === 2 && r.j.q === 'jogurt naturalny or', 'szukaj: wynik i oczyszczone zapytanie (' + (r.j && r.j.q) + ')');
 ok(sq2 === 'jogurt AND naturalny AND or AND countries_tags:"en:poland"', 'szukaj: słowa przez AND, tylko Polska (' + sq2 + ')');
-ok(sc2 && /langs=pl/.test(sc2.url) && /page_size=60/.test(sc2.url), 'szukaj: język polski, 60 wyników');
+ok(sc2 && /langs=pl/.test(sc2.url) && /page_size=100/.test(sc2.url), 'szukaj: język polski, 100 wyników');
 r = await run(null, { method: 'GET', path: '/search?q=płatki%20owsiane' }); sc2 = calls.find(c => c.url.startsWith('https://search.openfoodfacts.org/'));
 ok(r.status === 200 && new URL(sc2.url).searchParams.get('q').startsWith('płatki AND owsiane'), 'szukaj: polskie litery zostają');
 r = await run(null, { method: 'GET', path: '/search?q=%22%3A' }); ok(r.status === 400, 'szukaj: same znaki specjalne → 400');
@@ -135,6 +135,8 @@ r = await run(ef({ code: '123' }), { path: '/ocr' }); ok(r.status === 400, 'OCR:
 existing = { product_name_pl: '' };
 r = await run(ef({ product_name: 'Mus jabłkowy <b>' }), { path: '/edit' });
 { const sv = calls.find(c => c.url.includes('product_jqm2')); ok(r.status === 200 && r.j.saved.includes('name') && sv.body.product_name_pl === 'Mus jabłkowy b', 'polska nazwa: zapisana (' + JSON.stringify(r.j) + ')'); }
+r = await run(ef({ product_name: 'Kefir naturalny', category: 'en:kefirs' }), { path: '/edit' });
+{ const sv = calls.find(c => c.url.includes('product_jqm2')); ok(r.status === 200 && sv.body.add_categories === 'en:kefirs' && r.j.saved.includes('category'), 'nazwa i kategoria razem'); }
 existing = { product_name_pl: 'Już jest' };
 r = await run(ef({ product_name: 'Mus jabłkowy' }), { path: '/edit' }); ok(r.status === 409, 'polska nazwa: nie nadpisujemy istniejącej');
 r = await run(ef({ product_name: 'ab' }), { path: '/edit' }); ok(r.status === 400, 'polska nazwa: za krótka');

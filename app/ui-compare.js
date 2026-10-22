@@ -29,7 +29,7 @@
     if (!n || scr === 'compare' || scr === 'start') { bar.hidden = true; bar.innerHTML = ''; document.body.classList.remove('has-cmpbar'); return; }
     const thumbs = A.cmp.map(x => { const img = A.safeImg(x.p.image); return img ? `<img src="${esc(img)}" alt="">` : '<span class="cb-dot"></span>'; }).join('');
     bar.innerHTML = `<span class="cb-thumbs" aria-hidden="true">${thumbs}</span><span class="grow"><b>${n === 1 ? 'W porównaniu: 1 produkt' : `Porównujesz ${n} produkty`}</b><span>${esc(A.cmp.map(x => x.p.name).join(', '))}</span></span>`
-      + (n > 1 ? '<a class="btn btn-gold btn-sm" href="#/porownaj">Pokaż</a>' : '<button class="btn btn-white btn-sm" type="button" data-act="scan">Skanuj drugi</button>')
+      + (n > 1 ? '<a class="btn btn-gold btn-sm" href="#/porownaj">Pokaż</a>' : '<button class="btn btn-white btn-sm" type="button" data-act="cmp-scan">Skanuj drugi</button>')
       + '<button class="rw-x" type="button" data-act="cmp-clear" aria-label="Wyczyść porównanie"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
     bar.hidden = false; document.body.classList.add('has-cmpbar');
   };
@@ -55,6 +55,16 @@
     const g = A.groupMatch(p, analyze(p)), img = A.safeImg(p.image), ns = A.profile.noScores;
     return `<div class="cmp-sug" id="cmpSug">${img ? `<img class="thumb${ns ? '' : A.ringStyle(g.pct)}" src="${esc(img)}" alt="">` : ''}<span class="grow"><small>PRZED CHWILĄ SPRAWDZIŁEŚ</small><b>${esc(p.name)}${!ns && g.pct != null ? ' · ' + g.pct + '%' : ''}</b></span>`
       + `<button class="btn btn-dark btn-sm" type="button" data-act="cmp-pair" data-code="${esc(p.code)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>Porównaj</button></div>`;
+  };
+
+  /* Skan z „Skanuj drugi/trzeci”: zeskanowany produkt od razu trafia do porównania (do 3 minut od otwarcia skanera). */
+  A.cmpAfterScan = prod => {
+    if (!A.cmpWaiting || Date.now() - A.cmpWaiting > 180e3 || !prod || !prod.code || prod.kind === 'cosmetic' || A.inCmp(prod.code)) return false;
+    A.cmpWaiting = 0;
+    A.cmpAdd(prod);
+    A.cmpBar();
+    if (A.cmp.length > 1) { location.hash = '#/porownaj'; return true; }
+    return false;
   };
 
   /* ---------- Ekran porównania ---------- */
@@ -114,7 +124,7 @@
     const top = `<div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><h1 class="grow cmp-h1">Porównanie</h1>${items.length ? '<button class="btn btn-white btn-sm" type="button" data-act="cmp-clear">Wyczyść</button>' : ''}</div>`;
     if (items.length < 2) {
       el.innerHTML = `<div class="wrap">${top}<div class="empty stack" style="align-items:center;text-align:center"><b style="font-family:var(--f-display);font-size:1.2rem">${items.length ? 'Dodaj drugi produkt' : 'Nic jeszcze nie porównujesz'}</b><span>Zeskanuj produkt albo znajdź go w wyszukiwarce i stuknij „Porównaj”. Porównasz 2 albo 3 produkty naraz.</span>
-        <div class="row" style="gap:10px;flex-wrap:wrap;justify-content:center"><button class="btn btn-dark" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj</button><a class="btn btn-white" href="#/szukaj">Szukaj</a></div></div>
+        <div class="row" style="gap:10px;flex-wrap:wrap;justify-content:center"><button class="btn btn-dark" type="button" data-act="cmp-scan"><svg><use href="#i-scan"/></svg>Skanuj</button><a class="btn btn-white" href="#/szukaj">Szukaj</a></div></div>
         ${items.length ? `<div class="list">${items.map(x => `<div class="item"><span class="grow t1">${esc(x.p.name)}</span><button class="btn btn-white btn-sm" type="button" data-act="cmp-remove" data-code="${esc(x.code)}">Usuń</button></div>`).join('')}</div>` : ''}</div>`;
       return;
     }
@@ -150,7 +160,7 @@
     const diff = `<div class="panel cmp-tab"><span class="cmp-k">CO JE RÓŻNI · NA 100 G</span>${rows.map(r => `<div class="cmp-row" ${rgrid}><span class="cmp-rt"><b>${esc(r.t)}</b>${r.who ? `<small>${esc(r.who)}</small>` : ''}</span>${r.cells.map(c => `<span class="cmp-val${c.good ? ' good' : ''}${c.worse || c.bad ? ' worse' : ''}">${esc(c.t)}</span>`).join('')}</div>`).join('')}
       <p class="small muted" style="margin:6px 0 0">Zielona kropka: lepsza wartość. Najpierw to, czego pilnujecie.</p></div>`;
     const acts = `<div class="cmp-acts" ${grid}>${items.map((x, i) => i === best ? `<button class="btn btn-dark btn-sm" type="button" data-act="cmp-shelf" data-code="${esc(x.code)}"${Shelf.hasCode(A.shelves, x.code) ? ' disabled' : ''}>${Shelf.hasCode(A.shelves, x.code) ? 'Już na półce' : 'Na półkę'}</button>` : `<button class="btn btn-white btn-sm" type="button" data-act="cmp-remove" data-code="${esc(x.code)}">Usuń</button>`).join('')}</div>`;
-    const more = items.length < MAX ? `<div class="row" style="gap:10px"><button class="btn btn-white grow" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj trzeci</button><a class="btn btn-white grow" href="#/szukaj">Szukaj</a></div>` : '<p class="small muted center">Najwyżej 3 produkty naraz. Kolejny zastąpi najstarszy.</p>';
+    const more = items.length < MAX ? `<div class="row" style="gap:10px"><button class="btn btn-white grow" type="button" data-act="cmp-scan"><svg><use href="#i-scan"/></svg>Skanuj trzeci</button><a class="btn btn-white grow" href="#/szukaj">Szukaj</a></div>` : '<p class="small muted center">Najwyżej 3 produkty naraz. Kolejny zastąpi najstarszy.</p>';
     el.innerHTML = `<div class="wrap cmp"${vc ? ` style="--sc:${vc}"` : ''}><span class="d-arc" aria-hidden="true"></span>${top}${chips}
       <div class="cmp-cards" ${grid}>${items.map(card).join('')}</div>
       <div class="cmp-verdict" data-tone="${vtone}" role="status"><b>${esc(vh)}</b><span>${esc(vs)}</span></div>
@@ -169,13 +179,24 @@
     const ws = fq(q).split(' ').filter(w => w.length >= 3); if (!ws.length) return [];
     return SHOP_CATEGORIES.filter(c => { const l = fq(c.label); return ws.some(w => l.split(' ').some(x => x.startsWith(w.slice(0, Math.max(4, w.length - 2))))); }).slice(0, 3);
   }
+  /* Trafność: ile słów zapytania jest w nazwie, marce albo kategorii produktu. Polskie końcówki się zmieniają
+     („wiśnia” – „wiśniowy”), więc dłuższe słowa porównujemy po początku. Wyszukiwarka bazy zwraca też produkty
+     z częścią słów; pokazujemy tylko te, które mają wszystkie (a gdy takich nie ma – najwięcej). */
+  const stem = w => w.length <= 3 ? w : w.slice(0, Math.max(4, w.length - 2));
+  const words = q => fq(q).split(' ').filter(w => w.length >= 2);
+  const relevance = (p, ws) => { const t = ' ' + fq([p.name, p.brand, p.categoryName].join(' ')) + ' '; return ws.filter(w => t.includes((w.length <= 3 ? ' ' : '') + stem(w))).length; };
+  A.searchRelevant = (list, q) => {
+    const ws = words(q); if (!ws.length) return list;
+    const scored = list.map(p => ({ p, r: relevance(p, ws) })), best = Math.max(0, ...scored.map(x => x.r));
+    return best ? scored.filter(x => x.r === best).map(x => x.p) : [];
+  };
   // Produkty z telefonu (historia, porównanie) – od razu i bez sieci.
   function localHits(q) {
-    const ws = fq(q).split(' ').filter(Boolean); if (!ws.length) return [];
+    const ws = words(q); if (!ws.length) return [];
     const cache = A.store.get('cache', {}), seen = new Set(), out = [];
     Object.values(cache).map(c => c && c.p).concat(A.cmp.map(x => x.p)).forEach(p => {
       if (!p || !p.code || seen.has(p.code) || p.kind === 'cosmetic') return; seen.add(p.code);
-      const t = fq([p.name, p.brand].join(' ')); if (ws.every(w => t.includes(w))) out.push(p);
+      if (relevance(p, ws) === ws.length) out.push(p);
     });
     return out;
   }
@@ -236,7 +257,7 @@
       if (A.loadDetails && top.length) await A.loadDetails(top).catch(() => false);
       if (tok !== sToken) return;
       const seen = new Set(list.map(p => p.code));
-      const all = rank(list.concat(localHits(q).filter(p => !seen.has(p.code))));
+      const all = rank(A.searchRelevant(list.concat(localHits(q).filter(p => !seen.has(p.code))), q));
       drawResults(q, all, 'done'); addRecent(q); A.track('szukaj');
     } catch (e) { if (tok === sToken) drawResults(q, loc, loc.length ? 'done' : 'error'); }
   }
@@ -286,6 +307,8 @@
       if (el.classList.contains('btn')) A.rerenderProduct && A.current.screen === 'product' && A.rerenderProduct();
       A.cmpBar(); const nb = document.querySelector(`[data-act=cmp-toggle][data-code="${code}"]`); if (nb) nb.focus();
       A.announce(on ? 'Dodano do porównania.' : 'Usunięto z porównania.');
+    } else if (act === 'cmp-scan') {
+      A.cmpWaiting = Date.now(); A.openScanner();
     } else if (act === 'cmp-pair') {
       const prev = findProd(code), cur = A.currentProduct && A.currentProduct();
       if (prev) A.cmpAdd(prev); if (cur && cur.prod) A.cmpAdd(cur.prod);
@@ -298,7 +321,7 @@
     else if (act === 'cmp-prod') {
       const cur = A.currentProduct && A.currentProduct(); if (!cur || !cur.prod) return;
       if (A.inCmp(cur.prod.code)) { if (A.cmp.length > 1) { location.hash = '#/porownaj'; return; } A.cmpRemove(cur.prod.code); }
-      else { A.cmpAdd(cur.prod); if (A.cmp.length > 1) { location.hash = '#/porownaj'; return; } A.toast('Dodano do porównania. Zeskanuj albo wyszukaj drugi produkt.'); }
+      else { A.cmpAdd(cur.prod); if (A.cmp.length > 1) { location.hash = '#/porownaj'; return; } A.cmpWaiting = Date.now(); A.toast('Dodano do porównania. Zeskanuj albo wyszukaj drugi produkt.'); }
       if (A.rerenderProduct) A.rerenderProduct(); A.cmpBar();
     }
   });

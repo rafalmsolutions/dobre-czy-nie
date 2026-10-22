@@ -14,7 +14,7 @@
   }, true);
 
   /* ---------- Kliknięcia ---------- */
-  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus'];
+  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
@@ -58,6 +58,7 @@
       case 'how': A.openDlg('howDlg'); break;
       case 'photo-open': A.openPhoto(); break;
       case 'complete': A.startComplete(); break;
+      case 'fav-toggle': if (cur && cur.prod && A.toggleFav) { const on = A.toggleFav(cur.prod, cur.pm); el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); el.setAttribute('aria-label', on ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'); A.toast(on ? 'Dodano do ulubionych. Na Półkach dodasz je jednym stuknięciem.' : 'Usunięto z ulubionych.'); } break;
       case 'fill-go': A.fillAuto = el.dataset.code; A.fillFrom = el.dataset.code; break; // link prowadzi dalej do produktu
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
@@ -94,6 +95,7 @@
       case 'scanForm': e.preventDefault(); { const raw = A.$('scanCode').value; if (!A.codeProblem(raw)) { A.closeScanner(true); A.$('scanCode').value = ''; } A.openCode(raw, A.$('scanMsg')); } break;
       case 'newShelfForm': case 'renameForm': case 'addItemForm': case 'qtyForm': e.preventDefault(); A.shelfSubmit(f); break;
       case 'addForm': e.preventDefault(); A.submitAdd(); break;
+      case 'fixCodeForm': e.preventDefault(); { const v = A.$('fixCode').value; if (v.replace(/\D/g, '') === (A.currentProduct() && A.currentProduct().prod && A.currentProduct().prod.code)) { A.$('fixMsg').textContent = 'To ten sam kod. Popraw cyfry albo dodaj produkt poniżej.'; break; } A.openCode(v, A.$('fixMsg')); } break;
       case 'reportForm': A.submitReport(e); break;
       case 'profileForm': A.saveProfileForm(e); break;
       default: e.preventDefault();

@@ -739,7 +739,7 @@ const App = {};
   };
 
   /* ---------- Skaner ---------- */
-  let stream = null, scanning = false, detector = null, lastCand = null, sameCount = 0, canvas = null, zxReader = null, scanReturn = null;
+  let stream = null, scanning = false, detector = null, lastCand = null, sameCount = 0, canvas = null, zxReader = null, scanReturn = null, scanStart = 0, hinted = false;
   A.openScanner = async () => {
     scanReturn = document.activeElement;
     A.$('scanner').hidden = false; A.$('scanErr').hidden = true; A.$('reticle').hidden = false; A.$('torchBtn').hidden = true; A.$('torchSpacer').hidden = false;
@@ -761,7 +761,7 @@ const App = {};
     if (!detector) {
       try { await A.loadScript(ZXING_URLS); } catch (e) { return scanError('Nie udało się uruchomić skanera', 'Sprawdź połączenie z internetem albo wpisz cyfry spod kodu poniżej.'); }
     }
-    scanning = true; lastCand = null; sameCount = 0;
+    scanning = true; lastCand = null; sameCount = 0; scanStart = Date.now(); hinted = false;
     tick();
   };
   async function nativeDetector() {
@@ -800,11 +800,14 @@ const App = {};
     if (code) {
       code = code.length === 12 ? '0' + code : code;
       if (validBarcode(code)) {
+        // Ten sam kod dwa razy z rzędu (krótki EAN-8 trzy razy): na wygiętej puszce aparat potrafi odczytać
+        // fragment kresek jako inny, poprawny kod. Druga zgodna klatka to ok. 0,1 s więcej, a eliminuje pomyłki.
         sameCount = code === lastCand ? sameCount + 1 : 1; lastCand = code;
-        if (detector || sameCount >= 2) { found(code); return; }
+        if (sameCount >= (code.length === 8 ? 3 : 2)) { found(code); return; }
       }
     }
-    setTimeout(() => scanning && requestAnimationFrame(tick), detector ? 100 : 140);
+    if (scanStart && Date.now() - scanStart > 6000 && !hinted) { hinted = true; A.$('scanHint').textContent = 'Nie odczytuje? Ustaw kod płasko w ramce (puszkę obróć), odsuń telefon na ok. 15 cm i włącz latarkę, jeśli jest ciemno.'; }
+    setTimeout(() => scanning && requestAnimationFrame(tick), detector ? 80 : 140);
   }
   function found(code) {
     if (A.settings.sound === false && navigator.vibrate) { try { navigator.vibrate(60); } catch (e) { } }

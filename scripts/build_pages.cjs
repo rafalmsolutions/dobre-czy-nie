@@ -178,9 +178,10 @@ function methodPage() {
 <tr><td><b>Przetworzenie</b> (NOVA)</td><td class="n">10%</td><td>NOVA 1 = ${C.NOVA_POINTS[1]}, NOVA 2 = ${C.NOVA_POINTS[2]}, NOVA 3 = ${C.NOVA_POINTS[3]}, NOVA 4 = ${C.NOVA_POINTS[4]} pkt.</td></tr>
 </tbody></table></div>
 <p>Gdy brakuje którejś części (np. nie znamy składu), liczymy z pozostałych, proporcjonalnie do ich wag, i oznaczamy ocenę jako częściową. Na listach i w porównaniach bierzemy pod uwagę tylko oceny policzone z co najmniej dwóch części.</p>
-<h3>Dwie zasady dodatkowe</h3>
+<h3>Zasady dodatkowe</h3>
 <ul>
 <li><b>Limit ${C.CAP_SCORE} pkt</b> tylko dla substancji wycofanych w UE albo z mocnymi dowodami szkodliwości: ${esc(capNames)}. Taki produkt nie może mieć oceny wyższej niż „Od czasu do czasu”.</li>
+<li><b>Pitne produkty mleczne</b> (jogurty pitne, kefiry, maślanki, mleka smakowe) liczymy jak napoje, tak jak oficjalny Nutri-Score od 2023 r., na 100 ml. Baza bywa tu niespójna: dwa skyry pitne o identycznych wartościach miały w niej Nutri-Score B i E, tylko przez inną kategorię. U nas oba dostają tę samą ocenę.</li>
 <li><b>Ochrona prostej żywności:</b> produkt nieprzetworzony (NOVA 1–2) albo z 1–2 składników bez dodatków nie spada poniżej ${C.SIMPLE_FLOOR} pkt za same kalorie czy tłuszcz. Orzechy, oliwa czy ser nie dostają więc najniższego werdyktu.</li>
 </ul>
 <h3>Przykład</h3>
@@ -245,6 +246,7 @@ ${[0, 1, 2, 3].map(l => `<tr><td><b>${L[l][0].toUpperCase() + L[l].slice(1)}</b>
 
 <h2>Zmiany metody</h2>
 <div class="scroll"><table class="tbl"><thead><tr><th>Data</th><th>Zmiana</th></tr></thead><tbody>
+<tr><td class="n" style="text-align:left">22.10.2026</td><td>Pitne produkty mleczne liczone jednakowo jak napoje (wcześniej ocena z bazy, która dla bliźniaczych produktów bywała różna).</td></tr>
 <tr><td class="n" style="text-align:left">21.10.2026</td><td>Jeden wynik rodziny: dopasowanie osoby, której produkt pasuje najsłabiej. Tak samo na ekranie produktu, na listach i w historii.</td></tr>
 <tr><td class="n" style="text-align:left">19.10.2026</td><td>Wersja 2: dodatki według ryzyka, limit tylko dla E171 i azotynów/azotanów, ochrona prostej żywności, nowe werdykty.</td></tr>
 </tbody></table></div>

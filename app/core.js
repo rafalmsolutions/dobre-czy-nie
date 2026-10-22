@@ -117,6 +117,34 @@ function estimateNutriScore(nm, drink) {
   return score <= 0 ? 'a' : score <= 2 ? 'b' : score <= 10 ? 'c' : score <= 18 ? 'd' : 'e';
 }
 
+/* Pitne produkty mleczne (jogurty pitne, kefiry, maślanki, mleka smakowe). Oficjalny Nutri-Score od 2023 r. liczy je
+   jak napoje, a baza ocenia bliźniacze produkty raz tak, raz tak – zależnie od wpisanej kategorii (np. skyr pitny
+   wiśnia E, a truskawka B przy identycznych wartościach). Gdy znamy wartości odżywcze, liczymy je sami, jednakowo. */
+const DAIRY_DRINK_CATS = ['en:yogurt-drinks', 'en:drinkable-yogurts', 'en:fermented-milk-drinks', 'en:kefirs', 'en:buttermilks', 'en:flavoured-milks', 'en:milk-drinks', 'en:dairy-drinks', 'en:milkshakes'];
+const DAIRY_DRINK_WORDS = /(^|[^a-z])(pitn|do picia|kefir|maslank|napoj mleczn|mleko smakow)/;
+function isDairyDrink(prod) {
+  const cats = Array.isArray(prod.categories) ? prod.categories : [];
+  if (prod.kind === 'cosmetic' || cats.includes('en:plant-based-milk-alternatives') || cats.includes('en:plant-based-beverages')) return false;
+  if (DAIRY_DRINK_CATS.some(c => cats.includes(c))) return true;
+  const dairy = cats.includes('en:dairies') || cats.some(c => /yogurt|milk|kefir|dairy|skyr/.test(c));
+  return dairy && DAIRY_DRINK_WORDS.test(' ' + fold(prod.name));
+}
+/* Nutri-Score dla napojów (algorytm z 2023 r.), wartości na 100 ml. Bez zawartości owoców (baza jej zwykle nie ma). */
+function beverageNutriScore(nm, sweetened) {
+  if (!nm) return null;
+  const kcal = nm.kcal, sug = nm.sugars, sat = nm.sat, salt = nm.salt;
+  if ([kcal, sug, sat, salt].some(v => v == null || !isFinite(v))) return null;
+  const steps = (v, list) => list.filter(t => v > t).length;
+  const N = steps(kcal * 4.184, [30, 90, 150, 210, 240, 270, 300, 330, 360, 390])
+    + steps(sug, [0.5, 2, 3.5, 5, 6, 7, 8, 9, 10, 11])
+    + steps(sat, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    + steps(salt, [0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4])
+    + (sweetened ? 4 : 0);
+  const P = steps(nm.proteins || 0, [1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3]) + steps(nm.fiber || 0, [3, 4.1, 5.2, 6.3, 7.4]);
+  const score = N - P;
+  return score <= 2 ? 'b' : score <= 6 ? 'c' : score <= 9 ? 'd' : 'e';
+}
+
 /* Produkt prosty: nieprzetworzony albo z 1–2 składników bez dodatków. Nie dostaje najniższego werdyktu za same kalorie czy tłuszcz. */
 function isSimpleFood(prod, additives) {
   const nv = Number(prod.nova);
@@ -241,10 +269,11 @@ function analyze(prod) {
   const simple = isSimpleFood(prod, additives);
   // Brak Nutri-Score w bazie, ale są wartości odżywcze (np. produkt właśnie dodany): liczymy go szacunkowo.
   const official = String(prod.nutriscore || '').toLowerCase() in NUTRI_POINTS ? String(prod.nutriscore).toLowerCase() : '';
-  const est = official ? null : estimateNutriScore(prod.nutriments, prod.drink);
-  const nutriscore = official || est || '';
+  const bev = isDairyDrink(prod) ? beverageNutriScore(prod.nutriments, additives.some(a => SWEETENER_CODES.includes(a.code))) : null;
+  const est = official || bev ? null : estimateNutriScore(prod.nutriments, prod.drink);
+  const nutriscore = bev || official || est || '';
   const s = foodScore({ nutriscore, nova: prod.nova, additives, additivesKnown, simple });
-  return { ...s, nutriscore, nutriscoreEstimated: !!est, additives, additivesKnown, simple, watch: watchFromText(prod.ingredients) };
+  return { ...s, nutriscore, nutriscoreEstimated: !!est, nutriscoreBeverage: !!bev, additives, additivesKnown, simple, watch: watchFromText(prod.ingredients) };
 }
 
 /* „Dlaczego?” – lista powodów werdyktu. sign: '+' podnosi, '-' obniża, 'i' informacja. */
@@ -264,7 +293,7 @@ function explain(prod, an) {
   }
   const ns = String(an.nutriscore || prod.nutriscore || '').toLowerCase();
   if (ns in NUTRI_POINTS) {
-    const L = ns.toUpperCase() + (an.nutriscoreEstimated ? ', szacunkowy z wpisanych wartości' : '');
+    const L = ns.toUpperCase() + (an.nutriscoreEstimated ? ', szacunkowy z wpisanych wartości' : an.nutriscoreBeverage ? ', liczony jak dla napoju, bo to pitny produkt mleczny' : '');
     if (ns === 'a' || ns === 'b') add('+', `Dobra wartość odżywcza (Nutri-Score ${L}).`);
     else if (ns === 'c') add('i', `Przeciętna wartość odżywcza (Nutri-Score ${L}).`);
     else add('-', `Słaba wartość odżywcza (Nutri-Score ${L}).`);
@@ -886,5 +915,5 @@ function rankForUser(list, profile) {
 }
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') {
-  module.exports = { estimateNutriScore, LIMIT_CAP, goalInsights, rankForUser, customProblem, cleanCustom, customMatcher, cleanForMatch, compareInCategory, categoryLabel, matchProfile, cleanProfile, additiveKeyFromTag, additivesFromTags, additivesFromText, watchFromText, foodScore, additivesScore, inciAnalyze, cosmeticScore, grade, nutrientLevel, validBarcode, normalizeProduct, analyze, isSimpleFood, additiveEffect, CAP_CODES, explain, sourcesFor, personalMatch, departmentFor, plural, fmtNum, fold, MATCH_LEVELS };
+  module.exports = { estimateNutriScore, beverageNutriScore, isDairyDrink, LIMIT_CAP, goalInsights, rankForUser, customProblem, cleanCustom, customMatcher, cleanForMatch, compareInCategory, categoryLabel, matchProfile, cleanProfile, additiveKeyFromTag, additivesFromTags, additivesFromText, watchFromText, foodScore, additivesScore, inciAnalyze, cosmeticScore, grade, nutrientLevel, validBarcode, normalizeProduct, analyze, isSimpleFood, additiveEffect, CAP_CODES, explain, sourcesFor, personalMatch, departmentFor, plural, fmtNum, fold, MATCH_LEVELS };
 }
