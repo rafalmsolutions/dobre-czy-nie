@@ -122,6 +122,7 @@
   document.addEventListener('change', e => {
     const t = e.target;
     if (t.dataset.photo) { A.photoChosen(t); return; }
+    if (t.dataset.frontPhoto) { A.frontPhoto(t); return; }
     if (t.id === 'ingPhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.runOcr(f); return; }
     if (t.id === 'codePhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.decodeImageFile(f); return; }
     if (t.dataset.act === 'item-toggle') { A.shelfAction('item-toggle', t); return; }

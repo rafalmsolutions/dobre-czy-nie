@@ -129,6 +129,16 @@
     return null;
   }
   const fmt = v => String(v).replace('.', ',');
+  // Jedno zdjęcie do produktu z bazy (np. przód opakowania). Zwraca { ok, url } albo { ok:false, text }.
+  A.uploadPhoto = async (code, field, file) => {
+    if (!proxy()) return { ok: false, text: 'Wysyłanie zdjęć jest teraz niedostępne.' };
+    try {
+      const blob = await A.downscale(file, 1600, 'blob');
+      const r = await post('/image', { code, field }, blob);
+      if (r.ok) { A.award('photo_added', { code }); return { ok: true, url: URL.createObjectURL(blob) }; }
+      return { ok: false, text: r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : r.error === 'limit' || r.error === 'rate' ? 'Za dużo zdjęć naraz. Spróbuj za kilka minut.' : 'Nie udało się wysłać zdjęcia. Spróbuj ponownie za chwilę.' };
+    } catch (e) { return { ok: false, text: 'Nie udało się przygotować zdjęcia. Spróbuj jeszcze raz.' }; }
+  };
 
   /* Uzupełnianie w podanym elemencie. Gdy brakuje i składu, i wartości – jeden ekran z oboma, wypełniony odczytem ze zdjęć;
      człowiek tylko sprawdza i poprawia. opts: { code, name, needIngr, needNut, drink, fresh (świeżo dodany: zdjęcia jeszcze

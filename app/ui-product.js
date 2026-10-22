@@ -241,9 +241,15 @@
     parts.push('</div>');
     // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
     const miss = missingParts(prod, cur.snapshot);
-    if (A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added) && (miss.ingr || miss.nut || miss.name)) {
-      const what = [miss.name && 'nazwy', miss.name && miss.front && 'zdjęcia', miss.ingr && 'składu', miss.nut && 'wartości odżywczych'].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' i $1');
-      parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button></div></div>`);
+    const canFix = A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added);
+    // Brakuje tylko zdjęcia przodu (nazwa jest): jedno stuknięcie otwiera aparat, bez osobnego kroku.
+    const needPhoto = canFix && miss.front && !miss.name && !A.frontSent(prod.code);
+    const photoBtn = gold => `<span class="btn ${gold ? 'btn-gold' : 'btn-white'} filebtn" id="frontBtn"><svg><use href="#i-photo"/></svg>Zrób zdjęcie opakowania (+10 pkt)<input type="file" accept="image/*" capture="environment" data-front-photo="${esc(prod.code)}" aria-label="Zdjęcie przodu opakowania"></span><p class="msg" id="frontMsg" role="status"></p>`;
+    if (canFix && (miss.ingr || miss.nut || miss.name)) {
+      const what = [miss.name && 'nazwy', miss.name && miss.front && 'zdjęcia', miss.ingr && 'składu', miss.nut && 'wartości odżywczych', needPhoto && 'zdjęcia opakowania'].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' i $1');
+      parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button>${needPhoto ? photoBtn(false) : ''}</div></div>`);
+    } else if (needPhoto) {
+      parts.push(`<div id="completeBox"><div class="panel stack" id="frontBox"><b style="font-family:var(--f-display);font-size:1.1rem">Brakuje zdjęcia opakowania</b><p class="small">Bez zdjęcia trudniej rozpoznać ten produkt na liście i w wyszukiwarce. Zrób zdjęcie przodu, a trafi do Open Food Facts dla wszystkich.</p>${photoBtn(true)}</div></div>`);
     }
     parts.push(detailsHtml(prod, an, !pm.personal));
     screen(parts.join(''));
@@ -576,6 +582,20 @@
     const m = Math.max(0, Math.round((Date.now() - (t || Date.now())) / 60000));
     return m < 1 ? 'przed chwilą' : m < 60 ? `${m} min temu` : m < 1440 ? `${Math.round(m / 60)} godz. temu` : 'niedawno';
   }
+  // Zdjęcie przodu wysłane z tego telefonu: baza pokaże je dopiero po odświeżeniu, więc nie prosimy drugi raz.
+  A.frontSent = code => (A.store.get('d-front', []) || []).includes(code);
+  A.frontPhoto = async inp => {
+    const code = inp.dataset.frontPhoto, f = inp.files && inp.files[0]; inp.value = ''; if (!f || !A.uploadPhoto) return;
+    const btn = A.$('frontBtn'), msg = A.$('frontMsg');
+    if (btn) btn.classList.add('busy'); if (msg) msg.textContent = 'Wysyłam zdjęcie…';
+    const r = await A.uploadPhoto(code, 'front', f);
+    if (!r.ok) { if (btn) btn.classList.remove('busy'); if (msg) msg.textContent = r.text; return; }
+    A.store.set('d-front', [code].concat((A.store.get('d-front', []) || []).filter(c => c !== code)).slice(0, 200));
+    const done = `<img src="${esc(r.url)}" alt="Twoje zdjęcie opakowania" class="complete-photo"><p class="small"><b>Dziękujemy!</b> Zdjęcie jest w Open Food Facts. W aplikacji pojawi się po najbliższym odświeżeniu bazy.</p>`;
+    const fb = A.$('frontBox'); if (fb) fb.innerHTML = done; else if (btn) btn.outerHTML = done;
+    if (msg) msg.textContent = '';
+    A.toast('Zdjęcie wysłane. +10 pkt');
+  };
   A.startComplete = () => {
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;

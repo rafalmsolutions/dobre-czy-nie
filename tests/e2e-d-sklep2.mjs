@@ -9,6 +9,7 @@ const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceW
 await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 const S = { edit: [] };
 await ctx.route(/proxy\.test\/edit/, r => { const bd = r.request().postData() || ''; S.edit.push(bd); return r.fulfill({ json: { ok: true, saved: /name="product_name"/.test(bd) ? ['name', 'category'] : ['ingredients', 'nutrition'] } }); });
+S.img = []; await ctx.route(/proxy\.test\/image/, r => { S.img.push(r.request().postData() || ''); return r.fulfill({ json: { ok: true } }); });
 await ctx.route(/proxy\.test\/ocr/, r => r.fulfill({ json: { ok: false, error: 'no_text' } }));
 const P = (name, cats) => ({ code: '', product_name: name, brands: 'Test', nutriscore_grade: 'c', categories_hierarchy: cats || ['en:dairies', 'en:yogurts'], nutriments: { 'energy-kcal_100g': 80, 'saturated-fat_100g': 1.1, sugars_100g: 9.8, salt_100g: 0.08, proteins_100g: 6.5 } });
 await ctx.route(/proxy\.test\/search/, r => r.fulfill({ json: { ok: true, products: [
@@ -83,6 +84,15 @@ const sc = await page.evaluate(() => { const nm = { 'energy-kcal_100g': 80, fat_
   const a = analyze(mk('Skyr jogurt pitny Wiśnia', 'e', ['en:dairies', 'en:yogurts', 'en:yogurt-drinks'])), b2 = analyze(mk('Skyr jogurt pitny', 'b', ['en:dairies', 'en:yogurts', 'en:skyrs'])), c = analyze(mk('Skyr truskawkowy', 'b', ['en:dairies', 'en:yogurts']));
   return [a.score, b2.score, a.nutriscoreBeverage, c.nutriscoreBeverage, c.score]; });
 ok(sc[0] === sc[1] && sc[2] === true && sc[3] === false, 'skyr pitny wiśnia i truskawka: ta sama ocena (' + sc.join(',') + ')');
+// 6b. Produkt z nazwą, bez zdjęcia: jedno stuknięcie wysyła zdjęcie przodu
+await go('#/p/' + C.ham);
+ok(await page.locator('#frontBox [data-front-photo]').count() === 1, 'brakuje tylko zdjęcia: przycisk „Zrób zdjęcie opakowania”');
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+await page.setInputFiles('[data-front-photo]', { name: 'p.png', mimeType: 'image/png', buffer: png }); await page.waitForTimeout(1200);
+ok(S.img.length === 1 && /name="field"\r?\n\r?\nfront/.test(S.img[0]) && /Dziękujemy/.test(await page.innerText('#completeBox')), 'zdjęcie przodu wysłane, podziękowanie');
+await go('#/p/' + C.ham);
+ok(await page.locator('[data-front-photo]').count() === 0, 'po wysłaniu nie prosimy drugi raz');
+
 // 7. Kafelki „Twoja kolekcja” prowadzą do zestawień kart
 await go('#/album');
 await page.click('.al-stats a.holo'); await page.waitForTimeout(400);

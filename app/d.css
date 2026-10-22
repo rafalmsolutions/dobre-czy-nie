@@ -773,3 +773,4 @@ button.item.fill-item{width:100%;text-align:left;border:0;font:inherit;color:inh
 .fav-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}.fav-btn.on{color:#E5533D}.fav-btn.on svg{fill:#E5533D}
 details.bought{background:rgba(255,255,255,.55);border-radius:18px;padding:12px 14px}details.bought summary{font-weight:800;cursor:pointer}
 .chip.qadd{border:0;cursor:pointer;font:inherit;font-weight:700;background:#fff}
+.filebtn.busy{opacity:.6;pointer-events:none}
