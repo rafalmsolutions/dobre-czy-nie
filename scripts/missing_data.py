@@ -26,8 +26,9 @@ CHECKS = [
     ('brak_sklad', 'skład', lambda h, s: (not (h.get('ingredients_n') or text(h.get('ingredients_text_pl'), 20) or text(h.get('ingredients_text'), 20))) or 'en:ingredients-to-be-completed' in s),
     ('brak_wartosci', 'wartości odżywcze', lambda h, s: not any(isinstance((h.get('nutriments') or {}).get(k), (int, float)) for k in MAIN_NUT) or 'en:nutrition-facts-to-be-completed' in s),
     ('brak_foto_przod', 'zdjęcie przodu', lambda h, s: not text(h.get('image_front_url'), 400) or 'en:front-photo-to-be-selected' in s),
-    ('brak_foto_sklad', 'zdjęcie składu', lambda h, s: not text(h.get('image_ingredients_url'), 400) or 'en:ingredients-photo-to-be-selected' in s),
-    ('brak_foto_wartosci', 'zdjęcie wartości odżywczych', lambda h, s: not text(h.get('image_nutrition_url'), 400) or 'en:nutrition-photo-to-be-selected' in s),
+    # Wyszukiwarka nie zwraca adresów zdjęć składu i wartości, więc o tych brakach mówią tylko stany nadane przez Open Food Facts.
+    ('brak_foto_sklad', 'zdjęcie składu', lambda h, s: 'en:ingredients-photo-to-be-selected' in s),
+    ('brak_foto_wartosci', 'zdjęcie wartości odżywczych', lambda h, s: 'en:nutrition-photo-to-be-selected' in s),
 ]
 COLS = ['kod', 'nazwa', 'marka', 'ilosc', 'popularnosc', 'ile_brakow', 'braki'] + [c[0] for c in CHECKS] + ['ostatnia_zmiana', 'link_lupka', 'link_off_edycja', 'link_off']
 
@@ -58,16 +59,17 @@ def fetch(src, log=print):
     total = detect(src, base_q)
     log(f'Produktów w Polsce: {total}; strona: {src.page_max}')
     parts = partitions(src, base_q)
-    rows, seen = [], 0
+    rows, seen, with_states = [], 0, 0
     for q, n in parts:
         hits = src.get(q, size=src.page_max, fields=FIELDS).get('hits') or []
         for h in hits:
             if isinstance(h, dict):
                 seen += 1
+                with_states += 1 if tags(h.get('states_tags')) else 0
                 r = row(h)
                 if r:
                     rows.append(r)
-    log(f'Sprawdzono {seen} produktów, z brakami: {len(rows)}')
+    log(f'Sprawdzono {seen} produktów (ze stanami OFF: {with_states}), z brakami: {len(rows)}')
     rows.sort(key=lambda r: (-r['popularnosc'], -r['ile_brakow'], r['kod']))
     return rows, seen
 
