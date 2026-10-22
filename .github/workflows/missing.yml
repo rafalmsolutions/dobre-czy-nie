@@ -1,12 +1,12 @@
 name: Lista braków w danych (Polska)
 
 # Uruchamiane ręcznie: Actions → „Lista braków w danych (Polska)” → Run workflow.
-# Wynik (CSV) do pobrania jako artefakt „braki”.
+# Wynik (CSV) do pobrania jako artefakt „braki” i na gałęzi „dane-braki” (plik braki.csv).
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   braki:
@@ -24,3 +24,9 @@ jobs:
           name: braki
           path: braki.csv
           retention-days: 30
+      - name: Zapisz na gałęzi dane-braki
+        run: |
+          mkdir out && cp braki.csv out/ && cd out
+          git init -q -b dane-braki && git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add braki.csv && git commit -qm "Lista braków $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" dane-braki
