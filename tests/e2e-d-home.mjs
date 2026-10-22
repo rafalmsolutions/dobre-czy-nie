@@ -11,23 +11,31 @@ await page.addInitScript(() => {
   localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['sugar'] }));
 });
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(900);
-ok(await page.locator('#hProf').innerText() === 'Twój profil', 'bez domowników: „Twój profil” jak dotąd');
-ok(await page.locator('#scr-home .fam-home').count() === 0, 'bez domowników: bez listy rodziny');
+// 2.6.0: najpierw zakupy. Bez domowników jedna linijka „Pilnujesz: …”, bez historii duży przycisk „Skanuj”.
+ok(/Pilnujesz:\s*cukier/i.test(await page.locator('#scr-home .who-solo').innerText()), 'bez domowników: „Pilnujesz: cukier” w jednej linijce');
+ok(await page.locator('#scr-home .who-row').count() === 0, 'bez domowników: bez wiersza „Dla kogo dziś kupujesz?”');
+ok(await page.locator('#scr-home .d-scanbtn').count() === 1 && await page.locator('#hHist').count() === 0, 'pierwsze wejście: duży „Skanuj”, bez pustej sekcji „Ostatnio sprawdzone”');
+ok(await page.locator('#scr-home .d-prog').count() === 1 && await page.locator('#scr-home .level-card, #scr-home .al-week').count() === 0, 'nagrody w jednej karcie postępów');
+ok(await page.locator('#homeCode').count() === 0, 'bez osobnej sekcji „Nie masz aparatu?” (kod wpisuje się w wyszukiwarkę)');
+const order = await page.$$eval('#scr-home .wrap > *', l => l.map(e => e.id || e.className.split(' ')[0]));
+ok(order.indexOf('homeSearch') > -1 && order.indexOf('homeSearch') < order.indexOf('panel'), 'szukaj nad nagrodami: ' + order.join(','));
 ok(await page.locator('#boot').count() === 0, 'testy automatyczne: ekran ładowania od razu znika');
 
-// Dwóch domowników: jeden z alergią, drugi bez ustawień.
-await page.evaluate(() => { localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['nuts'] } }, { id: 'f2', name: 'Ola', p: {} }])); });
+// Dwóch domowników: jeden z alergią, drugi bez ustawień. Plus historia: znika duży przycisk, „Ostatnio sprawdzone” wyżej.
+await page.evaluate(() => { localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['nuts'] } }, { id: 'f2', name: 'Ola', p: {} }]));
+  localStorage.setItem('dcn-history', JSON.stringify([{ code: '3017620422003', name: 'Krem orzechowy', pct: 30, level: 'poor', t: Date.now() }])); });
 await page.reload(); await page.waitForTimeout(900);
-ok(await page.locator('#hProf').innerText() === 'Profile rodziny', 'z domownikami: nagłówek „Profile rodziny”');
-const rows = await page.$$eval('#scr-home .fam-home-row', r => r.map(x => x.innerText.replace(/\s+/g, ' ')));
-ok(rows.length === 3, 'trzy osoby: Ty, Kuba, Ola (' + rows.length + ')');
-ok(/^Ty\b/.test(rows[0]) && /Cukier/i.test(rows[0]), 'Ty: to, czego pilnujesz ' + rows[0]);
-ok(/Kuba/.test(rows[1]) && /orzech/i.test(rows[1]), 'Kuba: „Nie jem: orzechy” ' + rows[1]);
-ok(/Ola/.test(rows[2]) && /Nic nie zaznaczono/.test(rows[2]), 'Ola: nic nie zaznaczono');
-await page.$eval('#scr-home [data-act=prof-of][data-id=f1]', el => el.click()); await page.waitForTimeout(500);
-ok(await page.evaluate(() => location.hash) === '#/profil', '„Zmień” przy Kubie otwiera profil');
-ok(/Kuba/.test(await page.locator('#scr-profile h1').innerText()), 'profil otwiera się na Kubie');
-ok(await page.locator('#scr-profile input[name=allergens][value=nuts]').isChecked(), 'u Kuby zaznaczone orzechy');
+ok(await page.locator('#hProf').innerText() === 'Dla kogo dziś kupujesz?', 'z domownikami: „Dla kogo dziś kupujesz?”');
+const rows = await page.$$eval('#scr-home .who-p', r => r.map(x => x.innerText.replace(/\s+/g, ' ')));
+ok(rows.length === 3, 'trzy osoby w jednym wierszu: Ty, Kuba, Ola (' + rows.length + ')');
+ok(/^R?\s*Ty\b/.test(rows[0].replace(/^T /, '')) && /cukier/i.test(rows[0]), 'Ty: to, czego pilnujesz ' + rows[0]);
+ok(/Kuba/.test(rows[1]) && /✕ orzechy/i.test(rows[1]), 'Kuba: „✕ orzechy” ' + rows[1]);
+ok(/Ola/.test(rows[2]) && /bez ustawień/.test(rows[2]), 'Ola: bez ustawień');
+const h = await page.evaluate(() => { const y = id => document.getElementById(id).getBoundingClientRect().top; return { who: y('hProf'), hist: y('hHist'), best: y('hBest') }; });
+ok(h.who < h.hist && h.hist < h.best && h.hist < 700, 'kolejność: dla kogo → ostatnio sprawdzone (na pierwszym ekranie) → najlepsze');
+ok(await page.locator('#scr-home .d-scanbtn').count() === 0 && await page.locator('#scr-home .d-hi').count() === 1, 'z historią: powitanie zamiast dużego przycisku (skan na dolnym pasku)');
+await page.click('#scr-home a[href="#/profil"]'); await page.waitForTimeout(500);
+ok(await page.evaluate(() => location.hash) === '#/profil', '„Profile” otwiera zakładkę Profil (szczegóły każdej osoby)');
 
 // Ekran ładowania z animacją dla zwykłej przeglądarki (bez znacznika testów automatycznych).
 const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));

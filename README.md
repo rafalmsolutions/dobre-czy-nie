@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Ekran „Dla Ciebie”: najpierw zakupy (22.10.2026, wersja 2.6.0)
+- Kolejność: szukaj (także cyfry kodu kreskowego) → „Dla kogo dziś kupujesz?” w jednym wierszu (stuknięcie włącza/wyłącza osobę) → Ostatnio sprawdzone (z „Nie dla: …” przy kilku osobach) → Najlepsze (3 kategorie) → jedna karta postępów (poziom, wyzwanie, polowanie).
+- Duży przycisk „Skanuj” tylko przy pierwszym wejściu (bez historii); potem skan jest na dolnym pasku. Bez domowników: „Pilnujesz: …” w jednej linijce albo karta „Czego pilnujesz?”.
+- Usunięta sekcja „Nie masz aparatu?”: wyszukiwarka rozpoznaje kod (Enter otwiera produkt, błędny kod dostaje podpowiedź).
+- Projekt na płótnie: sekcja O (przed i po).
+
 ## Strona lupka.app, aplikacja pod /app/, wskazówki do etykiet, znacznik testera (22.10.2026, wersja 2.5.0)
 
 - **Strona promująca** pod lupka.app (PL/EN wg przeglądarki, animacje, pokaz „Jeden skan. Wynik dla każdego.” na prawdziwych wynikach aplikacji, krótsza wersja na telefon z karuzelą funkcji i stałym przyciskiem). Aplikacja przeniesiona do `app/` (szczegóły na górze).

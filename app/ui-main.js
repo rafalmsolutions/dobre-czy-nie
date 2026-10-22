@@ -90,7 +90,6 @@
   document.addEventListener('submit', e => {
     const f = e.target;
     switch (f.id) {
-      case 'homeForm': e.preventDefault(); A.openCode(A.$('homeCode').value, A.$('homeMsg')); break;
       case 'scanForm': e.preventDefault(); { const raw = A.$('scanCode').value; if (!A.codeProblem(raw)) { A.closeScanner(true); A.$('scanCode').value = ''; } A.openCode(raw, A.$('scanMsg')); } break;
       case 'newShelfForm': case 'renameForm': case 'addItemForm': case 'qtyForm': e.preventDefault(); A.shelfSubmit(f); break;
       case 'addForm': e.preventDefault(); A.submitAdd(); break;

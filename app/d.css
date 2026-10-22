@@ -728,3 +728,30 @@ button.ap-empty{font:inherit;color:inherit;cursor:pointer;text-align:center}
 .ap-tipq{font-size:11px;font-weight:800;text-decoration:underline;color:#3E4046}
 .ap-tip{margin-top:4px}.ap-tip b{font-family:var(--f-display)}
 .rv-tip{font-size:14px;line-height:1.45;background:rgba(255,255,255,.7);border-radius:14px;padding:10px 12px;text-align:left}
+
+/* 2.6.0: ekran „Dla Ciebie” – najpierw zakupy (szukaj, dla kogo, ostatnio sprawdzone), nagrody w jednej karcie na dole */
+#scr-home h2{font-size:1.15rem}
+.d-hiwrap{position:relative;padding:6px 0 2px}
+.d-hi{font-family:var(--f-display);font-size:26px;line-height:1.1;letter-spacing:-.02em}
+.who-row{display:flex;gap:8px;overflow-x:auto;margin:0 -14px;padding:2px 14px 6px;scrollbar-width:none}
+.who-row::-webkit-scrollbar{display:none}
+.who-p{flex:1 1 0;min-width:104px;display:flex;align-items:center;gap:8px;min-height:50px;padding:6px 12px 6px 6px;border-radius:999px;border:2px solid transparent;background:rgba(255,255,255,.5);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.who-p.on{background:#fff;border-color:var(--ink)}
+.who-av{flex:none;width:34px;height:34px;border-radius:50%;background:#B9BBC0;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.who-p.on .who-av{background:var(--ink)}
+.who-t{min-width:0}.who-t b{display:block;font-size:14px;line-height:1.15}
+.who-t span{display:block;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.who-solo{display:flex;align-items:center;gap:6px;min-height:44px;padding:8px 14px;border-radius:16px;background:rgba(255,255,255,.6);color:var(--ink);text-decoration:none;font-size:14px}
+.who-solo b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.who-solo .linkish{margin-left:auto;font-weight:800;font-size:13px;text-decoration:underline}
+.d-setprof h2{font-family:var(--f-display)}.d-setprof .btn{align-self:flex-start}
+#scr-home .list .item .t3{display:block;margin-top:2px;font-size:11px;font-weight:800;line-height:1.2;color:var(--muted)}
+#scr-home .list .item .t3.bad{color:#7A1A13}
+.tiles.t3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tiles.t3 .tile{min-height:0;align-items:center;justify-content:flex-start;padding:10px 6px 12px;gap:6px;text-align:center}
+.tiles.t3 .d-tile-img{position:static;width:72px;height:72px}
+.tiles.t3 b{font-size:13.5px}
+.d-prog{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink)}
+.d-prog b{font-family:var(--f-display);font-size:15px}
+.d-prog .xp{height:10px}
+.d-prog-l{font-size:12.5px;font-weight:700;color:#3E4046;line-height:1.35}
+.d-prog-go{font-size:22px;font-weight:800}

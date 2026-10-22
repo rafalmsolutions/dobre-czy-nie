@@ -16,10 +16,10 @@ await page.addInitScript(() => {
 const closeCel = async () => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) return; await page.click('#celebrate [data-act=cel-ok]'); await page.waitForTimeout(120); } };
 const sw = id => page.locator(`#scr-home [data-act=shop-on][data-id=${id}]`);
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(900); await closeCel();
-ok(await page.locator('#scr-home .fam-sw').count() === 3, 'ekran główny: przełącznik przy każdej osobie (3)');
-ok((await page.$$eval('#scr-home .fam-sw', l => l.map(x => x.getAttribute('aria-checked')))).every(x => x === 'true'), 'na start wszyscy włączeni');
+ok(await page.locator('#scr-home .who-p').count() === 3, 'ekran główny: przełącznik przy każdej osobie (3)');
+ok((await page.$$eval('#scr-home .who-p', l => l.map(x => x.getAttribute('aria-checked')))).every(x => x === 'true'), 'na start wszyscy włączeni');
 await sw('f2').click(); await page.waitForTimeout(300);
-ok(await sw('f2').getAttribute('aria-checked') === 'false' && await page.locator('#scr-home .fam-home-row.off').count() === 1, 'wyłączenie Oli: przełącznik i wyszarzony wiersz');
+ok(await sw('f2').getAttribute('aria-checked') === 'false' && await page.locator('#scr-home .who-p:not(.on)').count() === 1, 'wyłączenie Oli: przełącznik i wyszarzone kółko');
 ok((await page.evaluate(() => JSON.parse(localStorage.getItem('dcn-d-shopoff')) || [])).join() === 'f2', 'wybór zapamiętany');
 ok(await page.evaluate(() => document.activeElement && document.activeElement.dataset.id) === 'f2', 'fokus zostaje na przełączniku');
 

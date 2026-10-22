@@ -215,8 +215,18 @@
     else if (state === 'done') body = `<div class="empty stack" style="align-items:center;text-align:center"><b style="font-family:var(--f-display)">Nie znaleźliśmy „${esc(q)}”</b><span>Może inaczej się nazywa albo jeszcze go nie ma w bazie Open Food Facts. Masz go pod ręką? Zeskanuj kod i dodaj produkt (+10 pkt).</span><button class="btn btn-dark" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj i dodaj</button></div>`;
     box.innerHTML = catHtml + body;
   }
+  /* Same cyfry (kod spod kreski, także ze spacjami): od razu do produktu zamiast szukania po nazwie. */
+  const asCode = q => { const d = String(q || '').replace(/[\s-]/g, ''); return /^\d{6,14}$/.test(d) ? d : null; };
+  function drawCode(d) {
+    const box = A.$('srchRes'); if (!box) return; sItems = [];
+    const problem = A.codeProblem(d);
+    box.innerHTML = problem ? `<p class="msg" role="status">${esc(problem)}</p>`
+      : `<a class="item srch-code" href="#/p/${esc(d)}"><span class="thumb"><svg width="28" height="28" aria-hidden="true"><use href="#i-scan"/></svg></span><span class="grow"><span class="t1">Kod kreskowy ${esc(d)}</span><span class="t2">Otwórz produkt</span></span><span aria-hidden="true">›</span></a>`;
+  }
   async function runSearch(q) {
     const tok = ++sToken; q = q.trim();
+    const code = asCode(q);
+    if (code) { drawCode(code); return; }
     if (fq(q).length < 2) { drawEmpty(); return; }
     const loc = rank(localHits(q));
     drawResults(q, loc, loc.length ? 'local' : 'loading');
@@ -234,7 +244,7 @@
     const box = A.$('srchRes'); if (!box) return; sItems = [];
     const r = recent();
     box.innerHTML = r.length ? `<p class="small muted" style="font-weight:800;letter-spacing:.05em">OSTATNIO SZUKANE</p><div class="chips">${r.map(x => `<button class="cat-tab" type="button" data-act="srch-again" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`
-      : '<p class="small muted">Wpisz nazwę produktu albo marki, np. „skyr”, „płatki owsiane”, „pierogi ruskie”.</p>';
+      : '<p class="small muted">Wpisz nazwę produktu albo marki, np. „skyr”, „płatki owsiane”, „pierogi ruskie”, albo cyfry spod kodu kreskowego.</p>';
   }
   A.searchSet = q => { const i = A.$('srchQ'); if (i) { i.value = q; } sQuery = q; history.replaceState(null, '', '#/szukaj/' + encodeURIComponent(q)); runSearch(q); };
   A.route('search', arg => {
@@ -242,12 +252,12 @@
     const el = A.$('scr-search');
     if (!el.dataset.ready) {
       el.innerHTML = `<div class="wrap"><div class="topbar"><button class="btn btn-white iconbtn" type="button" data-act="back" aria-label="Wróć"><svg><use href="#i-back"/></svg></button><h1 class="grow" style="font-size:1.2rem">Szukaj produktu</h1></div>
-        <form class="srch-form" id="srchForm" role="search" novalidate><svg aria-hidden="true"><use href="#i-search"/></svg><input class="field" id="srchQ" type="search" enterkeyhint="search" autocomplete="off" maxlength="60" placeholder="Nazwa, marka albo kategoria" aria-label="Szukaj produktu, marki albo kategorii"></form>
+        <form class="srch-form" id="srchForm" role="search" novalidate><svg aria-hidden="true"><use href="#i-search"/></svg><input class="field" id="srchQ" type="search" enterkeyhint="search" autocomplete="off" maxlength="60" placeholder="Nazwa, marka albo cyfry kodu" aria-label="Szukaj produktu, marki, kategorii albo kodu kreskowego"></form>
         <div id="srchRes" class="stack" aria-live="polite"></div></div>`;
       el.dataset.ready = '1';
       const inp = A.$('srchQ');
       inp.addEventListener('input', () => { clearTimeout(sTimer); const v = inp.value; sTimer = setTimeout(() => { if (v === sQuery) return; sQuery = v; history.replaceState(null, '', v.trim() ? '#/szukaj/' + encodeURIComponent(v.trim()) : '#/szukaj'); A.current.arg = v.trim() || null; runSearch(v); }, 350); });
-      A.$('srchForm').addEventListener('submit', e => { e.preventDefault(); clearTimeout(sTimer); sQuery = inp.value; inp.blur(); runSearch(inp.value); });
+      A.$('srchForm').addEventListener('submit', e => { e.preventDefault(); clearTimeout(sTimer); sQuery = inp.value; inp.blur(); const c = asCode(inp.value); if (c && !A.codeProblem(c)) { A.go('#/p/' + c); return; } runSearch(inp.value); });
     }
     const inp = A.$('srchQ');
     if (inp.value !== q) inp.value = q;
