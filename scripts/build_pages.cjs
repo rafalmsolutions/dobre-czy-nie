@@ -366,7 +366,7 @@ ${rows.map(([k, v]) => `<tr><td><b>${esc(k)}</b></td>${v.map(x => `<td>${cite(x)
 <li><b>Spokojny ton:</b> „na co dzień” i „od czasu do czasu” zamiast „szkodliwe”. Dodatki obniżają ocenę tylko przy umiarkowanych i dużych zastrzeżeniach.</li>
 <li><b>Za darmo bez reklam i limitów</b>, łącznie z wyszukiwaniem i porównaniem. Dane profilu zostają w telefonie.</li>
 </ul>
-<p>Gdzie Lupka jest słabsza: polskich produktów w Open Food Facts jest na razie mniej (${nProd}) niż w bazie Zdrowych Zakupów (ponad 300 tys. [1]), a Lupka na razie działa w przeglądarce, bez aplikacji w sklepie. Brakujący produkt dodasz w minutę zdjęciem etykiety. Szczegółowe zestawienie z Yuką: <a href="/lupka-czy-yuka/">Lupka czy Yuka</a>.</p>
+<p>Gdzie Lupka jest słabsza: polskich produktów w Open Food Facts jest na razie mniej (${nProd}) niż w bazie Zdrowych Zakupów (ponad 300 tys. <a href="#zr1" class="small">[1]</a>), a Lupka na razie działa w przeglądarce, bez aplikacji w sklepie. Brakujący produkt dodasz w minutę zdjęciem etykiety. Szczegółowe zestawienie z Yuką: <a href="/lupka-czy-yuka/">Lupka czy Yuka</a>.</p>
 <h2>Źródła</h2>
 <ol class="src">${SRC.map(([t, u], i) => `<li id="zr${i + 1}"><a href="${esc(u)}">${esc(t)}</a></li>`).join('')}</ol>
 <p class="small muted">Nazwy aplikacji są znakami towarowymi ich właścicieli. Lupka nie jest z nimi powiązana.</p>
