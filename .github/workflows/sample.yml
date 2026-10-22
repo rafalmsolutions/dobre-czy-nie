@@ -22,10 +22,8 @@ jobs:
             f="${t/:/_}.json"; curl -sf "https://lupka.app/data/c/$f" -o "out/c/$f" || echo "brak $f"
           done
           ls out/c | wc -l; du -sh out
-      - name: Liczby produktów z polskim kodem
-        run: |
-          q() { curl -sfG https://search.openfoodfacts.org/search --data-urlencode "q=$1" --data-urlencode page_size=1 --data-urlencode fields=code -H 'User-Agent: Lupka-data/1.0 (rafalmsolutions@gmail.com)' | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d.get("count"), d.get("is_count_exact"))'; }
-          { echo "poland: $(q 'countries_tags:"en:poland"')"; echo "590*: $(q 'code:590*')"; echo "590* bez PL: $(q 'code:590* AND NOT countries_tags:"en:poland"')"; echo "590* bez PL z nazwą i wartościami: $(q 'code:590* AND NOT countries_tags:"en:poland" AND nutrition_grades:*')"; } | tee out/liczby.txt
+      - name: Sondy (liczby, odczyt tabeli wartości)
+        run: python3 scripts/probe.py | tee out/sondy.json
       - name: Zapisz na gałęzi dane-probka
         run: |
           cd out
