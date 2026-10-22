@@ -120,10 +120,10 @@
   /* Odczyt tabeli wartości ze zdjęcia (Open Food Facts odczytuje każde zdjęcie). Świeżo wysłane zdjęcie bywa odczytywane
      dopiero po chwili, więc przy nowym produkcie próbujemy kilka razy. Zwraca { values, per } albo null. */
   async function readNut(code, tries) {
-    for (let i = 0; i < tries; i++) {
+    for (let i = 0; i < Math.max(tries, 2); i++) {
       const r = await post('/ocr', { code, field: 'nutrition' });
       if (r.ok && r.text) { const p = A.parseNutText(r.text); return Object.keys(p.values).length ? p : null; }
-      if (r.error !== 'not_ready' || i === tries - 1) return null;
+      if ((r.error !== 'not_ready' && r.error !== 'off_busy') || i === Math.max(tries, 2) - 1) return null;
       await new Promise(res => setTimeout(res, 3000 + i * 3000));
     }
     return null;

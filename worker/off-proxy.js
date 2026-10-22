@@ -132,7 +132,9 @@ export default {
       if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });
       if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
       if (!env.OFF_USER || !env.OFF_PASS) return reply(500, { ok: false, error: 'not_configured' });
-      if (!rateOk(request.headers.get('CF-Connecting-IP') || 'unknown')) return reply(429, { ok: false, error: 'rate' });
+      // Odczyt zdjęć tylko czyta (uzupełnianie kilkudziesięciu produktów z rzędu), zapis ma niższy limit.
+      const ipKey = request.headers.get('CF-Connecting-IP') || 'unknown';
+      if (url.pathname === '/ocr' ? !rateOk('o:' + ipKey, 300) : !rateOk('e:' + ipKey, 120)) return reply(429, { ok: false, error: 'rate' });
       let form;
       try { form = await request.formData(); } catch (e) { return reply(400, { ok: false, error: 'form' }); }
       const code = String(form.get('code') || '').replace(/\D/g, '');
@@ -328,6 +330,7 @@ function ocrLines(vision, box) {
 }
 async function nutritionText(o, code, lang) {
   const r = await fetch(`${o.base}/api/v2/product/${code}.json?fields=images`, { headers: o.headers });
+  if (!r.ok && r.status !== 404) return { ok: false, error: 'off_busy', why: 'api_' + r.status };
   const j = r.ok ? await r.json().catch(() => null) : null;
   const imgs = j && j.product && j.product.images ? j.product.images : null;
   if (!imgs) return { ok: false, error: 'no_image' };
