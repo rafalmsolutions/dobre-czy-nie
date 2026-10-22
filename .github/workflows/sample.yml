@@ -1,0 +1,30 @@
+# Próbka danych do pracy lokalnej: kategorie ze sklepu (data/c) i meta z opublikowanej strony, na gałęzi dane-probka.
+# Uruchamiany ręcznie. Strona produkcyjna jej nie używa.
+name: Próbka danych
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probka:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pobierz kategorie z lupka.app
+        run: |
+          mkdir -p out/c
+          curl -sf https://lupka.app/data/meta.json -o out/meta.json
+          for t in $(grep -o "key: 'en:[a-z-]*'" app/data.js | sed -n '1,44p' | sed "s/key: '//;s/'//"); do
+            f="${t/:/_}.json"; curl -sf "https://lupka.app/data/c/$f" -o "out/c/$f" || echo "brak $f"
+          done
+          ls out/c | wc -l; du -sh out
+      - name: Zapisz na gałęzi dane-probka
+        run: |
+          cd out
+          git init -q -b dane-probka && git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add . && git commit -qm "Próbka danych $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" dane-probka
