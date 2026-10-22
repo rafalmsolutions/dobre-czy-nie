@@ -103,6 +103,8 @@ mis = json.load(open(os.path.join(out, 'uzupelnij.json')))
 t('misje: plik z kolejką', 0 < len(mis['items']) <= 500 and mis['count'] >= len(mis['items']), (len(mis['items']), mis.get('count')))
 t('misje: najpopularniejsze najpierw', [x['s'] for x in mis['items']] == sorted([x['s'] for x in mis['items']], reverse=True))
 t('misje: tylko gdy jest zdjęcie (s = skład, w = wartości)', all(x['k'] in ('s', 'w', 'sw') for x in mis['items']) and any(x['k'] == 'sw' for x in mis['items']))
+t('encje HTML w nazwach zamienione na litery', B.text('Baton z czekolad&#261; &amp; orzechami') == 'Baton z czekoladą & orzechami')
+t('skład do przepisania tylko po polsku', B.needs({'en:ingredients-to-be-completed', 'en:ingredients-photo-selected', 'en:nutrition-facts-to-be-completed', 'en:nutrition-photo-selected'}, False) == 'w')
 t('polski kod bez „Polska”: tylko po polsku', B.polish_described({'lang': 'pl'}) and B.polish_described({'lang': 'fr', 'product_name_pl': 'Jabłka'}) and not B.polish_described({'lang': 'fr', 'product_name': 'Mousseline'}))
 # Pusta wyszukiwarka nie może opublikować pustej kopii.
 saved = DB[:]; DB.clear()

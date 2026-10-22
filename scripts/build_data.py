@@ -15,7 +15,7 @@ serwery Open Food Facts są przeciążone. Dane: Open Food Facts, licencja ODbL.
 Użycie: python3 scripts/build_data.py --out site/data [--base URL] [--limit N]
 Tylko biblioteka standardowa Pythona.
 """
-import argparse, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
+import argparse, html, json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 from collections import defaultdict
 
 SEARCH = 'https://search.openfoodfacts.org/search'
@@ -117,7 +117,8 @@ def partitions(src, base_q, prefix='', depth=0):
 def text(v, n=200):
     if isinstance(v, list):
         v = ', '.join(str(x) for x in v if isinstance(x, (str, int, float)))
-    return v.strip()[:n] if isinstance(v, str) else ''
+    # Część nazw w bazie ma encje HTML („Czekolad&#261;”): zamieniamy je na litery.
+    return html.unescape(v).strip()[:n] if isinstance(v, str) else ''
 
 
 def tags(v, n=40):
@@ -168,9 +169,10 @@ def polish_described(h):
 
 
 # Do uzupełnienia bez produktu w ręku: zdjęcie jest w bazie, przepisanego tekstu brak.
-def needs(st):
+def needs(st, pl=True):
+    # Skład przepisujemy po polsku, więc tylko przy produktach opisanych po polsku; tabela wartości to same liczby.
     k = ''
-    if 'en:ingredients-to-be-completed' in st and 'en:ingredients-photo-selected' in st:
+    if pl and 'en:ingredients-to-be-completed' in st and 'en:ingredients-photo-selected' in st:
         k += 's'
     if 'en:nutrition-facts-to-be-completed' in st and 'en:nutrition-photo-selected' in st:
         k += 'w'
@@ -213,7 +215,7 @@ def fetch_all(src, limit=None, log=print, states=None):
                 pop[p['code']] = scans
                 added += 1 if is_extra else 0
                 if states is not None:
-                    k = needs(set(tags(h.get('states_tags'), 80)))
+                    k = needs(set(tags(h.get('states_tags'), 80)), polish_described(h))
                     if k:
                         states[p['code']] = k
         if limit and len(products) >= limit:
