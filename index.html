@@ -275,7 +275,9 @@ footer .links{display:flex;gap:26px;flex-wrap:wrap;font-weight:800;font-size:14.
   T.en.chip1 = 'Suits everyone'; T.en.chip1s = 'Skyr: Ola, Ania, Kuba'; T.en.chip2 = 'Not for: Kuba'; T.en.chip2s = 'oats: gluten'; T.en.stick = 'Check what you buy';
   // Stare linki do aplikacji (lupka.app/#/p/590…) i zainstalowana aplikacja: od razu do aplikacji.
   const app = document.querySelector('[data-app]').getAttribute('href');
-  if (/^#\/?(p\d|p\/|lista|album|polki|profil|porownaj|szukaj|postepy|najlepsze|odkrycia|start)/.test(location.hash) || matchMedia('(display-mode: standalone)').matches) { location.replace(app + location.hash); return; }
+  const toApp = () => /^#\/?(p\d|p\/|lista|album|polki|profil|porownaj|szukaj|postepy|najlepsze|odkrycia|start)/.test(location.hash);
+  addEventListener('hashchange', () => { if (toApp()) location.replace(app + location.hash); });
+  if (toApp() || matchMedia('(display-mode: standalone)').matches) { location.replace(app + location.hash); return; }
   let lang = 'pl';
   try { lang = new URLSearchParams(location.search).get('lang') || localStorage.getItem('lupka-lang') || ((navigator.language || '').toLowerCase().startsWith('pl') ? 'pl' : 'en'); } catch (e) { }
   let setLang = l => {

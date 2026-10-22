@@ -47,6 +47,9 @@ ok(new URL(p.url()).pathname === '/', '/strona/ → strona główna');
 
 // 5. Strona główna: strona promująca, przycisk do /app/.
 await p.goto(B); await p.waitForTimeout(1000);
+await p.evaluate(() => { location.hash = '#/p/3017620422003'; }); await p.waitForTimeout(1200);
+ok(new URL(p.url()).pathname === '/app/', 'zmiana adresu na stronie na #/p/… też przenosi do /app/');
+await p.goto(B); await p.waitForTimeout(1000);
 ok(/PRZYJRZYJ/i.test(await p.locator('h1').innerText()) && await p.locator('a.btn[href="/app/"]').count() >= 2, 'główny adres: strona z „Otwórz Lupkę” → /app/');
 
 // 6. Stary service worker z „/” zastąpiony sprzątaczem: wyrejestrowuje się, pamięć aplikacji zostaje.
