@@ -1,0 +1,10 @@
+# Lupka – lupka.app
+# Strona i polityka prywatności są dla wszystkich wyszukiwarek i asystentów AI.
+# Aplikacja (/app/) i archiwum mają w stronie „noindex”, dlatego nie blokujemy ich tutaj:
+# blokada w robots.txt ukryłaby przed wyszukiwarką właśnie ten znacznik.
+User-agent: *
+Allow: /
+Disallow: /data/
+Disallow: /config/
+
+Sitemap: https://lupka.app/sitemap.xml

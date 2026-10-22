@@ -181,3 +181,9 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
   - zaufany odkrywca (3 potwierdzone, 0 odrzuconych): od razu potwierdzony, gdy kod był widoczny na zdjęciu;
   - ekran `#/odkrycia`: status, lista „Poszukiwane”, pseudonim.
 - **Gramatury:** `scripts/build_data.py` zapisuje `data/qhist.json` i pole `qchg` w produktach, gdy gramatura zmieni się między kopiami bazy; produkt pokazuje „Mniej w opakowaniu”.
+
+## Wyszukiwarki i asystenci AI (22.10.2026)
+- Strona: tytuł i opis ze słowami „skaner produktów”, canonical, podgląd linku (img/og.jpg 1200×630), dane strukturalne schema.org (Organization, WebSite, WebApplication, FAQPage).
+- robots.txt (wszyscy, także roboty AI, mile widziani), sitemap.xml, llms.txt (zwięzłe fakty o Lupce dla asystentów AI).
+- /app/ i /archiwum/ mają „noindex”: w wynikach ma być strona, nie pusta powłoka aplikacji.
+

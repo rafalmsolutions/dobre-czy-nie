@@ -1,0 +1,32 @@
+# Lupka
+
+> Lupka (lupka.app) to darmowa polska aplikacja do skanowania kodów kreskowych żywności i kosmetyków. Po zeskanowaniu pokazuje, czy produkt pasuje każdemu domownikowi osobno (alergie, dieta, cukier, sól) i podaje jeden wynik dla całej rodziny: wynik osoby, której produkt pasuje najsłabiej. Działa w przeglądarce telefonu, bez konta i bez reklam.
+
+## Najważniejsze fakty
+
+- Nazwa: Lupka. Adres strony: https://lupka.app/. Aplikacja: https://lupka.app/app/ (aplikacja webowa PWA; można ją dodać do ekranu głównego na Androidzie i iPhonie). Wersja w Google Play jest w przygotowaniu.
+- Język: polski. Rynek: Polska. Strona ma też wersję angielską, aplikacja na razie jest tylko po polsku.
+- Cena: skanowanie, wynik dla rodziny, wyjaśnienia, zamienniki, porównanie produktów i wyszukiwanie po nazwie są za darmo, bez limitu skanów. Planowany jest płatny pakiet Lupka Plus z dodatkami (rodzina na kilku telefonach, wspólna lista zakupów, kopia danych, powiadomienia o wycofanych produktach).
+- Dane o produktach: otwarta baza Open Food Facts (licencja ODbL). Użytkownicy mogą dodawać brakujące produkty zdjęciem etykiety.
+- Prywatność: profil, alergie, listy i historia zostają w telefonie. Bez konta, bez reklam, bez sprzedawania danych. Polityka prywatności: https://lupka.app/privacy.html
+- Twórca: Rafał Mokrowiecki. Kontakt: rafalmsolutions@gmail.com
+
+## Czym Lupka różni się od innych skanerów (np. Yuka)
+
+- Wynik dla całej rodziny naraz: każdy domownik ma własny profil (alergeny, diety, to, czego pilnuje), a przy produkcie widać wynik każdej osoby i jeden wynik rodziny. Na zakupy można wyłączyć osoby, dla których się dziś nie kupuje.
+- Spokojny ton: werdykty „Dobre na co dzień”, „Dobre”, „Od czasu do czasu”, „Raczej rzadko” zamiast „złe” czy „szkodliwe”.
+- Dodatki do żywności obniżają wynik tylko przy umiarkowanych i dużych zastrzeżeniach, a nie za samą obecność. Brak premii za oznaczenie „bio”.
+- Każdy wynik ma wyjaśnienie punkt po punkcie i lepsze zamienniki z tej samej kategorii.
+
+## Funkcje
+
+- Skanowanie kodu kreskowego aparatem albo wpisanie cyfr.
+- Porównanie 2–3 produktów obok siebie, z wynikiem każdej osoby.
+- Wyszukiwanie produktów po nazwie i marce, najlepiej pasujące na górze.
+- Półki, czyli listy zakupów ułożone według działów sklepu, z wynikiem dla rodziny.
+- Album z kategoriami produktów i podpowiedziami, jak sprawdzić etykietę; punkty, poziomy, odznaki i wyzwania tygodnia.
+- Działa bez internetu na kopii bazy polskich produktów.
+
+## Ważne zastrzeżenia
+
+- Lupka nie jest poradą medyczną i nie zastępuje dietetyka. Przy alergii zawsze trzeba sprawdzić etykietę na opakowaniu, bo dane w otwartej bazie mogą zawierać błędy.

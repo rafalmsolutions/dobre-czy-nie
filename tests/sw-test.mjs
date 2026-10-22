@@ -72,5 +72,14 @@ await p.goto(B + 'privacy.html?z=app'); await p.waitForTimeout(300);
 ok(await p.locator('#back').innerText() === '← Wróć do aplikacji' && await p.locator('#back').getAttribute('href') === '/app/', 'polityka z aplikacji: „Wróć do aplikacji”');
 ok(/Rafał Mokrowiecki/.test(await p.innerText('body')) && !/\[data\]|\[imię/.test(await p.innerText('body')), 'polityka: administrator i data uzupełnione');
 
+// 9. Wyszukiwarki i asystenci AI: robots.txt, mapa strony, llms.txt, dane strukturalne, aplikacja i archiwum poza wynikami.
+for (const f of ['robots.txt', 'sitemap.xml', 'llms.txt', 'img/og.jpg']) ok((await p.request.get(B + f)).ok(), 'plik dla wyszukiwarek: ' + f);
+await p.goto(B); await p.waitForTimeout(300);
+const seo = await p.evaluate(() => ({ t: document.title, c: document.querySelector('link[rel=canonical]')?.href, r: document.querySelector('meta[name=robots]')?.content,
+  ld: [...document.querySelectorAll('script[type="application/ld+json"]')].map(s => { try { return JSON.parse(s.textContent)['@graph'].map(g => g['@type']).join(','); } catch (e) { return 'BŁĄD'; } }).join('|') }));
+ok(/skaner produktów/.test(seo.t) && seo.c === 'https://lupka.app/' && /^index/.test(seo.r), 'strona: tytuł, canonical, indeksowanie');
+ok(seo.ld === 'Organization,WebSite,WebApplication,FAQPage', 'strona: dane strukturalne ' + seo.ld);
+for (const u of ['app/', 'archiwum/']) { await p.goto(B + u); await p.waitForTimeout(500); ok(await p.evaluate(() => document.querySelector('meta[name=robots]')?.content) === 'noindex', u + ' poza wynikami wyszukiwania'); }
+
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);
