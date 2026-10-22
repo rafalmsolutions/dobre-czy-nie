@@ -54,5 +54,7 @@ if (await page.locator('#addName').count()) {
 ok(await page.evaluate(() => [App.guessCategory('Płatki owsiane górskie'), App.guessCategory('Szynka konserwowa'), App.guessCategory('Zupa pomidorowa'), App.guessCategory('Coś dziwnego')].join()) === 'en:breakfast-cereals,en:prepared-meats,en:soups,', 'zgadywanie kategorii z nazw');
 const col = await page.evaluate(() => App.parseNutText('Wartość odżywcza\nWartość energetyczna\nTłuszcz\nw tym kwasy tłuszczowe nasycone\nWęglowodany\nw tym cukry\nBiałko\nSól\n100 ml\n180 kJ / 43 kcal\n0,1 g\n0 g\n10,5 g\n10,2 g\n<0,5 g\n0,01 g'));
 ok(col.per === 'ml' && col.values['energy-kcal'] === 43 && col.values.sugars === 10.2 && col.values.salt === 0.01 && col.values.proteins === 0.5, 'tabela odczytana kolumnami (napój na 100 ml) ' + JSON.stringify(col));
+const real = await page.evaluate(() => App.parseNutText('wartość 100 g jogurtu odżywcza\n, Wartość\nenergetyczna 417 kJ /\n100 kcal\nTłuszcz 7,5g\nw tym kwasy\ntłuszczowe 4,5g\nnasycone\nWęglowodany 4,7g\nw tym cukry 4,7g\nBiałko 3,5g\nSól 0,12 g\nkwasy tłuszczowe jednonienasycone 2 g'));
+ok(JSON.stringify(real.values) === JSON.stringify({ 'energy-kcal': 100, fat: 7.5, 'saturated-fat': 4.5, carbohydrates: 4.7, sugars: 4.7, proteins: 3.5, salt: 0.12 }), 'prawdziwy odczyt z Open Food Facts (jogurt grecki): wszystkie pola ' + JSON.stringify(real.values));
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

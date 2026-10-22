@@ -37,13 +37,14 @@
   /* Wartości odżywcze z tekstu odczytanego ze zdjęcia tabeli. Zwraca { values, per } – tylko to, co udało się znaleźć;
      resztę człowiek dopisuje, a A.nutProblem sprawdza, czy liczby do siebie pasują (np. kalorie do makroskładników).
      Tabela bywa odczytana wierszami („Białko 8 g”) albo kolumnami (najpierw nazwy, potem liczby) – obsługujemy oba. */
-  const NUT_RULES = [['saturated-fat', /nasycon/], ['sugars', /cukr/], ['fat', /tluszcz/], ['carbohydrates', /weglowodan/], ['fiber', /blonnik/], ['proteins', /bialk/], ['salt', /(^|[^a-z])sol([^a-z]|$)/]];
+  const NUT_RULES = [['saturated-fat', /nasycon|kwasy|tluszczow/], ['sugars', /cukr/], ['fat', /tluszcz/], ['carbohydrates', /weglowodan/], ['fiber', /blonnik/], ['proteins', /bialk/], ['salt', /(^|[^a-z])sol([^a-z]|$)/]];
   A.parseNutText = raw => {
     const t = String(raw || '').replace(/\r/g, '').replace(/(\d)\s*,\s*(\d)/g, '$1.$2');
     const f = fold(t), values = {};
     const per = /100\s*ml/.test(f) && !/100\s*g(?![a-z])/.test(f) ? 'ml' : 'g';
     const kc = f.match(/(\d+(?:\.\d+)?)\s*kcal/); if (kc) values['energy-kcal'] = Number(kc[1]);
-    const lines = f.split('\n').map(l => l.trim()).filter(Boolean);
+    // Kwasy jedno- i wielonienasycone pomijamy (liczą się tylko nasycone); „w tym kwasy / tłuszczowe 4,5 g / nasycone” to nasycone.
+    const lines = f.split('\n').map(l => l.trim()).filter(l => l && !/nienasycon/.test(l));
     const numIn = s => { const m = s.match(/<?\s*(\d+(?:\.\d+)?)\s*(?:g(?![a-z])|$|\s)/); return m ? Number(m[1]) : null; };
     const pending = [];
     lines.forEach((ln, i) => {
