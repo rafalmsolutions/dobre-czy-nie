@@ -156,7 +156,7 @@
     // Ekrany zależne od konfiguracji (poziomy, odznaki) przerysowujemy po jej odświeżeniu.
     if (!hadCfg || ['home', 'progress'].includes(A.current.screen)) A.render();
     A.award('app_opened', {});
-    A.trackWeek();
+    A.trackWeek(); A.trackTester();
     A.flushReports(); A.flushAdds();
     if (A.discSync) A.discSync();
   }

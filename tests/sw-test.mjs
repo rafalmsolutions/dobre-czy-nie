@@ -1,43 +1,73 @@
-// Przeprowadzka 21.10.2026: dawna wersja D pod głównym adresem, dawna główna w /archiwum/, stary adres /d/ przekierowuje.
-// Sprawdza też service workery: główny działa bez internetu i nie kasuje pamięci archiwum. Uruchom: node sw-test.mjs (serwer na porcie 8790).
+// Adresy od 22.10.2026: lupka.app/ = strona, /app/ = aplikacja, /archiwum/ = dawna aplikacja, /d/ i /strona/ przekierowują.
+// Sprawdza też service workery: aplikacja działa bez internetu, nie kasuje pamięci archiwum, stary service worker z „/” sprząta po sobie.
+// Uruchom: node sw-test.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
 import { setup } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
-const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); await setup(ctx, {});
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, locale: 'pl-PL' }); await setup(ctx, {});
 const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
 await p.addInitScript(() => { localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); });
 const B = 'http://localhost:8790/';
 
+// 0. Dawny service worker z „/” (aplikacja przed przenosinami) z jego pamięcią.
+await p.goto(B + 'privacy.html'); await p.waitForTimeout(300);
+await p.evaluate(async () => { const c = await caches.open('dcn-d-2.4.1'); await c.put('/stary', new Response('x')); });
+
 // 1. Archiwum: dawna aplikacja z paskiem do nowej wersji i własnym service workerem.
 await p.goto(B + 'archiwum/'); await p.waitForTimeout(1500);
 ok(await p.evaluate(() => typeof App !== 'undefined' && !!(App.cfg.levels && App.cfg.levels.levels)), 'archiwum: aplikacja i konfiguracja z ../config/');
-ok(await p.locator('a[href="../"]:has-text("nowej wersji")').count() === 1, 'archiwum: pasek „Przejdź do nowej wersji”');
+ok(await p.locator('a[href="../app/"]:has-text("nowej wersji")').count() === 1, 'archiwum: pasek „Przejdź do nowej wersji” prowadzi do /app/');
 await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(800);
 
-// 2. Główny adres: nowa aplikacja (album, domownicy, odkrywcy).
-await p.goto(B); await p.waitForTimeout(1500);
-ok(await p.evaluate(() => typeof App !== 'undefined' && typeof App.albumAdd === 'function' && typeof App.familyView === 'function' && typeof App.discSubmit === 'function'), 'główny adres: nowa aplikacja');
+// 2. /app/: aplikacja (album, domownicy, odkrywcy), konfiguracja i kopia bazy z katalogu głównego.
+await p.goto(B + 'app/'); await p.waitForTimeout(1500);
+ok(await p.evaluate(() => typeof App !== 'undefined' && typeof App.albumAdd === 'function' && typeof App.familyView === 'function' && typeof App.discSubmit === 'function'), '/app/: aplikacja');
+ok(await p.evaluate(() => !!(App.cfg.levels && App.cfg.levels.levels && App.cfg.achievements)), '/app/: konfiguracja z ../config/ i własne odznaki');
 ok(await p.evaluate(() => document.title) === 'Lupka', 'tytuł: Lupka');
 await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(1500);
 const regs = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname).sort());
-ok(regs.includes('/') && regs.includes('/archiwum/'), 'dwa service workery: ' + regs.join(', '));
-const keys = await p.evaluate(() => caches.keys());
-ok(keys.some(k => k.startsWith('dcn-arch-')) && keys.some(k => k.startsWith('dcn-d-2')), 'główny nie kasuje pamięci archiwum: ' + keys.join(', '));
+ok(regs.includes('/app/') && regs.includes('/archiwum/'), 'service workery: ' + regs.join(', '));
+let keys = await p.evaluate(() => caches.keys());
+ok(keys.some(k => k.startsWith('dcn-arch-')) && keys.some(k => k.startsWith('lupka-2')), 'aplikacja nie kasuje pamięci archiwum: ' + keys.join(', '));
+ok(!keys.includes('dcn-d-2.4.1'), 'aplikacja usuwa pamięć sprzed przenosin');
 
-// 3. Bez internetu główna aplikacja dalej się otwiera.
+// 3. Bez internetu aplikacja dalej się otwiera.
 await ctx.setOffline(true);
 await p.reload(); await p.waitForTimeout(1200);
 ok(await p.evaluate(() => typeof App !== 'undefined' && !!(App.cfg.levels && App.cfg.levels.levels)), 'bez internetu: aplikacja i konfiguracja z pamięci');
 await ctx.setOffline(false);
 
-// 4. Stary adres /d/ przenosi na główny z zachowaniem ekranu.
+// 4. Stare adresy: /d/ i /#/p/… przenoszą do /app/ z zachowaniem ekranu, /strona/ na stronę.
 await p.goto(B + 'd/#/album'); await p.waitForTimeout(1200);
-ok(new URL(p.url()).pathname === '/' && new URL(p.url()).hash === '#/album', 'stary /d/#/album → ' + p.url());
+ok(new URL(p.url()).pathname === '/app/' && new URL(p.url()).hash === '#/album', 'stary /d/#/album → ' + p.url());
+await p.goto(B + '#/p/3017620422003'); await p.waitForTimeout(1200);
+ok(new URL(p.url()).pathname === '/app/' && new URL(p.url()).hash === '#/p/3017620422003', 'stary link lupka.app/#/p/… → ' + p.url());
+await p.goto(B + 'strona/'); await p.waitForTimeout(800);
+ok(new URL(p.url()).pathname === '/', '/strona/ → strona główna');
 
-// 5. Stary service worker z /d/ usuwa się sam.
-await p.evaluate(() => navigator.serviceWorker.register('d/sw.js', { scope: 'd/' }).catch(() => null)); await p.waitForTimeout(1500);
+// 5. Strona główna: strona promująca, przycisk do /app/.
+await p.goto(B); await p.waitForTimeout(1000);
+ok(/PRZYJRZYJ/i.test(await p.locator('h1').innerText()) && await p.locator('a.btn[href="/app/"]').count() >= 2, 'główny adres: strona z „Otwórz Lupkę” → /app/');
+
+// 6. Stary service worker z „/” zastąpiony sprzątaczem: wyrejestrowuje się, pamięć aplikacji zostaje.
+await p.evaluate(() => navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => null)); await p.waitForTimeout(2000);
 const regs2 = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname));
-ok(!regs2.includes('/d/'), 'stary service worker /d/ wyrejestrowany: ' + regs2.join(', '));
+ok(!regs2.includes('/'), 'stary service worker z „/” wyrejestrowany: ' + regs2.join(', '));
+keys = await p.evaluate(() => caches.keys());
+ok(keys.some(k => k.startsWith('lupka-2')) && keys.some(k => k.startsWith('dcn-arch-')), 'pamięć aplikacji i archiwum zostaje: ' + keys.join(', '));
+
+// 7. Stary service worker z /d/ usuwa się sam.
+await p.goto(B + 'app/'); await p.waitForTimeout(800);
+await p.evaluate(() => navigator.serviceWorker.register('/d/sw.js', { scope: '/d/' }).catch(() => null)); await p.waitForTimeout(1500);
+const regs3 = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname));
+ok(!regs3.includes('/d/'), 'stary service worker /d/ wyrejestrowany: ' + regs3.join(', '));
+
+// 8. Polityka prywatności: powrót tam, skąd przyszedłeś.
+await p.goto(B + 'privacy.html?z=strona'); await p.waitForTimeout(300);
+ok(await p.locator('#back').innerText() === '← Wróć na stronę Lupki' && await p.locator('#back').getAttribute('href') === '/', 'polityka ze strony: „Wróć na stronę Lupki”');
+await p.goto(B + 'privacy.html?z=app'); await p.waitForTimeout(300);
+ok(await p.locator('#back').innerText() === '← Wróć do aplikacji' && await p.locator('#back').getAttribute('href') === '/app/', 'polityka z aplikacji: „Wróć do aplikacji”');
+ok(/Rafał Mokrowiecki/.test(await p.innerText('body')) && !/\[data\]|\[imię/.test(await p.innerText('body')), 'polityka: administrator i data uzupełnione');
 
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

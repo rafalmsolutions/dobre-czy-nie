@@ -19,7 +19,7 @@ await page.addInitScript(() => {
   localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['milk'] } }]));
 });
 const closeCel = async () => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) return; await page.$eval('#celebrate [data-act=cel-ok]', e => e.click()); await page.waitForTimeout(120); } };
-await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(800); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(800); await closeCel();
 ok(await page.locator('#homeSearch').count() === 1, 'ekran główny: pole „Szukaj produktu”');
 await page.click('#homeSearch'); await page.waitForTimeout(400);
 ok(await page.evaluate(() => location.hash) === '#/szukaj' && await page.locator('#srchQ').count() === 1, 'otwiera ekran wyszukiwania');
@@ -55,12 +55,12 @@ await page.$$eval('#scr-compare [data-act=cmp-remove]', l => l[0].click()); awai
 ok(/Dodaj drugi produkt/.test(await page.innerText('#scr-compare')), 'po usunięciu: „Dodaj drugi produkt”');
 // Porównaj z ekranu produktu + podpowiedź po drugim skanie z tej samej kategorii.
 await page.evaluate(() => App.cmpClear());
-await page.goto('http://localhost:8790/index.html#/p/' + YOG[0].code); await page.waitForTimeout(1500); await closeCel();
-await page.goto('http://localhost:8790/index.html#/p/' + YOG[5].code); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/p/' + YOG[0].code); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/p/' + YOG[5].code); await page.waitForTimeout(1500); await closeCel();
 ok(await page.locator('#cmpSug').count() === 1 && /Skyr/.test(await page.innerText('#cmpSug')), 'podpowiedź: „Przed chwilą sprawdziłeś: Skyr naturalny · Porównaj”');
 await page.click('#cmpSug [data-act=cmp-pair]'); await page.waitForTimeout(500);
 ok(await page.evaluate(() => location.hash) === '#/porownaj' && await page.locator('#scr-compare .cmp-card').count() === 2, 'podpowiedź otwiera porównanie dwóch produktów');
-await page.goto('http://localhost:8790/index.html#/p/' + YOG[1].code); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/p/' + YOG[1].code); await page.waitForTimeout(1500); await closeCel();
 const pb = page.locator('#scr-product [data-act=cmp-prod]');
 ok(await pb.count() === 1, 'ekran produktu: przycisk „Porównaj”');
 await pb.click(); await page.waitForTimeout(500);
@@ -69,13 +69,13 @@ await page.reload(); await page.waitForTimeout(800);
 ok(await page.locator('#scr-compare .cmp-card').count() === 3, 'porównanie zostaje po odświeżeniu (w telefonie)');
 // Lista kategorii: przycisk ⇄ przy produktach.
 await page.evaluate(() => localStorage.setItem('dcn-d-listwho', JSON.stringify('me')));
-await page.goto('http://localhost:8790/index.html#/lista/en:yogurts'); await page.waitForTimeout(1500);
+await page.goto('http://localhost:8790/app/index.html#/lista/en:yogurts'); await page.waitForTimeout(1500);
 ok(await page.locator('#scr-list [data-act=cmp-toggle]').count() > 0, 'lista: przycisk ⇄ przy produktach');
 // Brak wyników.
-await page.goto('http://localhost:8790/index.html#/szukaj/xyzq'); await page.waitForTimeout(1200);
+await page.goto('http://localhost:8790/app/index.html#/szukaj/xyzq'); await page.waitForTimeout(1200);
 ok(/Nie znaleźliśmy/.test(await page.innerText('#srchRes')), 'brak wyników: zachęta do zeskanowania i dodania');
 // Komputer: układ bez przewijania w bok.
-await page.setViewportSize({ width: 1280, height: 900 }); await page.goto('http://localhost:8790/index.html#/porownaj'); await page.waitForTimeout(600);
+await page.setViewportSize({ width: 1280, height: 900 }); await page.goto('http://localhost:8790/app/index.html#/porownaj'); await page.waitForTimeout(600);
 ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'komputer: bez przewijania w bok');
 await page.setViewportSize({ width: 360, height: 760 }); await page.waitForTimeout(300);
 ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'telefon 360 px: trzy kolumny mieszczą się');

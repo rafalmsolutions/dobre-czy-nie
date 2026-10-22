@@ -10,7 +10,7 @@ await page.addInitScript(() => {
   localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false }));
   localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['sugar'] }));
 });
-await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(900);
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(900);
 ok(await page.locator('#hProf').innerText() === 'Twój profil', 'bez domowników: „Twój profil” jak dotąd');
 ok(await page.locator('#scr-home .fam-home').count() === 0, 'bez domowników: bez listy rodziny');
 ok(await page.locator('#boot').count() === 0, 'testy automatyczne: ekran ładowania od razu znika');
@@ -32,7 +32,7 @@ ok(await page.locator('#scr-profile input[name=allergens][value=nuts]').isChecke
 // Ekran ładowania z animacją dla zwykłej przeglądarki (bez znacznika testów automatycznych).
 const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));
 await p2.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }); });
-await p2.goto('http://localhost:8790/index.html#/'); await p2.waitForTimeout(500);
+await p2.goto('http://localhost:8790/app/index.html#/'); await p2.waitForTimeout(500);
 ok(await p2.locator('#boot').count() === 1 && await p2.locator('#boot .lp-ring').count() === 1, 'ekran ładowania z animowanym znakiem widoczny na starcie');
 ok(await p2.evaluate(() => getComputedStyle(document.getElementById('boot')).position) === 'fixed', 'ekran ładowania przykrywa aplikację');
 await p2.waitForTimeout(1800);
@@ -42,7 +42,7 @@ await p2.locator('#boot').click(); await p2.waitForTimeout(400);
 ok(await p2.locator('#boot').count() === 0, 'stuknięcie pomija animację');
 const p3 = await (await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', reducedMotion: 'reduce' })).newPage();
 await p3.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }); localStorage.setItem('dcn-onboarded', 'true'); });
-await p3.goto('http://localhost:8790/index.html#/'); await p3.waitForTimeout(600);
+await p3.goto('http://localhost:8790/app/index.html#/'); await p3.waitForTimeout(600);
 ok(await p3.locator('#boot').count() === 0, '„ogranicz animacje”: bez czekania');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

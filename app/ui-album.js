@@ -65,10 +65,34 @@
         <span class="acard-foot">${esc(foot)}</span>${c.h ? '<span class="acard-holo" aria-hidden="true"></span>' : ''}</div>
       ${c.h ? '<span class="acard-star" aria-hidden="true">✦</span>' : ''}${c.w ? '<span class="acard-week">tydzień</span>' : ''}</div>`;
   };
+  /* Jak sprawdzić warunek miejsca na etykiecie (album ma uczyć czytać opakowania). Progi „mało/dużo” jak w unijnych oświadczeniach żywieniowych. */
+  const LABEL_TIP = {
+    'ns-a': 'Nutri-Score to kolorowa skala A–E na przodzie opakowania. Nie każdy producent ją drukuje – wtedy porównaj w tabeli wartości cukry, tłuszcze nasycone i sól na 100 g.',
+    'ns-ab': 'Nutri-Score to kolorowa skala A–E na przodzie opakowania. Nie każdy producent ją drukuje – wtedy porównaj w tabeli wartości cukry, tłuszcze nasycone i sól na 100 g.',
+    'ns-c': 'Nutri-Score to kolorowa skala A–E na przodzie opakowania. Nie każdy producent ją drukuje – wtedy porównaj w tabeli wartości cukry, tłuszcze nasycone i sól na 100 g.',
+    nova12: 'Krótki skład z rzeczy, które znasz z kuchni, to zwykle mało przetworzony produkt. Długa lista z emulgatorami, aromatami, syropami czy skrobią modyfikowaną oznacza mocne przetworzenie.',
+    nova3: 'Krótki skład z rzeczy, które znasz z kuchni, to zwykle mało przetworzony produkt. Długa lista z emulgatorami, aromatami, syropami czy skrobią modyfikowaną oznacza mocne przetworzenie.',
+    noadd: 'Dodatki w składzie mają numer E (np. E330) albo nazwę z funkcją, np. „regulator kwasowości: kwas cytrynowy”. Szukaj słów: konserwant, emulgator, stabilizator, barwnik, wzmacniacz smaku.',
+    nopalm: 'Szukaj w składzie słowa „palmowy”: olej palmowy, tłuszcz palmowy, olej z ziaren palmowych. Producent musi podać, z jakiej rośliny jest tłuszcz roślinny.',
+    vegan: 'Alergeny w składzie są wyróżnione, np. pogrubieniem: mleko, jaja, ryby, skorupiaki, mięczaki. Uważaj też na żelatynę, miód, serwatkę i karmin (E120). Pewność daje znak „Vegan”.',
+    bio: 'Szukaj unijnego znaku: listek z gwiazdek na zielonym tle, obok kod jednostki certyfikującej, np. PL-EKO-07. Napis „naturalny” to nie to samo co bio.',
+    fair: 'Szukaj znaku Fairtrade albo Rainforest Alliance (żabka). Sam napis „etyczny” czy „odpowiedzialny” nie jest certyfikatem.',
+    nosugar: '„Bez dodatku cukru” znaczy, że producent nie dodał cukrów ani składników słodzących. Cukry naturalne (np. z mleka czy owoców) mogą być – sprawdź wiersz „w tym cukry” w tabeli wartości.',
+    glutenfree: 'Szukaj napisu „bezglutenowy” albo przekreślonego kłosa. Gluten mają pszenica, żyto, jęczmień, orkisz i zwykły owies – w składzie są wyróżnione jako alergeny.',
+    lactosefree: 'Szukaj napisu „bez laktozy”. Mleko w składzie jest wyróżnione jako alergen, ale produkt bez laktozy dalej może je zawierać (laktoza jest rozłożona).',
+    lowsugar: 'W tabeli wartości odżywczych wiersz „w tym cukry”: mało to najwyżej 5 g na 100 g (napoje: 2,5 g na 100 ml).',
+    lowsalt: 'W tabeli wartości odżywczych wiersz „sól”: mało to najwyżej 0,3 g na 100 g.',
+    lowfat: 'W tabeli wartości odżywczych wiersz „tłuszcz”: mało to najwyżej 3 g na 100 g (napoje: 1,5 g na 100 ml).',
+    lowsat: 'W tabeli wartości wiersz „w tym kwasy tłuszczowe nasycone”: mało to najwyżej 1,5 g na 100 g (napoje: 0,75 g na 100 ml).',
+    protein: 'W tabeli wartości odżywczych wiersz „białko”: tu szukamy co najmniej 10 g na 100 g.',
+    fiber: 'W tabeli wartości wiersz „błonnik”: dużo to co najmniej 6 g na 100 g. Nie każdy producent go podaje – bez tego wiersza nie wiadomo.'
+  };
+  A.labelTip = s => !s || s.secret ? '' : LABEL_TIP[String(s.id).replace(/^c:/, '')] || (String(s.id).startsWith('s:') ? 'Rodzaj produktu sprawdzisz w nazwie i w składzie: składniki są wymienione od tego, którego jest najwięcej.' : String(s.id).startsWith('b:') ? 'Markę znajdziesz na przodzie opakowania. Marki własne sieci (np. Biedronki czy Lidla) też się liczą jako osobne marki.' : '');
   const emptySlotHtml = (key, s, i) => {
     const seen = A.album.seen[key] || 0, hintOn = s.secret && seen >= 5;
-    return `<div class="ap-empty t-${esc(s.tier)}${s.secret ? ' secret' : ''}"><span class="ap-top"><span class="ap-chip">${esc(A.RARITY[s.tier].label)}</span><span class="ap-num">#${String(i + 1).padStart(2, '0')}</span></span>
-      <span class="ap-q">?</span><b>${s.secret ? 'Tajne miejsce' : esc(s.label)}</b><small>${s.secret ? (hintOn ? 'Podpowiedź: chodzi o ' + esc(s.h || 'skład') : `podpowiedź po ${5 - seen} ${plural(5 - seen, 'skanie', 'skanach', 'skanach')} z tej strony`) : esc(A.oddsText(s))}</small></div>`;
+    const tip = A.labelTip(s);
+    return `<${tip ? 'button type="button" data-act="slot-tip" data-k="' + esc(key) + '" data-slot="' + esc(s.id) + '"' : 'div'} class="ap-empty t-${esc(s.tier)}${s.secret ? ' secret' : ''}"${tip ? ' aria-label="' + esc(s.label) + ': jak to sprawdzić na etykiecie"' : ''}><span class="ap-top"><span class="ap-chip">${esc(A.RARITY[s.tier].label)}</span><span class="ap-num">#${String(i + 1).padStart(2, '0')}</span></span>
+      <span class="ap-q">?</span><b>${s.secret ? 'Tajne miejsce' : esc(s.label)}</b><small>${s.secret ? (hintOn ? 'Podpowiedź: chodzi o ' + esc(s.h || 'skład') : `podpowiedź po ${5 - seen} ${plural(5 - seen, 'skanie', 'skanach', 'skanach')} z tej strony`) : esc(A.oddsText(s))}</small>${tip ? '<span class="ap-tipq" aria-hidden="true">jak sprawdzić?</span>' : ''}</${tip ? 'button' : 'div'}>`;
   };
   A.missingText = (key, max = 3) => A.missingSlots(key).filter(s => !s.secret && !s.id.startsWith('any')).sort((a, b) => b.share - a.share).slice(0, max).map(s => `„${s.label}”`).join(', ');
 
@@ -140,7 +164,7 @@
       ${rv.flipped ? '' : `<span class="rv-kicker">NOWE MIEJSCE${si >= 0 ? ' #' + String(si + 1).padStart(2, '0') : ''}</span>`}
       <div class="rv-stage">${rv.flipped ? `<div class="rv-rays" aria-hidden="true" style="background:${c.h ? RAYS.holo : RAYS[c.r]}"></div><div class="rv-front">${A.cardHtml(c, 224)}</div>`
         : `<button class="rv-back" type="button" data-act="reveal-flip" aria-label="Odsłoń nową kartę" style="background:${BACK[c.r] || BACK.zwykla}"><span class="rv-q">?</span><b class="rv-slot">${slot.secret ? '???' : esc(slot.label)}</b><span class="rv-logo"><span>dobre </span><b>czy nie?</b></span></button>`}</div>
-      ${rv.flipped ? `<div class="rv-text" role="status"><h2><span class="w-light">${esc(h1[0])}</span> <span class="w-bold">${esc(h1[1])}</span></h2><p>${esc(text)}${extra ? ' ' + esc(extra) : ''}</p>
+      ${rv.flipped ? `<div class="rv-text" role="status"><h2><span class="w-light">${esc(h1[0])}</span> <span class="w-bold">${esc(h1[1])}</span></h2><p>${esc(text)}${extra ? ' ' + esc(extra) : ''}</p>${A.labelTip(Object.assign({}, slot, { secret: false })) ? `<p class="rv-tip"><b>Na etykiecie:</b> ${esc(A.labelTip(Object.assign({}, slot, { secret: false })))}</p>` : ''}
         ${gal ? `<div class="rv-progress rv-gal">${A.galleryHtml(c.k, openIdx(c.k), { size: 'tiny', fresh: si >= 0 ? si : null })}<span class="stack" style="gap:4px;text-align:left"><b>Plakat: ${esc(page.label)}</b><span>Odsłoniłeś kolejny fragment: ${have} z ${A.ALBUM_SLOTS}</span></span></div>`
           : `<div class="rv-progress"><div class="row" style="justify-content:space-between"><b>Strona: ${esc(page.label)}</b><b>${have} z ${A.ALBUM_SLOTS}</b></div><span class="xp"><i style="width:${have * 10}%"></i></span></div>`}
         <div class="rv-btns"><button class="btn btn-white" type="button" data-act="reveal-close">Wynik produktu</button>${rv.res.pageFull ? '<button class="btn btn-green" type="button" data-act="reveal-page">Dalej ›</button>' : `<a class="btn btn-green" href="#/album/${esc(c.k)}" data-act="reveal-album">Zobacz stronę</a>`}</div></div>`
@@ -248,12 +272,22 @@
       el.innerHTML = `<div class="wrap"><span class="d-arc d-arc-page" aria-hidden="true"></span>
         ${head(`${filled} z ${A.ALBUM_SLOTS} miejsc${holo ? ` · ${holo} ${plural(holo, 'błyszcząca', 'błyszczące', 'błyszczących')}` : ''}`, full)}
         <span class="xp ap-xp"><i style="width:${filled * 10}%"></i></span>
-        ${gal ? `<div class="gal-box">${A.galleryHtml(key, openIdx(key))}<div class="gal-cap"><b>${full ? 'Plakat odsłonięty w całości' : 'Plakat do odsłonięcia'}</b><span>styl: ${esc(gal.style)} · każde zdobyte miejsce odsłania jeden fragment.</span></div>${full ? '' : '<button class="btn btn-white" type="button" data-act="gal-demo">Podgląd: odsłoń cały plakat (test)</button>'}</div>` : ''}
+        ${gal ? `<div class="gal-box">${A.galleryHtml(key, openIdx(key))}<div class="gal-cap"><b>${full ? 'Plakat odsłonięty w całości' : 'Plakat do odsłonięcia'}</b><span>styl: ${esc(gal.style)} · każde zdobyte miejsce odsłania jeden fragment.</span></div>${full || !A.store.get('debug', false) ? '' : '<button class="btn btn-white" type="button" data-act="gal-demo">Podgląd: odsłoń cały plakat (test)</button>'}</div>` : ''}
         <p class="ap-reward small">Każde miejsce ma warunek. „1 na 17” znaczy, że spełnia go mniej więcej co siedemnasty popularny produkt z tej kategorii${prof ? ' zgodny z Twoim profilem' : ''}.${full ? '' : ' Pełna strona: złota ramka i +100 pkt.'}</p>
         ${sketch ? `<a class="ap-sketch" href="#/p/${esc(sketch.c)}"><span class="ap-sketch-ic">✎</span><span class="grow"><b>Ożyw szkic „${esc(sketch.n)}”</b><span>Uzupełnij dane, a karta nabierze kolorów</span></span><span aria-hidden="true">›</span></a>` : ''}
         <div class="ap-grid">${slots.map((s, i) => { const c = A.slotCard(key, s.id); return c ? `<a class="ap-slot" href="#/p/${esc(c.c)}" aria-label="${esc(c.n)}, miejsce: ${esc(s.label)}">${A.cardHtml(c, 156, i + 1)}</a>` : emptySlotHtml(key, s, i); }).join('')}</div>
+        <div class="panel ap-tip" id="slotTip" role="status" hidden></div>
         ${miss && !full ? `<div class="ap-hunt"><span class="ap-hunt-k">NA ZAKUPY</span><b>Szukasz jeszcze: ${esc(miss)}</b><span>Przy skanie od razu zobaczysz, czy produkt zajmie wolne miejsce.</span></div>` : ''}
       </div>`;
     });
+  });
+  // Stuknięcie w puste miejsce: jak sprawdzić warunek na etykiecie.
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act=slot-tip]'); if (!el) return;
+    const s = (A.slotsOf(el.dataset.k) || []).find(x => x.id === el.dataset.slot), box = A.$('slotTip'); if (!s || !box) return;
+    const again = !box.hidden && box.dataset.slot === s.id;
+    box.hidden = again; box.dataset.slot = again ? '' : s.id;
+    box.innerHTML = again ? '' : `<b>„${esc(s.label)}” – jak to sprawdzić na etykiecie</b><p class="small" style="margin:6px 0 0">${esc(A.labelTip(s))}</p>`;
+    if (!again) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 })();

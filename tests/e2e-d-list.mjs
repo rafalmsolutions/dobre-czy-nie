@@ -36,7 +36,7 @@ await page.addInitScript(() => {
   localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['nuts'] } }]));
 });
 const rows = () => page.$$eval('#shopList .item', it => it.map(x => ({ name: x.querySelector('.t1').textContent, pct: (x.querySelector('.pct') || {}).textContent, t2: x.querySelector('.t2').textContent })));
-await page.goto('http://localhost:8790/index.html#/lista/en:prepared-meats'); await page.waitForTimeout(2500);
+await page.goto('http://localhost:8790/app/index.html#/lista/en:prepared-meats'); await page.waitForTimeout(2500);
 for (let i = 0; i < 6; i++) { if (await page.locator('#celebrate').isHidden()) break; await page.$eval('#celebrate [data-act=cel-ok]', e => e.click()); await page.waitForTimeout(150); }
 
 ok(detailCalls === 1, 'lista pobiera pełne dane jednym zapytaniem do pośrednika (' + detailCalls + ')');
@@ -61,7 +61,7 @@ await page.$eval('.list-who [data-who=me]', e => e.click()); await page.waitForT
 r = await rows();
 ok(r.some(x => /orzech/i.test(x.name)), 'wybór „Ty”: produkt z orzechami wraca (Ty nie masz alergii)');
 const gulMe = r.find(x => /Gulasz/.test(x.name));
-await page.goto('http://localhost:8790/index.html#/p/5900000002001'); await page.waitForTimeout(1500);
+await page.goto('http://localhost:8790/app/index.html#/p/5900000002001'); await page.waitForTimeout(1500);
 const badge = (await page.locator('#scr-product .d-badge b, #scr-product .fam-ans').first().innerText()).trim();
 const bill = (await page.locator('#scr-product .bill-sum b').first().innerText().catch(() => '')).trim();
 const pctDetail = (bill.match(/\d+%/) || [])[0];
@@ -77,22 +77,22 @@ const other = await page.$$eval('#scr-product .fam-c', b => { const x = b.find(e
 if (other) { await page.$eval(`#scr-product .fam-c[data-id="${other}"]`, e => e.click()); await page.waitForTimeout(400); }
 const rg2 = await ring();
 ok(other && rg2.deg === rg.deg && rg2.pct === rg.pct, `stuknięcie osoby zmienia tylko rachunek, wynik rodziny zostaje (${rg2.deg}°, ${rg2.pct}%)`);
-await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(700);
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(700);
 const histPct = async () => page.$$eval('#scr-home .list .item', it => { const x = it.find(e => /Gulasz/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; });
 ok(await histPct() === rg.pct, `„Ostatnio sprawdzone” = wynik rodziny (${await histPct()}% ↔ ${rg.pct}%)`);
 // Tylko Ty na zakupach: wszędzie Twój wynik.
-await page.evaluate(() => App.setShopOn('f1', false)); await page.goto('http://localhost:8790/index.html#/p/5900000002001'); await page.waitForTimeout(400);
-await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(500);
+await page.evaluate(() => App.setShopOn('f1', false)); await page.goto('http://localhost:8790/app/index.html#/p/5900000002001'); await page.waitForTimeout(400);
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(500);
 ok(await histPct() === parseInt(gulMe.pct), `tylko Ty: „Ostatnio sprawdzone” = Twój wynik (${await histPct()}% ↔ ${gulMe.pct})`);
 await page.evaluate(() => App.shopAll());
-await page.goto('http://localhost:8790/index.html#/p/5900000002001'); await page.waitForTimeout(1200);
+await page.goto('http://localhost:8790/app/index.html#/p/5900000002001'); await page.waitForTimeout(1200);
 const fit = await page.$eval('#scr-product .d-title h1', h => ({ sw: h.scrollWidth, cw: h.clientWidth }));
 ok(fit.sw <= fit.cw + 1, `długa nazwa mieści się bez łamania słowa (${fit.sw} ≤ ${fit.cw})`);
 await page.setViewportSize({ width: 1280, height: 900 }); await page.reload(); await page.waitForTimeout(1500);
 const fit2 = await page.$eval('#scr-product .d-title h1', h => ({ sw: h.scrollWidth, cw: h.clientWidth }));
 ok(fit2.sw <= fit2.cw + 1, `komputer: długa nazwa mieści się (${fit2.sw} ≤ ${fit2.cw})`);
 await page.setViewportSize({ width: 390, height: 844 });
-await page.goto('http://localhost:8790/index.html#/lista/en:prepared-meats'); await page.waitForTimeout(1200);
+await page.goto('http://localhost:8790/app/index.html#/lista/en:prepared-meats'); await page.waitForTimeout(1200);
 ok(detailCalls === 1, 'powrót do listy: pełne dane z telefonu, bez nowego pobrania (' + detailCalls + ')');
 const xs = await page.$$eval('#shopList .item .pct', p => p.map(e => Math.round(e.getBoundingClientRect().left)));
 ok(xs.length >= 2 && new Set(xs).size === 1, 'procenty w jednej kolumnie ' + xs.join(','));
@@ -100,7 +100,7 @@ ok(xs.length >= 2 && new Set(xs).size === 1, 'procenty w jednej kolumnie ' + xs.
 DETAIL['5900000002009'] = { code: '5900000002009', product_name_pl: 'Jogurt typu greckiego', brands: 'Testowy', nutriscore_grade: 'a', nova_group: 3, categories_hierarchy: ['en:yogurts'], ingredients_text_pl: '', nutriments: { 'sugars_100g': 3.9, 'salt_100g': 0.1, 'saturated-fat_100g': 1.6 } };
 await ctx.route(/openfoodfacts\.org\/api\/v2\/product\/5900000002009/, async r => { await new Promise(res => setTimeout(res, 6000)); r.fulfill({ json: { status: 1, product: DETAIL['5900000002009'] } }).catch(() => { }); });
 const t0 = Date.now();
-await page.goto('http://localhost:8790/index.html#/p/5900000002009'); await page.waitForSelector('#scr-product .d-title h1', { timeout: 8000 }).catch(() => { });
+await page.goto('http://localhost:8790/app/index.html#/p/5900000002009'); await page.waitForSelector('#scr-product .d-title h1', { timeout: 8000 }).catch(() => { });
 ok(Date.now() - t0 < 5500, 'wolna baza: wynik po ' + (Date.now() - t0) + ' ms, bez czekania na nią');
 ok(await page.locator('#snapNote').count() === 0, 'wolna baza: pełne dane z pośrednika, nie kopia bazy');
 ok(await page.locator('#completeBox').count() === 1, 'brak składu: jest przycisk „Pomóż uzupełnić”');

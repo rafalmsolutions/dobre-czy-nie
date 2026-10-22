@@ -3,7 +3,7 @@
   "short_name": "Lupka",
   "description": "Zeskanuj produkt i zobacz, czy pasuje do Ciebie i Twojej rodziny. Album, odkrywcy, półki zakupowe.",
   "lang": "pl",
-  "id": "./",
+  "id": "/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

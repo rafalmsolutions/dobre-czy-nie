@@ -1,6 +1,6 @@
 // Testy wersji D: profil „Nie jem” + „Pilnuję”, spójność dopasowania, przeniesienie ustawień, odznaki w 3 stopniach.
 const fs = require('fs'), path = require('path'), vm = require('vm');
-const dir = path.join(__dirname, '..');
+const dir = path.join(__dirname, '..', 'app');
 const ctx = { console, Intl, URL, setTimeout };
 vm.createContext(ctx);
 for (const f of ['data.js', 'core.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8').replace(/^'use strict';/m, ''), ctx, { filename: f });

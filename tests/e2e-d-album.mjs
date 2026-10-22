@@ -26,7 +26,7 @@ await page.addInitScript(() => {
 });
 
 // 1. Strona z 10 miejscami
-await page.goto('http://localhost:8790/index.html#/album/en:yogurts'); await page.waitForTimeout(1500); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/album/en:yogurts'); await page.waitForTimeout(1500); await closeCel();
 await page.screenshot({ path: shots + 'hunt-page.png', fullPage: true });
 const slots = await page.evaluate(() => App.slotsOf('en:yogurts'));
 ok(slots && slots.length === 10, 'strona ma 10 miejsc');
@@ -38,6 +38,14 @@ ok(slots.every((s, i) => i === 0 || ['zwykla', 'rzadka', 'epicka', 'legendarna']
 ok(await page.locator('#scr-albumpage .ap-empty').count() === 10, '10 pustych miejsc na ekranie');
 ok((await page.innerText('#scr-albumpage')).includes('Tajne miejsce'), 'tajne miejsce widoczne jako „Tajne miejsce”');
 ok(await page.locator('#scr-albumpage .gal').count() === 1, 'plakat na stronie Jogurty');
+// Wskazówki do etykiet: stuknięcie w puste miejsce mówi, jak sprawdzić warunek na opakowaniu.
+const tipBtn = page.locator('#scr-albumpage button[data-act=slot-tip]').first();
+ok(await page.locator('#scr-albumpage button[data-act=slot-tip]').count() >= 8, 'puste miejsca (poza tajnymi) mają „jak sprawdzić?”');
+await tipBtn.click(); await page.waitForTimeout(300);
+ok(await page.locator('#slotTip').isVisible() && /etykiecie/.test(await page.innerText('#slotTip')) && (await page.innerText('#slotTip')).length > 60, 'wskazówka do etykiety: ' + (await page.innerText('#slotTip')).slice(0, 90));
+await tipBtn.click(); await page.waitForTimeout(200);
+ok(await page.locator('#slotTip').isHidden(), 'drugie stuknięcie chowa wskazówkę');
+ok(await page.locator('[data-act=gal-demo]').count() === 0, 'bez testowego przycisku „odsłoń cały plakat”');
 
 // 2. Wypełniamy wszystko poza miejscem, które zajmie skan jogurtu naturalnego
 const target = await page.evaluate(raw => {
@@ -50,7 +58,7 @@ ok(target && target.share < 1, 'skan trafi na najtrudniejsze pasujące miejsce: 
 
 // 3. Skan → odsłonięcie → pełna strona → plakat
 const pts0 = await page.evaluate(() => App.game.points);
-await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1800);
+await page.goto('http://localhost:8790/app/index.html#/p/' + C.milk); await page.waitForTimeout(1800);
 ok(!(await page.locator('#reveal').isVisible()) && !(await page.locator('#celebrate').isVisible()), 'po skanie: nic nie zasłania wyniku');
 ok(await page.locator('#rwBar').isVisible() && /Nowa karta/.test(await page.innerText('#rwBar')), 'po skanie: pasek „Nowa karta · Odbierz”: ' + (await page.innerText('#rwBar').catch(() => '')).replace(/\n/g, ' | '));
 ok(await page.locator('#scr-product .fam-ans, #scr-product .d-badge').count() >= 1, 'wynik widoczny od razu');
@@ -64,6 +72,7 @@ await page.click('[data-act=reveal-flip]', { force: true }); await page.waitForT
 await page.screenshot({ path: shots + 'hunt-front.png' });
 ok(await page.evaluate(([c, t]) => App.album.cards[c] && App.album.cards[c].slot === t, [C.milk, target.id]), 'karta zajęła właściwe miejsce');
 ok((await page.innerText('#reveal')).includes('1 na'), 'opis rzadkości „1 na …”');
+ok(/Na etykiecie:/.test(await page.innerText('#reveal')), 'odsłonięta karta: „Na etykiecie: …”');
 ok(await page.locator('[data-act=reveal-page]').count() === 1, 'ostatnie miejsce: przycisk „Dalej” do pełnej strony');
 await closeCel(); await page.click('[data-act=reveal-page]'); await page.waitForTimeout(900);
 ok((await page.innerText('#reveal')).toLowerCase().includes('ukończona') && await page.locator('#reveal .gal.full').count() === 1, 'gratulacje i odsłonięty plakat');
@@ -72,8 +81,8 @@ await page.click('#reveal [data-act=reveal-album]'); await page.waitForTimeout(9
 ok(await page.locator('#scr-albumpage .gal.full .gal-t.open').count() === 10, 'strona: plakat odsłonięty w całości');
 
 // 4. Ponowny skan i produkt bez wolnego miejsca
-await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(400);
-await page.goto('http://localhost:8790/index.html#/p/' + C.milk); await page.waitForTimeout(1200);
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(400);
+await page.goto('http://localhost:8790/app/index.html#/p/' + C.milk); await page.waitForTimeout(1200);
 ok(!(await page.locator('#reveal').isVisible()), 'ponowny skan: bez nowej karty');
 const r1 = await page.evaluate(raw => App.albumAdd(normalizeProduct(raw, 'off')), Object.assign({}, Y[0], { code: ean('591900000999') }));
 ok(r1 && r1.noSlot, 'pełna strona: kolejny jogurt nie zajmuje miejsca');
@@ -85,7 +94,7 @@ ok(await page.evaluate(() => { App.profile = cleanProfile({ diet: ['vegan'] }); 
 await page.evaluate(() => { App.profile = cleanProfile({}); });
 
 // 6. Album: polowanie tygodnia i lista stron
-await page.goto('http://localhost:8790/index.html#/album'); await page.waitForTimeout(800); await closeCel();
+await page.goto('http://localhost:8790/app/index.html#/album'); await page.waitForTimeout(800); await closeCel();
 await page.screenshot({ path: shots + 'hunt-album.png', fullPage: true });
 ok((await page.innerText('#scr-album')).includes('POLOWANIE TYGODNIA'), 'album: polowanie tygodnia');
 
@@ -99,14 +108,14 @@ await p2.addInitScript(y => {
   const cards = { [y[16].code]: { c: y[16].code, k: 'en:yogurts', r: 'epicka', h: false, s: false, w: false, n: 'Skyr 0', b: '', i: '', t: 1 }, '5900000000000': { c: '5900000000000', k: 'en:yogurts', r: 'zwykla', n: 'Nieznany', t: 2 } };
   localStorage.setItem('dcn-d-album', JSON.stringify({ cards, done: {}, weeks: {} })); localStorage.setItem('dcn-d-album-v', '2');
 }, Y);
-await p2.goto('http://localhost:8790/index.html#/album/en:yogurts'); await p2.waitForTimeout(1800);
+await p2.goto('http://localhost:8790/app/index.html#/album/en:yogurts'); await p2.waitForTimeout(1800);
 const mig = await p2.evaluate(c => ({ skyr: App.album.cards[c], unknown: App.album.cards['5900000000000'] }), Y[16].code);
 ok(mig.skyr && mig.skyr.slot && !mig.skyr.legacy, 'stara karta skyru dostała miejsce: ' + (mig.skyr && mig.skyr.slot));
 ok(!mig.unknown, 'stara karta bez danych produktu usunięta');
 // podpowiedź do tajnego miejsca po 5 skanach
 await p2.evaluate(() => { App.album.seen['en:yogurts'] = 5; App.albumSave(); });
-await p2.goto('http://localhost:8790/index.html#/album'); await p2.waitForTimeout(300);
-await p2.goto('http://localhost:8790/index.html#/album/en:yogurts'); await p2.waitForTimeout(900);
+await p2.goto('http://localhost:8790/app/index.html#/album'); await p2.waitForTimeout(300);
+await p2.goto('http://localhost:8790/app/index.html#/album/en:yogurts'); await p2.waitForTimeout(900);
 ok((await p2.innerText('#scr-albumpage')).includes('Podpowiedź: chodzi o'), 'podpowiedź do tajnego miejsca po 5 skanach');
 
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));

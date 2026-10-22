@@ -8,7 +8,7 @@ const shots = new URL('./shots/', import.meta.url).pathname;
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const S = { edit: [], product: [] };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'application/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'application/javascript' }); });
 const form = r => (r.request().postDataBuffer() || Buffer.alloc(0)).toString('utf8');
 const field = (body, name) => { const m = body.match(new RegExp('name="' + name + '"\\r\\n\\r\\n([^\\r]*)')); return m ? m[1] : null; };
 await ctx.route(/proxy\.test\/category/, r => r.fulfill({ json: { products: [] } }));
@@ -20,10 +20,10 @@ const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => err
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); localStorage.setItem('dcn-d-stores', JSON.stringify(['lidl', 'biedronka'])); });
 const pts = () => page.evaluate(() => App.game.points);
 const txt = async sel => (await page.locator(sel).innerText().catch(() => '')) || '';
-const go = async code => { await page.goto('http://localhost:8790/index.html#/'); await page.waitForTimeout(200); await page.goto('http://localhost:8790/index.html#/p/' + code); await page.waitForTimeout(1500); };
+const go = async code => { await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(200); await page.goto('http://localhost:8790/app/index.html#/p/' + code); await page.waitForTimeout(1500); };
 
 // 1. Profil: „Gdzie robisz zakupy”
-await page.goto('http://localhost:8790/index.html#/profil'); await page.waitForTimeout(600);
+await page.goto('http://localhost:8790/app/index.html#/profil'); await page.waitForTimeout(600);
 ok(await page.locator('input[name=mystore][value=lidl]').isChecked() && await page.locator('input[name=mystore][value=biedronka]').isChecked(), 'profil: zaznaczone moje sklepy');
 await page.locator('label.pchip:has(input[name=mystore][value=dino])').click(); await page.waitForTimeout(200);
 ok(await page.evaluate(() => App.myStores().join()) === 'biedronka,lidl,dino' || await page.evaluate(() => App.myStores().includes('dino')), 'profil: dodanie sklepu zapisane od razu');
@@ -45,7 +45,7 @@ await go(C.ham);
 ok(await page.locator('#storeBox').count() === 0 && S.edit.length === 1, '„Nie teraz”: bez wysyłki i bez kolejnego pytania');
 
 // 3. Dodanie brakującego produktu: sklep podpowiedziany, bez dodatkowego kroku
-await page.goto('http://localhost:8790/index.html#/p/' + C.missing); await page.waitForTimeout(1800);
+await page.goto('http://localhost:8790/app/index.html#/p/' + C.missing); await page.waitForTimeout(1800);
 ok(await page.locator('#addForm input[name=addStore][value=biedronka]').isChecked(), 'dodawanie: pierwszy z moich sklepów zaznaczony');
 await page.evaluate(c => { App.findCodes = async () => [c]; }, C.missing);
 await page.fill('#addName', 'Jogurt testowy 2%');

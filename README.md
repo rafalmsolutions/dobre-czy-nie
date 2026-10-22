@@ -4,15 +4,26 @@ Aplikacja webowa (PWA): skanujesz kod kreskowy i od razu widzisz, czy produkt pa
 Od 21.10.2026 główną aplikacją jest dawna wersja D „Wystawa”: jasnoszare tło, produkt na okrągłym „talerzu”, nazwa w dwóch grubościach,
 album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile rodziny, historia gramatur. Bez maskotki.
 
-- Adres: https://lupka.app/ (od 21.10.2026; domena kupiona w Cloudflare, DNS bez proxy wskazuje na GitHub Pages, HTTPS wymuszone). Dawny adres https://rafalmsolutions.github.io/dobre-czy-nie/ przekierowuje automatycznie (GitHub Pages); dane zapisane pod dawnym adresem zostają tam.
-- Archiwum (dawna główna aplikacja z Ziarenkiem): https://lupka.app/archiwum/ (folder `archiwum/`, opis w `archiwum/README.md`).
-- Stary adres `/d/` przenosi na główny (z zachowaniem `#/…`), a stary service worker z `/d/` usuwa się sam (`d/index.html`, `d/sw.js`).
-- Obie wersje korzystają z tej samej kopii bazy (`data/`, budowana w GitHub Actions) i plików `config/`; profil, historia, półki i punkty są w tej samej pamięci przeglądarki
-  (klucze nowej aplikacji: `dcn-d-…`; przy pierwszym uruchomieniu profil przenosi się z dawnej głównej).
-- Service workery: główny (`dcn-d-…`) czyści stare pamięci „dcn-…”, ale nie rusza archiwum (`dcn-arch-…`) i nie obsługuje adresów `/archiwum/`.
-- Statystyki GoatCounter: ekrany nowej aplikacji mają ścieżki `/d/…`, zdarzenia przedrostek `d-` (ciągłość z testów wersji D); archiwum `/archiwum/…` i `arch-`.
+- **Adresy (od 22.10.2026):** https://lupka.app/ – strona promująca (`index.html` w katalogu głównym, obrazki w `img/`, PL/EN), https://lupka.app/app/ – aplikacja (folder `app/`),
+  https://lupka.app/archiwum/ – dawna aplikacja z Ziarenkiem (folder `archiwum/`, opis w `archiwum/README.md`), `privacy.html` w katalogu głównym (wspólna).
+  Domena kupiona w Cloudflare, DNS bez proxy wskazuje na GitHub Pages, HTTPS wymuszone. Dawny adres github.io przekierowuje automatycznie.
+- **Przenosiny 22.10.2026:** dane w telefonie zostają (ta sama domena). Stare linki `lupka.app/#/p/…` (i inne ekrany aplikacji) oraz zainstalowana aplikacja (start w „/”) przenoszą do `/app/` (skrypt na stronie).
+  Stary service worker z „/” zastępuje `sw.js` w katalogu głównym, który czyści pamięć „dcn-d-…” i wyrejestrowuje się. `/d/` i `/strona/` przekierowują.
+- Wspólne dla aplikacji i archiwum: kopia bazy `data/` (budowana w GitHub Actions) i pliki `config/` w katalogu głównym (aplikacja czyta `../data/`, `../config/`).
+- Service worker aplikacji (`app/sw.js`, pamięć `lupka-…`, zdjęcia `dcn-img`, szczegóły `dcn-pdet`) czyści stare „dcn-…” i „lupka-…”, nie rusza archiwum (`dcn-arch-…`).
+- Statystyki GoatCounter: ekrany aplikacji mają ścieżki `/d/…`, zdarzenia przedrostek `d-`; archiwum `/archiwum/…` i `arch-`.
+- Testerzy: link `lupka.app/app/?t=imie` zapisuje znacznik testera (dopisywany do uwag i zgłoszeń, raz dziennie zdarzenie `d-tester-imie`).
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
-  `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium.
+  `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
+
+## Strona lupka.app, aplikacja pod /app/, wskazówki do etykiet, znacznik testera (22.10.2026, wersja 2.5.0)
+
+- **Strona promująca** pod lupka.app (PL/EN wg przeglądarki, animacje, pokaz „Jeden skan. Wynik dla każdego.” na prawdziwych wynikach aplikacji, krótsza wersja na telefon z karuzelą funkcji i stałym przyciskiem). Aplikacja przeniesiona do `app/` (szczegóły na górze).
+  Strona generowana skryptem z płótna (zrzuty z aplikacji na przykładowych produktach bez prawdziwych marek).
+- **Album uczy czytać etykiety:** przy każdym pustym miejscu „jak sprawdzić?” (np. olej palmowy: słowo „palmowy” w składzie; „mało cukru”: najwyżej 5 g na 100 g w wierszu „w tym cukry”), a przy odsłoniętej karcie „Na etykiecie: …” (`LABEL_TIP` w `app/ui-album.js`, progi jak w unijnych oświadczeniach żywieniowych).
+  Testowy przycisk „odsłoń cały plakat” tylko z `dcn-debug`.
+- **Znacznik testera** z linku (`?t=imie`), polityka prywatności to opisuje. Polityka: administrator Rafał Mokrowiecki, wersja z 21.10.2026, powrót do aplikacji albo na stronę.
+- Testy: `tests/sw-test.mjs` (nowe adresy, sprzątanie starego service workera), nowe przypadki w `tests/e2e-d-album.mjs` i `tests/e2e-d-feedback.mjs`.
 
 ## Dźwięki z zestawu SFX Kit (21.10.2026, wersja 2.4.1)
 

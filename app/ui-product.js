@@ -760,7 +760,7 @@
       return;
     }
     if (A.CFG.reportEmail) {
-      const href = `mailto:${A.CFG.reportEmail}?subject=${encodeURIComponent('Zgłoszenie: ' + (r.name || r.code))}&body=${encodeURIComponent(reportText(r))}`;
+      const href = `mailto:${A.CFG.reportEmail}?subject=${encodeURIComponent('Zgłoszenie: ' + (r.name || r.code) + (A.tester && A.tester() ? ' · ' + A.tester() : ''))}&body=${encodeURIComponent(reportText(r))}`;
       msg.textContent = 'Otwieramy pocztę z gotowym zgłoszeniem. Wystarczy kliknąć „Wyślij”.';
       A.$('repSend').disabled = false;
       try { location.href = href; } catch (err) { }

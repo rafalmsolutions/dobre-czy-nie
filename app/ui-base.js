@@ -59,7 +59,7 @@ const App = {};
     const names = { rules: 'points-rules', levels: 'levels', achievements: 'achievements', challenges: 'weekly-challenges' };
     try {
       const entries = await Promise.all(Object.entries(names).map(async ([k, f]) => {
-        const r = await fetch(f === 'achievements' ? 'achievements.json' : 'config/' + f + '.json', { cache: 'no-cache' }); // wersja D: własne odznaki
+        const r = await fetch(f === 'achievements' ? 'achievements.json' : '../config/' + f + '.json', { cache: 'no-cache' }); // wersja D: własne odznaki
         if (!r.ok) throw new Error(f);
         return [k, await r.json()];
       }));
@@ -107,12 +107,23 @@ const App = {};
     try { if (!(navigator.sendBeacon && navigator.sendBeacon(url))) new Image().src = url; } catch (e) { }
   }
   A.track = name => hit('d-' + name, true); // wersja D: osobne zdarzenia w statystykach
+  /* Znacznik testera z linku (lupka.app/app/?t=jan): zapamiętany w telefonie, dopisywany do uwag i zgłoszeń
+     oraz raz dziennie do statystyk („d-tester-jan”), żeby było widać, kto korzysta i kto co zgłosił. Tylko to słowo, bez danych. */
+  (() => {
+    try {
+      const u = new URL(location.href), t = (u.searchParams.get('t') || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9-]/g, '').slice(0, 30);
+      if (t) { A.store.set('tester', t); u.searchParams.delete('t'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
+    } catch (e) { }
+  })();
+  A.tester = () => { const t = A.store.get('tester', ''); return typeof t === 'string' && /^[a-z0-9-]{1,30}$/.test(t) ? t : ''; };
+  A.trackTester = () => { const t = A.tester(), day = new Date().toISOString().slice(0, 10); if (!t || A.store.get('tester-day', '') === day) return; A.store.set('tester-day', day); A.track('tester-' + t); };
   // Uwagi od testerów: gotowy e-mail z szablonem i wersją aplikacji (bez danych z profilu).
   A.feedbackHref = () => {
     const v = (A.CFG.appVersion || '2.0'), scr = `${Math.round(window.innerWidth)}×${Math.round(window.innerHeight)}`;
     const ua = /Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'komputer';
-    const body = `Co było przydatne:\n\n\nCo przeszkadzało albo nie działało:\n\n\nCzego brakuje:\n\n\n---\nWersja ${v}, ${ua}, ekran ${scr}`;
-    return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Lupka ' + v)}&body=${encodeURIComponent(body)}`;
+    const t = A.tester();
+    const body = `Co było przydatne:\n\n\nCo przeszkadzało albo nie działało:\n\n\nCzego brakuje:\n\n\n---\nWersja ${v}, ${ua}, ekran ${scr}${t ? ', tester: ' + t : ''}`;
+    return `mailto:${A.CFG.contactEmail}?subject=${encodeURIComponent('Uwagi: Lupka ' + v + (t ? ' · ' + t : ''))}&body=${encodeURIComponent(body)}`;
   };
   A.trackView = screen => hit('/d/' + screen, false);
   A.trackWeek = () => {
@@ -585,7 +596,7 @@ const App = {};
   /* Własna kopia polskich produktów (folder data/, budowana co tydzień przez GitHub Actions).
      Odpowiada od razu i nie zależy od tego, czy serwery Open Food Facts są przeciążone. */
   let metaP = null;
-  A.snapshotMeta = () => metaP || (metaP = fetch('data/meta.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => (j && j.products ? j : null)).catch(() => null));
+  A.snapshotMeta = () => metaP || (metaP = fetch('../data/meta.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => (j && j.products ? j : null)).catch(() => null));
   async function snapshotJson(path) {
     const r = await fetch(path);
     if (r.status === 404) return null;
@@ -594,7 +605,7 @@ const App = {};
   }
   A.snapshotProduct = async code => {
     if (!/^\d{8,14}$/.test(code) || !(await A.snapshotMeta())) return null;
-    try { const j = await snapshotJson(`data/p/${code.slice(-3)}.json`); return j && j[code] ? Object.assign(normalizeProduct(j[code], 'off'), { snapshot: true }) : null; }
+    try { const j = await snapshotJson(`../data/p/${code.slice(-3)}.json`); return j && j[code] ? Object.assign(normalizeProduct(j[code], 'off'), { snapshot: true }) : null; }
     catch (e) { return null; }
   };
   const SEARCH_PER_MIN = 8;
@@ -614,7 +625,7 @@ const App = {};
     if (await A.snapshotMeta()) {
       // Brak pliku = w Polsce mniej niż 5 produktów z tej kategorii: nie ma czego porównywać, nie pytamy dalej.
       let j;
-      try { j = await snapshotJson(`data/c/${cat.replace(':', '_')}.json`); }
+      try { j = await snapshotJson(`../data/c/${cat.replace(':', '_')}.json`); }
       catch (e) { throw e.kind ? e : A.fetchError(navigator.onLine === false ? 'offline' : 'network'); }
       return j && Array.isArray(j.products) ? j.products.filter(x => x && x.code).map(x => normalizeProduct(x, 'off')) : [];
     }

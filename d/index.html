@@ -8,10 +8,10 @@
 <script>
   // Wersja D jest od 21.10.2026 główną aplikacją. Stary adres /d/ przenosi na główny (z zachowaniem #/p/… itp.).
   if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => { if (/\/d\/$/.test(new URL(r.scope).pathname)) r.unregister(); })).catch(() => { });
-  location.replace('../' + location.hash);
+  location.replace('../app/' + location.hash);
 </script>
 </head>
 <body style="font-family:system-ui,sans-serif;padding:24px">
-<p>Aplikacja ma nowy adres. <a href="../">Przejdź do aplikacji</a>.</p>
+<p>Aplikacja ma nowy adres. <a href="../app/">Przejdź do aplikacji</a>.</p>
 </body>
 </html>

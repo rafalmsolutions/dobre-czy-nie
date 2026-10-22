@@ -19,9 +19,10 @@ jobs:
       - name: Lighthouse (telefon, wolniejsza sieć)
         run: |
           mkdir -p out runs
-          for page in start produkt; do
-            url="https://lupka.app/"
-            [ "$page" = produkt ] && url="https://lupka.app/#/p/5900197012723"
+          for page in strona start produkt; do
+            url="https://lupka.app/app/"
+            [ "$page" = strona ] && url="https://lupka.app/"
+            [ "$page" = produkt ] && url="https://lupka.app/app/#/p/5900197012723"
             # 3 przebiegi, bo maszyny GitHuba mają zmienną moc – bierzemy przebieg ze środkowym wynikiem szybkości.
             for n in 1 2 3; do
               npx --yes lighthouse@12 "$url" --quiet --output=json --output-path="runs/$page-$n.json" \
