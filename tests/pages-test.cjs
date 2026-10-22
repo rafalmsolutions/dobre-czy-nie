@@ -15,6 +15,8 @@ const m = read('jak-liczymy/index.html'), y = read('lupka-czy-yuka/index.html'),
 ok(/60% to wartość odżywcza/.test(m) && /Limit 49 pkt/.test(m) && /E250 azotyn sodu/.test(m) && /−15 pkt/.test(m), 'metoda: wagi, limit i kary z kodu aplikacji');
 ok(/<link rel="canonical" href="https:\/\/lupka.app\/jak-liczymy\/">/.test(m) && /"BreadcrumbList"/.test(m), 'metoda: canonical i okruszki');
 ok(/W wersji Premium/.test(y) && /help.yuka.io/.test(y), 'Yuka: porównanie ze źródłami');
+const ap = read('aplikacje-do-sprawdzania-skladu/index.html');
+ok(['Zdrowe Zakupy', 'Yuka', 'Open Food Facts', 'SkanuJemy'].every(n => ap.includes(n)) && /Stan na \d/.test(ap) && /id="zr8"/.test(ap) && /href="#zr2"/.test(ap), 'porównanie aplikacji: 5 aplikacji, data, źródła z odnośnikami');
 const items = (k.match(/<li class="prod">/g) || []).length;
 ok(items === 10, 'kategoria: 10 produktów (' + items + ')');
 ok(!/Yaourt/.test(k), 'kategoria: bez nazw w obcym języku');
@@ -23,7 +25,7 @@ ok(/"ItemList"/.test(k) && /\/app\/#\/lista\/en:yogurts/.test(k) && /\/app\/#\/p
 ok(/Porównaliśmy \d+ produkt/.test(k) && !/\d+ jogurty/.test(k), 'kategoria: poprawna odmiana');
 JSON.parse(k.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
 ok(/kategorie\/jogurty\//.test(idx), 'indeks kategorii');
-ok(['/', '/jak-liczymy/', '/lupka-czy-yuka/', '/kategorie/', '/kategorie/jogurty/', '/privacy.html'].every(u => sm.includes(`<loc>https://lupka.app${u}</loc>`)), 'mapa strony');
+ok(['/', '/jak-liczymy/', '/aplikacje-do-sprawdzania-skladu/', '/lupka-czy-yuka/', '/kategorie/', '/kategorie/jogurty/', '/privacy.html'].every(u => sm.includes(`<loc>https://lupka.app${u}</loc>`)), 'mapa strony');
 // Bez danych: tylko strony stałe, bez błędu.
 const out2 = path.join(tmp, 'site2');
 execFileSync('node', [path.join(__dirname, '..', 'scripts', 'build_pages.cjs'), '--data', path.join(tmp, 'brak'), '--out', out2]);

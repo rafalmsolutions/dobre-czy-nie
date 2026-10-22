@@ -30,7 +30,8 @@
 ## Więcej
 
 - [Jak Lupka liczy wynik](https://lupka.app/jak-liczymy/): pełna metoda oceny z wagami, progami i przykładami.
-- [Lupka czy Yuka](https://lupka.app/lupka-czy-yuka/): porównanie ze źródłami.
+- [Aplikacje do sprawdzania składu w Polsce](https://lupka.app/aplikacje-do-sprawdzania-skladu/): Lupka, Zdrowe Zakupy, Yuka, Open Food Facts i SkanuJemy obok siebie, ze źródłami.
+- [Lupka czy Yuka](https://lupka.app/lupka-czy-yuka/): szczegółowe porównanie ze źródłami.
 - [Najlepszy skład według kategorii](https://lupka.app/kategorie/): rankingi produktów z polskich sklepów, aktualizowane co tydzień.
 
 ## Ważne zastrzeżenia

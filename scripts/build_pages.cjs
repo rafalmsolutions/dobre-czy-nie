@@ -92,7 +92,7 @@ main{padding:18px 0 40px}.doc{max-width:860px}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:12px 0 8px}
 .cat{display:flex;gap:12px;align-items:center;background:#fff;border-radius:20px;padding:14px 16px;text-decoration:none}.cat .ct b{display:block;font-size:16.5px}.cat .ct span{display:block;font-size:13.5px;color:var(--muted);line-height:1.4}
 .cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--ink);color:#fff;border-radius:26px;padding:22px 24px;margin:28px 0}.cta p{flex:1 1 300px;margin:0;font-weight:700}.cta .btn{background:#fff;color:var(--ink);border-color:#fff}
-.vs th:nth-child(2),.vs td:nth-child(2){background:#F1F8F3}
+.vs th:nth-child(2),.vs td:nth-child(2){background:#F1F8F3}.wide{position:relative;left:50%;transform:translateX(-50%);width:min(1160px,calc(100vw - 40px))}.apps{min-width:900px;font-size:14.5px}.apps td,.apps th{min-width:150px}.apps td:first-child{min-width:130px}
 details{background:#fff;border-radius:18px;padding:14px 18px;margin:10px 0}summary{font-weight:800;cursor:pointer}details p{margin:10px 0 0}
 .src{font-size:14.5px}.src li{margin:6px 0}
 footer{padding:26px 0 50px}footer .wrap{display:flex;justify-content:space-between;align-items:flex-start;gap:16px 26px;border-top:1px solid #CFD1D5;padding-top:24px;flex-wrap:wrap}
@@ -100,7 +100,7 @@ footer .links{display:flex;gap:10px 22px;flex-wrap:wrap;font-weight:800;font-siz
 @media (max-width:760px){nav.links{display:none}header .wrap{justify-content:space-between}body{font-size:16.5px}.lead{font-size:17.5px}
 .card{padding:18px}.prod{padding:10px 12px 10px 8px;gap:10px}.prod .pos{display:none}.prod img,.prod .noimg{width:50px;height:50px}.prod .v{display:none}.prod .ring{--s:46px!important}
 .tbl{font-size:14.5px}.hide-m{display:none}.tbl th,.tbl td{padding:9px 10px}}`;
-const NAV = [['/jak-liczymy/', 'Jak liczymy'], ['/kategorie/', 'Kategorie'], ['/lupka-czy-yuka/', 'Lupka czy Yuka'], ['/#pytania', 'Pytania']];
+const NAV = [['/jak-liczymy/', 'Jak liczymy'], ['/kategorie/', 'Kategorie'], ['/aplikacje-do-sprawdzania-skladu/', 'Porównanie aplikacji'], ['/#pytania', 'Pytania']];
 const page = ({ path: p, title, desc, h1, kick, lead, body, ld, crumbs, ogImage }) => `<!doctype html>
 <html lang="pl">
 <head>
@@ -141,7 +141,7 @@ ${lead ? `<p class="lead">${lead}</p>` : ''}
 ${body}
 </div></main>
 <footer><div class="wrap"><a class="logo" href="/"><svg><use href="#i-lupka"/></svg><b>lupka</b></a>
-<span class="links"><a href="/jak-liczymy/">Jak liczymy wynik</a><a href="/kategorie/">Produkty według kategorii</a><a href="/lupka-czy-yuka/">Lupka czy Yuka</a><a href="/privacy.html?z=strona">Polityka prywatności</a><a href="mailto:rafalmsolutions@gmail.com?subject=Lupka">Kontakt</a></span>
+<span class="links"><a href="/jak-liczymy/">Jak liczymy wynik</a><a href="/kategorie/">Produkty według kategorii</a><a href="/aplikacje-do-sprawdzania-skladu/">Porównanie aplikacji</a><a href="/privacy.html?z=strona">Polityka prywatności</a><a href="mailto:rafalmsolutions@gmail.com?subject=Lupka">Kontakt</a></span>
 <span class="muted">Dane: <a href="https://pl.openfoodfacts.org/">Open Food Facts</a> (ODbL) · © ${new Date(BUILT).getUTCFullYear()} Lupka</span></div></footer>
 </body>
 </html>
@@ -315,6 +315,71 @@ ${cta('Sprawdź swoje zakupy dla całej rodziny. Za darmo, bez konta.', '/app/',
   });
 }
 
+/* ---------- 2b. Aplikacje do sprawdzania składu w Polsce ---------- */
+const APPS_ASOF = '22.10.2026';
+function appsPage() {
+  const nProd = meta && meta.products ? `ok. ${num(Math.round(meta.products / 100) / 10)} tys. produktów z Polski` : 'produkty z Polski';
+  const A_ = ['Lupka (nasza)', 'Zdrowe Zakupy', 'Yuka', 'Open Food Facts', 'SkanuJemy'];
+  const rows = [
+    ['Cena', ['Za darmo, bez limitu skanów', 'Darmowa z limitem skanów; płatna subskrypcja zdejmuje limit i reklamy [2]', 'Podstawa za darmo; Premium od 15 USD rocznie [5]', 'Za darmo (projekt non-profit) [7]', 'Plan darmowy, większość funkcji płatna [8]']],
+    ['Reklamy', ['Nie', 'Tak, w wersji darmowej [1][2]', 'Nie [4]', 'Nie [7]', 'Nie [8]']],
+    ['Wynik dla kilku osób naraz', ['Tak: osobno każda osoba i jeden wynik rodziny', 'Nie znaleźliśmy w opisie', 'Nie znaleźliśmy w opisie', 'Nie znaleźliśmy w opisie', 'Nie znaleźliśmy w opisie']],
+    ['Jak ocenia jedzenie', ['0–100: 60% Nutri-Score, 30% dodatki według ryzyka, 10% przetworzenie (NOVA); metoda opisana publicznie', 'Ocena ze składników i wartości odżywczych [1]', '0–100: 60% Nutri-Score, 30% dodatki, 10% premia za bio [6]', 'Nutri-Score (A–E) i NOVA (1–4), bez jednej liczby [7]', 'Ocena dietetyka, analiza przez ekspertów bez AI [8]']],
+    ['Alergie i diety', ['14 alergenów UE, 4 diety, własne słowa; „Pilnuję”: cukier, sól, tłuszcze i inne', 'Własna lista składników, np. alergeny, gluten, cukry proste, tłuszcze utwardzone [1]', 'Ostrzeżenia o preferencjach w Premium [5]', 'Alergeny i etykiety (bio, bezglutenowe, wegańskie) w danych produktu [7]', '22 diety i wykluczenia, np. low FODMAP, bezhistaminowa [8]']],
+    ['Wyszukiwanie po nazwie', ['Za darmo', 'Tak [1]', 'W Premium [5]', 'Tak', 'Tak (filtry produktów) [8]']],
+    ['Baza produktów', [`Open Food Facts: ${nProd}`, 'Ponad 300 000 produktów [1]', '4 mln spożywczych i 2 mln kosmetyków [4]', 'Ponad 3 mln produktów na świecie [7]', '14 400 produktów z Biedronki, Lidla, Żabki i Auchan [8]']],
+    ['Kosmetyki', ['Tak (skład INCI)', 'Tak [1]', 'Tak [4]', 'Osobna baza Open Beauty Facts', 'Nie znaleźliśmy w opisie']],
+    ['Dodatki', ['Porównanie 2–3 produktów, półki (listy zakupów), album i nagrody', 'Porównywanie i dodawanie produktów [1]', 'Rekomendacje lepszych produktów [4]', 'Dodawanie produktów i zdjęć, ślad węglowy [7]', '480 przepisów, lista zakupów, kalorie [8]']],
+    ['Ocena w Google Play', ['Jeszcze nie ma (wkrótce)', '4,9 (61,4 tys. opinii), ponad 1 mln pobrań [1]', '5,0 (189 tys. opinii), ponad 10 mln pobrań [4]', '3,4 (7,73 tys. opinii), ponad 1 mln pobrań [7]', '4,6 w App Store i Google Play (wg strony) [8]']]
+  ];
+  const SRC = [
+    ['Zdrowe Zakupy w Google Play', 'https://play.google.com/store/apps/details?id=pl.healthyfood&hl=pl&gl=PL'],
+    ['Zdrowe Zakupy: regulamin subskrypcji', 'https://zdrowezakupy.org/regulamin-subskrypcji.html'],
+    ['Zdrowe Zakupy: strona', 'https://zdrowezakupy.org/'],
+    ['Yuka w Google Play', 'https://play.google.com/store/apps/details?id=io.yuka.android&hl=pl&gl=PL'],
+    ['Yuka: Premium', 'https://yuka.io/en/premium-member/'],
+    ['Yuka: jak oceniane są produkty', 'https://help.yuka.io/l/en/article/ijzgfvi1jq'],
+    ['Open Food Facts w Google Play', 'https://play.google.com/store/apps/details?id=org.openfoodfacts.scanner&hl=pl&gl=PL'],
+    ['SkanuJemy: strona', 'https://www.skanujemy.app/']
+  ];
+  const cite = t => esc(t).replace(/\[(\d)\]/g, (m, n) => `<a href="#zr${n}" class="small">[${n}]</a>`);
+  const body = `
+<p class="small muted">Stan na ${APPS_ASOF}. Stronę przygotował zespół Lupki, więc Lupka jest na pierwszym miejscu. Dane o innych aplikacjach pochodzą z ich stron i ze sklepu Google Play (numery w nawiasach prowadzą do źródeł). Jeśli coś się zmieniło, <a href="mailto:rafalmsolutions@gmail.com?subject=Por%C3%B3wnanie%20aplikacji">napisz do nas</a>, poprawimy.</p>
+<div class="card"><p style="margin:0"><b>W skrócie.</b> Wszystkie pięć aplikacji skanuje kod kreskowy i pokazuje skład. Różnią się tym, dla kogo liczą wynik, ile kosztują i jak dużą mają bazę. Z tego, co podają opisy aplikacji, tylko Lupka liczy wynik jednocześnie dla każdej osoby w rodzinie. Yuka i Open Food Facts mają największe bazy na świecie, Zdrowe Zakupy dużą bazę polskich produktów, a SkanuJemy specjalizuje się w dietach leczniczych.</p></div>
+<h2>Porównanie</h2>
+<div class="scroll wide"><table class="tbl vs apps"><thead><tr><th></th>${A_.map(a => `<th>${esc(a)}</th>`).join('')}</tr></thead><tbody>
+${rows.map(([k, v]) => `<tr><td><b>${esc(k)}</b></td>${v.map(x => `<td>${cite(x)}</td>`).join('')}</tr>`).join('')}
+</tbody></table></div>
+<p class="small muted">Na telefonie tabelę przewiniesz w bok.</p>
+<h2>Którą wybrać?</h2>
+<ul>
+<li><b>Kupujesz dla kilku osób z różnymi potrzebami</b> (np. dziecko z alergią i ktoś, kto pilnuje cukru): <a href="/app/">Lupka</a>. Jeden skan pokazuje, komu produkt nie pasuje i dlaczego.</li>
+<li><b>Jesteś na diecie leczniczej</b> (low FODMAP, bez histaminy, SIBO): SkanuJemy ma do tego gotowe diety i ocenę dietetyka.</li>
+<li><b>Zależy Ci na dużej bazie polskich produktów</b> (ponad 300 tys.) i nie przeszkadzają Ci reklamy w darmowej wersji: Zdrowe Zakupy.</li>
+<li><b>Często kupujesz za granicą</b> albo chcesz premii za bio w ocenie: Yuka.</li>
+<li><b>Chcesz współtworzyć otwarte dane</b> o jedzeniu: Open Food Facts. Z tej bazy korzysta też Lupka, więc produkt dodany w jednej aplikacji trafia do obu.</li>
+</ul>
+<h2>Czym Lupka różni się od reszty</h2>
+<ul>
+<li><b>Wynik dla całej rodziny</b> z jednego skanu, z możliwością wyłączenia osób, dla których dziś nie kupujesz.</li>
+<li><b>Jawna metoda.</b> Każdy próg i każda kara są opisane na stronie <a href="/jak-liczymy/">Jak Lupka liczy wynik</a>.</li>
+<li><b>Spokojny ton:</b> „na co dzień” i „od czasu do czasu” zamiast „szkodliwe”. Dodatki obniżają ocenę tylko przy umiarkowanych i dużych zastrzeżeniach.</li>
+<li><b>Za darmo bez reklam i limitów</b>, łącznie z wyszukiwaniem i porównaniem. Dane profilu zostają w telefonie.</li>
+</ul>
+<p>Gdzie Lupka jest słabsza: ma mniejszą bazę niż Zdrowe Zakupy czy Yuka i na razie działa w przeglądarce, bez aplikacji w sklepie. Brakujący produkt dodasz w minutę zdjęciem etykiety. Szczegółowe zestawienie z Yuką: <a href="/lupka-czy-yuka/">Lupka czy Yuka</a>.</p>
+<h2>Źródła</h2>
+<ol class="src">${SRC.map(([t, u], i) => `<li id="zr${i + 1}"><a href="${esc(u)}">${esc(t)}</a></li>`).join('')}</ol>
+<p class="small muted">Nazwy aplikacji są znakami towarowymi ich właścicieli. Lupka nie jest z nimi powiązana.</p>
+${cta('Sprawdź swoje zakupy dla całej rodziny. Za darmo, bez konta.', '/app/', 'Otwórz Lupkę')}`;
+  return page({
+    path: '/aplikacje-do-sprawdzania-skladu/', title: 'Aplikacje do sprawdzania składu produktów w Polsce – porównanie (2026)', h1: 'Aplikacje do sprawdzania składu: porównanie',
+    desc: 'Lupka, Zdrowe Zakupy, Yuka, Open Food Facts i SkanuJemy obok siebie: cena, reklamy, alergie i diety, baza produktów, wynik dla rodziny. Fakty ze źródłami.',
+    kick: 'PORÓWNANIE APLIKACJI', lead: 'Pięć popularnych w Polsce skanerów składu jedzenia: co potrafią, ile kosztują i która sprawdzi się w jakiej sytuacji.', body,
+    crumbs: [['/', 'Lupka'], ['/aplikacje-do-sprawdzania-skladu/', 'Porównanie aplikacji']],
+    ld: [ORG, { '@type': 'Article', headline: 'Aplikacje do sprawdzania składu produktów w Polsce – porównanie', inLanguage: 'pl-PL', dateModified: '2026-10-22', author: { '@id': BASE + '/#org' }, publisher: { '@id': BASE + '/#org' }, mainEntityOfPage: BASE + '/aplikacje-do-sprawdzania-skladu/' }]
+  });
+}
+
 /* ---------- 3. Kategorie ---------- */
 const TOP_N = 10, MIN_SCORED = 8;
 const FOREIGN = /[éèêëàâäçîïôöûùüßñåøæ]/i;
@@ -419,9 +484,10 @@ ${cta('W aplikacji te same kategorie są posortowane dla Twojej rodziny.', '/app
 }
 
 /* ---------- Zapis ---------- */
-const urls = [['/', today], ['/jak-liczymy/', today], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-21']];
+const urls = [['/', today], ['/jak-liczymy/', today], ['/aplikacje-do-sprawdzania-skladu/', '2026-10-22'], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-21']];
 write('jak-liczymy/index.html', methodPage());
 write('lupka-czy-yuka/index.html', yukaPage());
+write('aplikacje-do-sprawdzania-skladu/index.html', appsPage());
 let cats = [];
 if (fs.existsSync(path.join(DATA, 'c'))) {
   const seenSlug = new Set();
