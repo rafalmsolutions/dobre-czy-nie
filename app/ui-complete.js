@@ -37,14 +37,15 @@
   /* Wartości odżywcze z tekstu odczytanego ze zdjęcia tabeli. Zwraca { values, per } – tylko to, co udało się znaleźć;
      resztę człowiek dopisuje, a A.nutProblem sprawdza, czy liczby do siebie pasują (np. kalorie do makroskładników).
      Tabela bywa odczytana wierszami („Białko 8 g”) albo kolumnami (najpierw nazwy, potem liczby) – obsługujemy oba. */
-  const NUT_RULES = [['saturated-fat', /nasycon|kwasy|tluszczow/], ['sugars', /cukr/], ['fat', /tluszcz/], ['carbohydrates', /weglowodan/], ['fiber', /blonnik/], ['proteins', /bialk/], ['salt', /(^|[^a-z])sol([^a-z]|$)/]];
+  // Polskie nazwy, a dla tabel wielojęzycznych także angielskie (np. „of which saturates”).
+  const NUT_RULES = [['saturated-fat', /nasycon|kwasy|tluszczow|saturate/], ['sugars', /cukr|sugar/], ['fat', /tluszcz|(^|[^a-z])fat([^a-z]|$)/], ['carbohydrates', /weglowodan|carbohydrate/], ['fiber', /blonnik|fibre|fiber/], ['proteins', /bialk|protein/], ['salt', /(^|[^a-z])(sol|salt)([^a-z]|$)/]];
   A.parseNutText = raw => {
     const t = String(raw || '').replace(/\r/g, '').replace(/(\d)\s*,\s*(\d)/g, '$1.$2');
     const f = fold(t), values = {};
     const per = /100\s*ml/.test(f) && !/100\s*g(?![a-z])/.test(f) ? 'ml' : 'g';
     const kc = f.match(/(\d+(?:\.\d+)?)\s*kcal/); if (kc) values['energy-kcal'] = Number(kc[1]);
     // Kwasy jedno- i wielonienasycone pomijamy (liczą się tylko nasycone); „w tym kwasy / tłuszczowe 4,5 g / nasycone” to nasycone.
-    const lines = f.split('\n').map(l => l.trim()).filter(l => l && !/nienasycon/.test(l));
+    const lines = f.split('\n').map(l => l.trim()).filter(l => l && !/nienasycon|unsaturate/.test(l));
     const numIn = s => { const m = s.match(/<?\s*(\d+(?:\.\d+)?)\s*(?:g(?![a-z])|$|\s)/); return m ? Number(m[1]) : null; };
     const pending = [];
     lines.forEach((ln, i) => {
@@ -150,7 +151,8 @@
       if (opts.onDone) opts.onDone(st.saved);
     }
     const loading = (title, what) => { el.innerHTML = `<div class="panel stack">${head(title)}<p class="small muted">${what}</p><div class="sk" style="height:90px"></div></div>`; };
-    const ocrIngr = async () => { const r = await post('/ocr', { code: opts.code }); return r.ok ? A.trimOcr(r.text) : ''; };
+    // Bez zdjęcia składu nie ma czego odczytywać (odczyt trwa kilka sekund, więc go wtedy pomijamy).
+    const ocrIngr = async () => { if (!urls.ingredients && !opts.fresh && !st.justUploaded) return ''; const r = await post('/ocr', { code: opts.code }); return r.ok ? A.trimOcr(r.text) : ''; };
     const nutTries = () => opts.fresh || st.justUploaded ? 5 : 1;
 
     // --- Fragmenty ekranu ---
