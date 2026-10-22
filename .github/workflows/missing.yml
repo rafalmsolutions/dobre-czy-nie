@@ -1,0 +1,26 @@
+name: Lista braków w danych (Polska)
+
+# Uruchamiane ręcznie: Actions → „Lista braków w danych (Polska)” → Run workflow.
+# Wynik (CSV) do pobrania jako artefakt „braki”.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  braki:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pobierz produkty z Polski i wypisz braki
+        run: python3 scripts/missing_data.py --out braki.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: braki
+          path: braki.csv
+          retention-days: 30
