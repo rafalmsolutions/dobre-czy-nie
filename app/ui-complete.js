@@ -41,26 +41,35 @@
   const NUT_RULES = [['saturated-fat', /nasycon|kwasy|tluszczow|saturate/], ['sugars', /cukr|sugar/], ['fat', /tluszcz|(^|[^a-z])fat([^a-z]|$)/], ['carbohydrates', /weglowodan|carbohydrate/], ['fiber', /blonnik|fibre|fiber/], ['proteins', /bialk|protein/], ['salt', /(^|[^a-z])(sol|salt)([^a-z]|$)/]];
   A.parseNutText = raw => {
     const t = String(raw || '').replace(/\r/g, '').replace(/(\d)\s*,\s*(\d)/g, '$1.$2');
-    const f = fold(t), values = {};
+    // Odczyt myli zero z literą O („Sól OG”, „0 q”): poprawiamy przed szukaniem liczb.
+    const f = fold(t).replace(/(^|[\s(:])o\s?[gq](?=[^a-z]|$)/g, '$1 0 g').replace(/(\d)\s?q(?=[^a-z]|$)/g, '$1 g'), values = {};
     const per = /100\s*ml/.test(f) && !/100\s*g(?![a-z])/.test(f) ? 'ml' : 'g';
     const kc = f.match(/(\d+(?:\.\d+)?)\s*kcal/); if (kc) values['energy-kcal'] = Number(kc[1]);
-    // Kwasy jedno- i wielonienasycone pomijamy (liczą się tylko nasycone); „w tym kwasy / tłuszczowe 4,5 g / nasycone” to nasycone.
     const lines = f.split('\n').map(l => l.trim()).filter(l => l && !/nienasycon|unsaturate/.test(l));
-    const numIn = s => { const m = s.match(/<?\s*(\d+(?:\.\d+)?)\s*(?:g(?![a-z])|$|\s)/); return m ? Number(m[1]) : null; };
+    const numIn = s => { const m = s.match(/<?\s*(\d+(?:\.\d+)?)\s*(?:g(?![a-z])|$|\s|\)|,)/); return m ? Number(m[1]) : null; };
     const pending = [];
     lines.forEach((ln, i) => {
-      if (/k?j\b|kcal/.test(ln) && !NUT_RULES.some(([, re]) => re.test(ln))) return;
-      const rule = NUT_RULES.find(([, re]) => re.test(ln)); if (!rule) return;
-      const [k, re] = rule; if (values[k] != null) return;
-      const after = ln.slice(ln.search(re) + 1).replace(/^[a-z ]*/, ' ');
-      let v = numIn(after);
-      if (v == null && lines[i + 1] && /^<?\s*\d+(?:\.\d+)?\s*g$/.test(lines[i + 1]) && !pending.length) v = numIn(lines[i + 1]);
-      if (v == null) pending.push(k); else values[k] = v;
+      // Wszystkie nazwy w wierszu (tabela bywa jednym zdaniem: „tłuszcz 1,2 g (w tym nasycone 1,2 g), węglowodany…”).
+      const hits = [];
+      NUT_RULES.forEach(([k, re]) => { const g = new RegExp(re.source, 'g'); let m; while ((m = g.exec(ln))) { hits.push({ k, s: m.index, e: m.index + m[0].length }); if (!m[0].length) g.lastIndex++; } });
+      if (!hits.length) return;
+      // „tłuszczowe” to też „tłuszcz”: z nakładających się trafień zostaje dłuższe (tu: kwasy tłuszczowe = nasycone).
+      hits.sort((a, b) => a.s - b.s || (b.e - b.s) - (a.e - a.s));
+      for (let n = hits.length - 1; n > 0; n--) if (hits.slice(0, n).some(o => hits[n].s < o.e)) hits.splice(n, 1);
+      hits.forEach((h, n) => {
+        if (values[h.k] != null) return;
+        const nx = hits[n + 1];
+        if (nx && nx.k === h.k) return; // „nasycone kwasy tłuszczowe 1,2 g”: liczba stoi po ostatnim słowie
+        let v = numIn(ln.slice(h.e, nx ? nx.s : ln.length) + ' ');
+        if (v == null && !nx && lines[i + 1] && /^<?\s*\d+(?:\.\d+)?\s*g$/.test(lines[i + 1]) && !pending.length) v = numIn(lines[i + 1]);
+        if (v == null) { if (!pending.includes(h.k)) pending.push(h.k); } else values[h.k] = v;
+      });
     });
     // Odczyt kolumnami: nazwy bez liczb, a potem same liczby z „g” w tej samej kolejności.
-    if (pending.length) {
+    const todo = pending.filter(k => values[k] == null);
+    if (todo.length) {
       const nums = lines.filter(l => /^<?\s*\d+(?:\.\d+)?\s*g$/.test(l)).map(numIn);
-      pending.forEach((k, i) => { if (nums[i] != null && values[k] == null) values[k] = nums[i]; });
+      todo.forEach((k, n) => { if (nums[n] != null && values[k] == null) values[k] = nums[n]; });
     }
     Object.keys(values).forEach(k => { const v = values[k]; if (!isFinite(v) || v < 0 || (k === 'energy-kcal' ? v > 900 : v > 100)) delete values[k]; });
     return { values, per };

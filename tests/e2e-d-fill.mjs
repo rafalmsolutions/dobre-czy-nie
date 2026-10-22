@@ -56,5 +56,9 @@ const col = await page.evaluate(() => App.parseNutText('Wartość odżywcza\nWar
 ok(col.per === 'ml' && col.values['energy-kcal'] === 43 && col.values.sugars === 10.2 && col.values.salt === 0.01 && col.values.proteins === 0.5, 'tabela odczytana kolumnami (napój na 100 ml) ' + JSON.stringify(col));
 const real = await page.evaluate(() => App.parseNutText('wartość 100 g jogurtu odżywcza\n, Wartość\nenergetyczna 417 kJ /\n100 kcal\nTłuszcz 7,5g\nw tym kwasy\ntłuszczowe 4,5g\nnasycone\nWęglowodany 4,7g\nw tym cukry 4,7g\nBiałko 3,5g\nSól 0,12 g\nkwasy tłuszczowe jednonienasycone 2 g'));
 ok(JSON.stringify(real.values) === JSON.stringify({ 'energy-kcal': 100, fat: 7.5, 'saturated-fat': 4.5, carbohydrates: 4.7, sugars: 4.7, proteins: 3.5, salt: 0.12 }), 'prawdziwy odczyt z Open Food Facts (jogurt grecki): wszystkie pola ' + JSON.stringify(real.values));
+const para = await page.evaluate(() => App.parseNutText('WARTOŚĆ ODŻYWCZA NA 100 g : WARTOŚCETYCZNAT\nTŁUSZCZ 1,2 g ( W TYM NASYCONE KWASY TŁUSZCZOWE 1,2 g ) , WĘGLOWODANY 96,9 g ( W TYM\nBIAŁKO O q . SÓL OG .'));
+ok(JSON.stringify(para.values) === JSON.stringify({ fat: 1.2, 'saturated-fat': 1.2, carbohydrates: 96.9, proteins: 0, salt: 0 }), 'tabela jako zdanie, „O q” jako zero ' + JSON.stringify(para.values));
+const en = await page.evaluate(() => App.parseNutText('Energy 1029 kJ / 242 kcal\nFat 0.5 g\nof which saturates 0.4 g\nmonounsaturates 0 g\nCarbohydrate 97 g\nof which sugars 2 g\nProtein 0 g\nSalt 0 g'));
+ok(en.values.sugars === 2 && en.values['saturated-fat'] === 0.4 && en.values.carbohydrates === 97, 'tabela po angielsku');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);
