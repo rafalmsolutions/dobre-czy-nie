@@ -185,5 +185,6 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 ## Wyszukiwarki i asystenci AI (22.10.2026)
 - Strona: tytuł i opis ze słowami „skaner produktów”, canonical, podgląd linku (img/og.jpg 1200×630), dane strukturalne schema.org (Organization, WebSite, WebApplication, FAQPage).
 - robots.txt (wszyscy, także roboty AI, mile widziani), sitemap.xml, llms.txt (zwięzłe fakty o Lupce dla asystentów AI).
+- Strony budowane przy publikacji przez scripts/build_pages.cjs (test: tests/pages-test.cjs): /jak-liczymy/ (liczby czytane z app/core.js i app/data.js), /lupka-czy-yuka/, /kategorie/ i 44 kategorie z bieżącej kopii bazy, sitemap.xml. Lokalnie: gałąź dane-probka (workflow „Próbka danych”) i `node scripts/build_pages.cjs --data <próbka> --out .`.
 - /app/ i /archiwum/ mają „noindex”: w wynikach ma być strona, nie pusta powłoka aplikacji.
 

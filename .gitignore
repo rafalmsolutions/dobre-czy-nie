@@ -6,3 +6,9 @@ datacache/
 newdata/
 __pycache__/
 .wrangler/
+
+# Strony budowane przy publikacji (scripts/build_pages.cjs)
+/jak-liczymy/
+/lupka-czy-yuka/
+/kategorie/
+/sitemap.xml

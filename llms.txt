@@ -27,6 +27,12 @@
 - Album z kategoriami produktów i podpowiedziami, jak sprawdzić etykietę; punkty, poziomy, odznaki i wyzwania tygodnia.
 - Działa bez internetu na kopii bazy polskich produktów.
 
+## Więcej
+
+- [Jak Lupka liczy wynik](https://lupka.app/jak-liczymy/): pełna metoda oceny z wagami, progami i przykładami.
+- [Lupka czy Yuka](https://lupka.app/lupka-czy-yuka/): porównanie ze źródłami.
+- [Najlepszy skład według kategorii](https://lupka.app/kategorie/): rankingi produktów z polskich sklepów, aktualizowane co tydzień.
+
 ## Ważne zastrzeżenia
 
 - Lupka nie jest poradą medyczną i nie zastępuje dietetyka. Przy alergii zawsze trzeba sprawdzić etykietę na opakowaniu, bo dane w otwartej bazie mogą zawierać błędy.

@@ -42,6 +42,7 @@ jobs:
           node tests/unit-d.cjs
           node tests/worker-test.mjs
           node tests/worker-disc-test.mjs
+          node tests/pages-test.cjs
 
       - name: Ostatnia udana kopia danych (zapas, gdy Open Food Facts nie odpowiada)
         uses: actions/cache/restore@v4
@@ -73,6 +74,7 @@ jobs:
           mkdir site
           rsync -a --exclude '.git*' --exclude tests --exclude scripts --exclude worker --exclude datacache --exclude site --exclude README.md ./ site/
           cp -r datacache site/data
+          node scripts/build_pages.cjs --data site/data --out site
           du -sh site site/data
           find site -type f | wc -l
 
