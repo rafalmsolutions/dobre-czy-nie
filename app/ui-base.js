@@ -748,7 +748,7 @@ const App = {};
     setTimeout(() => A.$('scanner').querySelector('[data-act=close-scan]').focus(), 30);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return scanError('Ta przeglądarka nie daje dostępu do aparatu', 'Wpisz cyfry spod kodu poniżej albo wybierz zdjęcie kodu.');
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      stream = await openCamera();
     } catch (e) {
       return scanError('Nie mamy dostępu do aparatu', e && e.name === 'NotAllowedError' ? 'Zezwól na dostęp do aparatu w ustawieniach przeglądarki albo wpisz cyfry spod kodu poniżej.' : 'Nie znaleźliśmy aparatu albo używa go inna aplikacja. Wpisz cyfry spod kodu poniżej.');
     }
@@ -757,12 +757,58 @@ const App = {};
     try { await video.play(); } catch (e) { }
     const track = stream.getVideoTracks()[0];
     try { const caps = track.getCapabilities ? track.getCapabilities() : {}; if (caps.torch) { A.$('torchBtn').hidden = false; A.$('torchSpacer').hidden = true; } } catch (e) { }
+    await tuneCamera(track);
+    A.$('scanner').onclick = e => { if (!e.target.closest('button,a,input,form,.scan-err')) A.refocus(); };
     detector = await nativeDetector();
     if (!detector) {
       try { await A.loadScript(ZXING_URLS); } catch (e) { return scanError('Nie udało się uruchomić skanera', 'Sprawdź połączenie z internetem albo wpisz cyfry spod kodu poniżej.'); }
     }
     scanning = true; lastCand = null; sameCount = 0; scanStart = Date.now(); hinted = false;
     tick();
+  };
+  /* Aparat do kodów. Telefony z kilkoma aparatami z tyłu potrafią dać szerokokątny bez autofokusa (ostry tylko na jedną
+     odległość). Wybieramy tylny aparat z ciągłym autofokusem i zapamiętujemy go w telefonie (d-cam). */
+  const camVideo = id => ({ video: Object.assign(id ? { deviceId: { exact: id } } : { facingMode: { ideal: 'environment' } }, { width: { ideal: 1920 }, height: { ideal: 1080 } }), audio: false });
+  const camCaps = st => { try { const t = st.getVideoTracks()[0]; return t && t.getCapabilities ? t.getCapabilities() : {}; } catch (e) { return {}; } };
+  const hasAF = caps => Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous');
+  async function openCamera() {
+    const saved = A.store.get('d-cam', '');
+    if (saved) { try { return await navigator.mediaDevices.getUserMedia(camVideo(saved)); } catch (e) { A.store.set('d-cam', ''); } }
+    let st = await navigator.mediaDevices.getUserMedia(camVideo(null));
+    const caps = camCaps(st);
+    // Brak informacji o ostrości (np. iPhone): zostajemy przy aparacie wybranym przez system.
+    if (!Array.isArray(caps.focusMode) || hasAF(caps) || !navigator.mediaDevices.enumerateDevices) { if (caps.deviceId && hasAF(caps)) A.store.set('d-cam', caps.deviceId); return st; }
+    try {
+      const cur = caps.deviceId, devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput' && d.deviceId !== cur && !/front|przed|user|selfie/i.test(d.label));
+      for (const d of devs) {
+        let alt = null;
+        try { st.getTracks().forEach(t => t.stop()); alt = await navigator.mediaDevices.getUserMedia(camVideo(d.deviceId)); } catch (e) { alt = null; }
+        if (alt && hasAF(camCaps(alt))) { A.store.set('d-cam', d.deviceId); return alt; }
+        if (alt) alt.getTracks().forEach(t => t.stop());
+      }
+    } catch (e) { }
+    // Żaden nie ma autofokusa: wracamy do domyślnego.
+    try { st.getTracks().forEach(t => t.stop()); } catch (e) { }
+    return navigator.mediaDevices.getUserMedia(camVideo(null));
+  }
+  // Ciągły autofokus, a przy dużym zoomie lekkie przybliżenie: kod da się czytać z dalszej odległości, w zasięgu ostrości.
+  async function tuneCamera(track) {
+    if (!track || !track.getCapabilities) return;
+    let caps = {}; try { caps = track.getCapabilities(); } catch (e) { return; }
+    const adv = {};
+    if (hasAF(caps)) adv.focusMode = 'continuous';
+    if (caps.zoom && caps.zoom.max >= 2 && caps.zoom.min <= 1.5) adv.zoom = 1.5;
+    if (Object.keys(adv).length) { try { await track.applyConstraints({ advanced: [adv] }); } catch (e) { } }
+  }
+  // Stuknięcie w obraz: ponowne ustawienie ostrości (tam, gdzie telefon na to pozwala).
+  A.refocus = async () => {
+    const track = stream && stream.getVideoTracks()[0]; if (!track || !track.getCapabilities) return;
+    let caps = {}; try { caps = track.getCapabilities(); } catch (e) { return; }
+    const modes = Array.isArray(caps.focusMode) ? caps.focusMode : [];
+    try {
+      if (modes.includes('single-shot')) await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+      if (modes.includes('continuous')) await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+    } catch (e) { }
   };
   async function nativeDetector() {
     if (!('BarcodeDetector' in window)) return null;
@@ -806,7 +852,7 @@ const App = {};
         if (sameCount >= (code.length === 8 ? 3 : 2)) { found(code); return; }
       }
     }
-    if (scanStart && Date.now() - scanStart > 6000 && !hinted) { hinted = true; A.$('scanHint').textContent = 'Nie odczytuje? Ustaw kod płasko w ramce (puszkę obróć), odsuń telefon na ok. 15 cm i włącz latarkę, jeśli jest ciemno.'; }
+    if (scanStart && Date.now() - scanStart > 6000 && !hinted) { hinted = true; A.$('scanHint').textContent = 'Nie odczytuje? Odsuń telefon na 20–30 cm (z bliska aparat nie łapie ostrości), stuknij w obraz, ustaw kod płasko w ramce (puszkę obróć) i włącz latarkę, jeśli jest ciemno.'; }
     setTimeout(() => scanning && requestAnimationFrame(tick), detector ? 80 : 140);
   }
   function found(code) {

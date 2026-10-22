@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Ostrość skanera i statystyki strony (22.10.2026, wersja 2.7.5)
+- Skaner: na telefonach z kilkoma tylnymi aparatami system bywa, że daje szerokokątny bez autofokusa (ostry tylko na jedną odległość). Jeśli domyślny aparat nie ma ciągłego autofokusa, sprawdzamy inne tylne aparaty i bierzemy pierwszy z autofokusem; wybór zapamiętany w d-cam. Rozdzielczość do 1920×1080, ciągła ostrość, zoom 1,5× (gdy aparat ma co najmniej 2×), stuknięcie w obraz ponownie ustawia ostrość. iPhone (bez informacji o ostrości) bez zmian. Podpowiedź po 6 s: 20–30 cm.
+- Strona lupka.app (poza aplikacją) liczy odsłony w GoatCounter (ścieżki „strona/…”, z adresem, skąd przyszedł odwiedzający), bez ciasteczek, z poszanowaniem „Nie śledź”. Polityka prywatności uzupełniona.
+- Test: `tests/e2e-d-camera.mjs` (udawane aparaty Chromium).
+
 ## Zdjęcie opakowania (22.10.2026, wersja 2.7.4)
 - Produkt z nazwą, ale bez zdjęcia przodu: na ekranie produktu przycisk „Zrób zdjęcie opakowania (+10 pkt)”. Jedno stuknięcie otwiera aparat, zdjęcie idzie przez /image (field=front) do OFF. Gdy brakuje też składu lub wartości, przycisk jest pod „Uzupełnij”.
 - Wysłane kody pamiętamy w d-front, żeby nie prosić drugi raz, zanim baza pokaże zdjęcie.

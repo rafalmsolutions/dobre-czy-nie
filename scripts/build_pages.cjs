@@ -143,6 +143,9 @@ ${body}
 <footer><div class="wrap"><a class="logo" href="/"><svg><use href="#i-lupka"/></svg><b>lupka</b></a>
 <span class="links"><a href="/jak-liczymy/">Jak liczymy wynik</a><a href="/kategorie/">Produkty według kategorii</a><a href="/aplikacje-do-sprawdzania-skladu/">Porównanie aplikacji</a><a href="/privacy.html?z=strona">Polityka prywatności</a><a href="mailto:rafalmsolutions@gmail.com?subject=Lupka">Kontakt</a></span>
 <span class="muted">Dane: <a href="https://pl.openfoodfacts.org/">Open Food Facts</a> (ODbL) · © ${new Date(BUILT).getUTCFullYear()} Lupka</span></div></footer>
+<script>/* Anonimowe odsłony strony (GoatCounter, bez ciasteczek, bez IP); szanujemy „Nie śledź”. */
+(()=>{try{if(navigator.doNotTrack==='1'||/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||location.hostname!=='lupka.app')return;const r=document.referrer&&!document.referrer.startsWith(location.origin)?document.referrer:'';new Image().src='https://dobreczynie.goatcounter.com/count?p='+encodeURIComponent('strona'+location.pathname)+'&t='+encodeURIComponent(document.title.slice(0,100))+'&r='+encodeURIComponent(r)+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2,8)}catch(e){}})();
+</script>
 </body>
 </html>
 `;

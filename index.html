@@ -354,5 +354,8 @@ footer .links{display:flex;gap:26px;flex-wrap:wrap;font-weight:800;font-size:14.
   feats.addEventListener('scroll', () => { const i = Math.round(feats.scrollLeft / (feats.scrollWidth / dots.length)); dots.forEach((d, k) => d.classList.toggle('on', k === i)); }, { passive: true });
 })();
 </script>
+<script>/* Anonimowe odsłony strony (GoatCounter, bez ciasteczek, bez IP); szanujemy „Nie śledź”. */
+(()=>{try{if(navigator.doNotTrack==='1'||/bot|crawl|spider|lighthouse/i.test(navigator.userAgent)||location.hostname!=='lupka.app')return;const r=document.referrer&&!document.referrer.startsWith(location.origin)?document.referrer:'';new Image().src='https://dobreczynie.goatcounter.com/count?p='+encodeURIComponent('strona'+location.pathname)+'&t='+encodeURIComponent(document.title.slice(0,100))+'&r='+encodeURIComponent(r)+'&s='+screen.width+'&rnd='+Math.random().toString(36).slice(2,8)}catch(e){}})();
+</script>
 </body>
 </html>
