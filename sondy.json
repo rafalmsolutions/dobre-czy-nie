@@ -1,0 +1,263 @@
+{
+ "poland": 21192,
+ "590": 26984,
+ "code:5901* AND NOT countries_tags:\"en:poland\"": [
+  2237,
+  true
+ ],
+ "code:5901* AND -countries_tags:\"en:poland\"": [
+  2237,
+  true
+ ],
+ "code:5901*": [
+  4590,
+  true
+ ],
+ "code:5901* AND countries_tags:\"en:poland\"": [
+  2353,
+  true
+ ],
+ "590 bez PL": 12621,
+ "przyklady": [
+  [
+   "5900020025494",
+   "Gluten Free Corn Flakes",
+   [
+    "Nestlé"
+   ],
+   1,
+   [
+    "en:denmark",
+    "en:finland",
+    "en:france"
+   ]
+  ],
+  [
+   "5906425121137",
+   "Ketchup",
+   [
+    "McDonald's",
+    "Develey"
+   ],
+   1,
+   [
+    "en:france",
+    "en:serbia"
+   ]
+  ],
+  [
+   "5906974017455",
+   "Mangue en cubes",
+   [
+    "Andros"
+   ],
+   1,
+   [
+    "en:france",
+    "en:switzerland"
+   ]
+  ],
+  [
+   "5902768863970",
+   "Bogutti American Cookies With Chocolate Chips n Hazelnut",
+   [
+    "Bogutti"
+   ],
+   3,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5906850031087",
+   null,
+   null,
+   null,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5901713014153",
+   "Mousseline de pomme",
+   [
+    "Dawtona"
+   ],
+   1,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5906874064009",
+   "Farine typ 450",
+   [
+    "Lubelskie Mtyny"
+   ],
+   2,
+   [
+    "en:france",
+    "en:united-states"
+   ]
+  ],
+  [
+   "5901088009167",
+   "grand original apple",
+   [
+    "grand"
+   ],
+   2,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5908310286242",
+   "WAFLIN NUGATIN",
+   [
+    "TAGO"
+   ],
+   1,
+   [
+    "en:mexico"
+   ]
+  ],
+  [
+   "5900334006745",
+   "Orange nectar",
+   [
+    "Tymbark"
+   ],
+   1,
+   [
+    "en:belgium"
+   ]
+  ],
+  [
+   "5903021303813",
+   "Salted hazelnut & Tanzanian coffée",
+   [
+    "Nuii"
+   ],
+   2,
+   [
+    "en:france",
+    "en:germany"
+   ]
+  ],
+  [
+   "5902627491214",
+   "Salmone norvegese",
+   null,
+   null,
+   [
+    "en:italy"
+   ]
+  ],
+  [
+   "5906747172220",
+   "Mini bites",
+   [
+    "Kupiec"
+   ],
+   1,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5900020029096",
+   "Barres de céréales amandes et graines de courges",
+   [
+    "CLUSTERS"
+   ],
+   1,
+   [
+    "en:belgium",
+    "en:france"
+   ]
+  ],
+  [
+   "5902487113363",
+   "Cocorico ailes de poulet fumé",
+   null,
+   null,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5903772570106",
+   "SMART",
+   [
+    "dddff"
+   ],
+   1,
+   [
+    "en:italy"
+   ]
+  ],
+  [
+   "5900385501657",
+   "Ketchup à la prune",
+   null,
+   null,
+   [
+    "en:france"
+   ]
+  ],
+  [
+   "5904016040867",
+   "Oxycort",
+   null,
+   1,
+   [
+    "en:north-macedonia"
+   ]
+  ],
+  [
+   "5901062002702",
+   "Milk 1,5% Fat content",
+   [
+    "Mlekovita"
+   ],
+   1,
+   [
+    "en:cyprus"
+   ]
+  ],
+  [
+   "5901150007053",
+   "Bismarkhering",
+   [
+    "Marinus"
+   ],
+   1,
+   [
+    "en:germany"
+   ]
+  ]
+ ],
+ "images": "{\"code\":\"5900197012723\",\"product\":{\"images\":{\"1\":{\"sizes\":{\"100\":{\"h\":100,\"w\":56},\"400\":{\"h\":400,\"w\":225},\"full\":{\"h\":5344,\"w\":3008}},\"uploaded_t\":1562661277,\"uploader\":\"openfoodfacts-contributors\"},\"2\":{\"sizes\":{\"100\":{\"h\":100,\"w\":56},\"400\":{\"h\":400,\"w\":225},\"full\":{\"h\":5344,\"w\":3008}},\"uploaded_t\":1562661385,\"uploader\":\"openfoodfacts-contributors\"},\"3\":{\"sizes\":{\"100\":{\"h\":100,\"w\":56},\"400\":{\"h\":400,\"w\":225},\"full\":{\"h\":5344,\"w\":3008}},\"uploaded_t\":1562661424,\"uploader\":\"openfoodfacts-contributors\"},\"front_pl\":{\"coordinates_image_size\":\"400\",\"imgid\":\"1\",\"rev\":\"11\",\"sizes\":{\"100\":{\"h\":100,\"w\":63},\"200\":{\"h\":200,\"w\":125},\"400\":{\"h\":400,\"w\":250},\"full\":{\"h\":4804,\"w\":3008}},\"x1\":0,\"x2\":3008,\"y1\":0,\"y2\":4804},\"ingredients_pl\":{\"coordinates_image_size\":\"400\",\"imgid\":\"2\",\"rev\":\"12\",\"sizes\":{\"100\":{\"h\":82,\"w\":100},\"200\":{\"h\":164,\"w\":200},\"400\":{\"h\":328,\"w\":400},\"full\":{\"h\":1303,\"w\":1589}},\"x1\":764,\"x2\":2353,\"y1\":1298,\"y2\":2601},\"nutrition_pl\":{\"coordinates_image_size\":\"full\",\"imgid\":\"3\",\"rev\":\"14\",\"sizes\":{\"100\":{\"h\":100,\"w\":66},\"200\":{\"h\":200,\"w\":132},\"400\":{\"h\":400,\"w\":264},\"full\":{\"h\":1894,\"w\":1249}},\"x1\":1636,\"x2\":2885,\"y1\":753,\"y2\":2647}}},\"status\":1,\"status_verbose\":\"product found\"}",
+ "nutrition_imgid": "3",
+ "ocr_json": [
+  200,
+  "{\"responses\":[{\"labelAnnotations\":[{\"mid\":\"/m/04k94\",\"description\":\"Liquid\",\"score\":0.88383013,\"topicality\":0.88383013},{\"mid\":\"/m/02yfx\",\"description\":\"Fluid\",\"score\":0.8690263,\"topicality\":0.8690263},{\"mid\":\"/m/0457gc6\",\"description\":\"Material property\",\"score\":0.8001803,\"topicality\":0.8001803},{\""
+ ],
+ "ocr_json.gz": [
+  200,
+  "\u001f�\b\bյNg\u0002�3.json\u0000�}�n��u�4t���\\��܍��\u0001��\u0001\u0019g{'��Ѣ8\u001a�T�\u00191�� @���K\u0004���{��f�o�_�7���l]٪a�ߪӪu^�������zu}v����\u001f�.���.�\\��7˛�4�\u001d|w���\u0017�~��G�\\D����7gקW��7��ë��M���������\u0017�E\b:h!��g7������\u000f�����\u001fU\u001f����������B���\u000f��/\u001a�ߞ�替Xޜ]�//\u0017���Ϯ�\u0007��\u000b!�h��0\\Q�ǻ�����_^���\\��.^_ޞ���&��T��<\\}�˛�����|u1���i��4����o�\u000f��毗竛�7�\u0013Q"
+ ],
+ "ingredients.pl nutrition": [
+  200,
+  "{}"
+ ],
+ "ingredients.pl ingredients": [
+  200,
+  "{\"ocr_engine\":\"google_cloud_vision\",\"ingredients_text_from_image\":\"Mleko, śmietanka, mleko zagęszczone odtłuszczone, żywe kultury bakterii jogurtowych (Streptococcus thermophilus i Lactobacillus delbrueckii subsp. bulgaricus) oraz L. acidophilus i Bifidobacterium lactis. Należy natut das data i ne partii\",\"status\":0,\"ingredients_text_from_image_orig\":null}"
+ ],
+ "robotoff": [
+  200,
+  "{\"count\":0,\"insights\":[],\"status\":\"no_insights\"}"
+ ]
+}
