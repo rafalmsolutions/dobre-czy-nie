@@ -16,6 +16,10 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Kolekcja i nowa karta (22.10.2026, wersja 2.7.3)
+- Kafelki „Twoja kolekcja” (karty, pełne strony, legendarne, błyszczące) są linkami do zestawień: #/album/karty, /pelne, /legendarne, /blyszczace. Przy zerze zestawienie wyjaśnia, jak je zdobyć.
+- Odsłonięta karta: przyciski „Wynik produktu” / „Zobacz stronę” przyklejone do dołu ekranu, karta mniejsza (190 px), opis przewija się pod przyciskami.
+
 ## Po pierwszym teście w sklepie (22.10.2026, wersja 2.7.2)
 - Półka: kupione znikają z działów do zwiniętego „W koszyku: N” (można je rozwinąć i odznaczyć). „Szybko dodaj”: ulubione (♥ przy produkcie, d-fav) i rzeczy kupione co najmniej 2 razy (↻, d-bought).
 - Pitne produkty mleczne (jogurty, kefiry, maślanki, skyr pitny…) mają Nutri-Score liczony algorytmem dla napojów (Nutri-Score 2023), niezależnie od oceny w bazie. Wcześniej dwa skyry pitne o identycznych wartościach miały w OFF B i E tylko przez inną kategorię.

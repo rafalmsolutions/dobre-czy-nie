@@ -162,12 +162,13 @@
     box.innerHTML = `<div class="rv-wrap">
       <div class="rv-top"><button class="rv-x" type="button" data-act="reveal-close" aria-label="Zamknij"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span>Album · ${esc(page.label)}</span><span style="width:44px"></span></div>
       ${rv.flipped ? '' : `<span class="rv-kicker">NOWE MIEJSCE${si >= 0 ? ' #' + String(si + 1).padStart(2, '0') : ''}</span>`}
-      <div class="rv-stage">${rv.flipped ? `<div class="rv-rays" aria-hidden="true" style="background:${c.h ? RAYS.holo : RAYS[c.r]}"></div><div class="rv-front">${A.cardHtml(c, 224)}</div>`
+      <div class="rv-stage${rv.flipped ? ' open' : ''}">${rv.flipped ? `<div class="rv-rays" aria-hidden="true" style="background:${c.h ? RAYS.holo : RAYS[c.r]}"></div><div class="rv-front">${A.cardHtml(c, 190)}</div>`
         : `<button class="rv-back" type="button" data-act="reveal-flip" aria-label="Odsłoń nową kartę" style="background:${BACK[c.r] || BACK.zwykla}"><span class="rv-q">?</span><b class="rv-slot">${slot.secret ? '???' : esc(slot.label)}</b><span class="rv-logo"><span>dobre </span><b>czy nie?</b></span></button>`}</div>
       ${rv.flipped ? `<div class="rv-text" role="status"><h2><span class="w-light">${esc(h1[0])}</span> <span class="w-bold">${esc(h1[1])}</span></h2><p>${esc(text)}${extra ? ' ' + esc(extra) : ''}</p>${A.labelTip(Object.assign({}, slot, { secret: false })) ? `<p class="rv-tip"><b>Na etykiecie:</b> ${esc(A.labelTip(Object.assign({}, slot, { secret: false })))}</p>` : ''}
         ${gal ? `<div class="rv-progress rv-gal">${A.galleryHtml(c.k, openIdx(c.k), { size: 'tiny', fresh: si >= 0 ? si : null })}<span class="stack" style="gap:4px;text-align:left"><b>Plakat: ${esc(page.label)}</b><span>Odsłoniłeś kolejny fragment: ${have} z ${A.ALBUM_SLOTS}</span></span></div>`
           : `<div class="rv-progress"><div class="row" style="justify-content:space-between"><b>Strona: ${esc(page.label)}</b><b>${have} z ${A.ALBUM_SLOTS}</b></div><span class="xp"><i style="width:${have * 10}%"></i></span></div>`}
-        <div class="rv-btns"><button class="btn btn-white" type="button" data-act="reveal-close">Wynik produktu</button>${rv.res.pageFull ? '<button class="btn btn-green" type="button" data-act="reveal-page">Dalej ›</button>' : `<a class="btn btn-green" href="#/album/${esc(c.k)}" data-act="reveal-album">Zobacz stronę</a>`}</div></div>`
+      </div>
+        <div class="rv-btns rv-dock"><button class="btn btn-white" type="button" data-act="reveal-close">Wynik produktu</button>${rv.res.pageFull ? '<button class="btn btn-green" type="button" data-act="reveal-page">Dalej ›</button>' : `<a class="btn btn-green" href="#/album/${esc(c.k)}" data-act="reveal-album">Zobacz stronę</a>`}</div>`
         : '<div class="rv-text"><h2><span class="w-light">Nowa</span> <span class="w-bold">karta</span></h2><p>Ten produkt zajmuje wolne miejsce w albumie. Stuknij, żeby ją odsłonić.</p></div>'}
     </div>`;
   }
@@ -238,7 +239,7 @@
     A.$('scr-album').innerHTML = `<div class="wrap"><span class="d-arc d-arc-album" aria-hidden="true"></span>
       <div class="d-head"><h1 class="al-h"><span class="w-light">Twoja</span> <span class="w-bold">kolekcja</span></h1>${A.hudPill()}</div>
       ${A.collTabs('cards')}
-      <div class="al-stats"><div><b>${st.cards}</b><span>${plural(st.cards, 'karta', 'karty', 'kart')}</span></div><div><b>${st.pages}</b><span>pełne strony</span></div><div class="legend"><b>${st.legend}</b><span>legendarne</span></div><div class="holo"><b>${st.holo} ✦</b><span>błyszczące</span></div></div>
+      <nav class="al-stats" aria-label="Twoje karty"><a href="#/album/karty"><b>${st.cards}</b><span>${plural(st.cards, 'karta', 'karty', 'kart')}</span></a><a href="#/album/pelne"><b>${st.pages}</b><span>pełne strony</span></a><a class="legend" href="#/album/legendarne"><b>${st.legend}</b><span>legendarne</span></a><a class="holo" href="#/album/blyszczace"><b>${st.holo} ✦</b><span>błyszczące</span></a></nav>
       <a class="al-week${wk.done ? ' done' : ''}" href="#/album/${esc(wk.key)}">${wk.img ? `<img src="${esc(wk.img)}" alt="">` : ''}<span class="grow"><span class="al-week-k">POLOWANIE TYGODNIA</span><b>Wolne miejsce na stronie: ${esc(wk.label.toLowerCase())}</b><span>${wk.done ? 'Zdobyte w tym tygodniu ✓' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')} · złota ramka i +30 pkt`}</span></span><span aria-hidden="true">›</span></a>
       ${A.discOn && A.discOn() ? (() => { const its = Object.values(A.disc.items), conf = its.filter(i => i.status === 'confirmed').length; return `<a class="al-disc" href="#/odkrycia"><span class="disc-gold" aria-hidden="true">★</span><span class="grow"><b>Twoje odkrycia</b><span>${its.length ? `${its.length} ${plural(its.length, 'dodany', 'dodane', 'dodanych')} · ${conf} ${plural(conf, 'potwierdzony', 'potwierdzone', 'potwierdzonych')}` : 'Dodaj produkt, którego nie ma w bazie: +50 pkt i złota karta'}</span></span><span aria-hidden="true">›</span></a>`; })() : ''}
       ${near.length ? `<div class="sec-head"><h2>Prawie gotowe</h2></div><div class="stack" style="gap:10px">${near.map(p => `<a class="al-near" href="#/album/${esc(p.key)}">${p.img ? `<img src="${esc(p.img)}" alt="">` : ''}<span class="grow stack" style="gap:6px"><span class="row" style="justify-content:space-between"><b>${esc(p.label)}</b><b>${p.n} z ${A.ALBUM_SLOTS}</b></span><span class="xp"><i style="width:${p.n * 10}%"></i></span><span class="small muted">Brakuje: ${esc(A.missingText(p.key, 2) || 'tajnego miejsca')}</span></span></a>`).join('')}</div>` : ''}
@@ -248,9 +249,30 @@
     </div>`;
   });
 
+  /* ---------- Zestawienia z kafelków kolekcji: wszystkie karty, pełne strony, legendarne, błyszczące ---------- */
+  const SETS = {
+    karty: { h: ['Wszystkie', 'karty'], pick: c => true, empty: 'Nie masz jeszcze kart. Zeskanuj produkt, a zajmie pierwsze pasujące miejsce w albumie.' },
+    legendarne: { h: ['Karty', 'legendarne'], pick: c => c.r === 'legendarna', info: 'Legendarne miejsce spełnia mniej niż 1 na 50 popularnych produktów z kategorii.', empty: 'Jeszcze żadnej. Legendarne miejsce spełnia mniej niż 1 na 50 popularnych produktów z kategorii. Na stronie albumu widać, które miejsca są najtrudniejsze.' },
+    blyszczace: { h: ['Karty', 'błyszczące'], pick: c => c.h, info: 'Błyszcząca może się trafić przy każdej nowej karcie, mniej więcej raz na 20. To czyste szczęście.', empty: 'Jeszcze żadnej. Błyszcząca może się trafić przy każdej nowej karcie, mniej więcej raz na 20.' },
+    pelne: { h: ['Pełne', 'strony'], empty: 'Jeszcze żadnej. Strona jest pełna, gdy zdobędziesz wszystkie 10 miejsc. Za pełną stronę: złota ramka i +100 pkt.' }
+  };
+  const setHtml = key => {
+    const S = SETS[key], back = `<div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Twoja kolekcja</span>${A.hudPill()}</div>`;
+    const title = `<h1 class="al-h"><span class="w-light">${S.h[0]}</span> <span class="w-bold">${S.h[1]}</span></h1>`;
+    if (key === 'pelne') {
+      const full = Object.keys(A.album.done).map(k => ({ ...A.pageInfo(k), n: A.cardsOf(k).length })).filter(p => p.key);
+      return `<div class="wrap"><span class="d-arc d-arc-page" aria-hidden="true"></span>${back}${title}
+        ${full.length ? `<div class="al-grid">${full.map(p => `<a class="al-page full" href="#/album/${esc(p.key)}">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : ''}<b>${esc(p.label)}</b><span class="al-n">pełna strona</span><span class="al-star">★</span></a>`).join('')}</div>` : `<div class="empty">${S.empty}</div>`}</div>`;
+    }
+    const cards = Object.values(A.album.cards).filter(c => !c.legacy && S.pick(c)).sort((a, b) => b.t - a.t);
+    return `<div class="wrap"><span class="d-arc d-arc-page" aria-hidden="true"></span>${back}${title}
+      ${cards.length ? `<p class="small muted" style="font-weight:700;margin:0">${cards.length} ${plural(cards.length, 'karta', 'karty', 'kart')}, od najnowszej${S.info ? '. ' + S.info : ''}</p><div class="ap-grid">${cards.map((c, i) => `<a class="ap-slot" href="#/p/${esc(c.c)}" aria-label="${esc(c.n)}">${A.cardHtml(c, 156, i + 1)}</a>`).join('')}</div>` : `<div class="empty">${S.empty}</div>`}</div>`;
+  };
+
   /* ---------- Strona albumu ---------- */
   let pageReq = 0;
   A.route('albumPage', key => {
+    if (SETS[key]) { ++pageReq; A.$('scr-albumpage').innerHTML = setHtml(key); return; }
     const page = A.pageInfo(key);
     if (!page) { A.go('#/album'); return; }
     const el = A.$('scr-albumpage'), isCat = A.isHuntPage(key), req = ++pageReq;

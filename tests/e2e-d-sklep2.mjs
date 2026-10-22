@@ -83,5 +83,13 @@ const sc = await page.evaluate(() => { const nm = { 'energy-kcal_100g': 80, fat_
   const a = analyze(mk('Skyr jogurt pitny Wiśnia', 'e', ['en:dairies', 'en:yogurts', 'en:yogurt-drinks'])), b2 = analyze(mk('Skyr jogurt pitny', 'b', ['en:dairies', 'en:yogurts', 'en:skyrs'])), c = analyze(mk('Skyr truskawkowy', 'b', ['en:dairies', 'en:yogurts']));
   return [a.score, b2.score, a.nutriscoreBeverage, c.nutriscoreBeverage, c.score]; });
 ok(sc[0] === sc[1] && sc[2] === true && sc[3] === false, 'skyr pitny wiśnia i truskawka: ta sama ocena (' + sc.join(',') + ')');
+// 7. Kafelki „Twoja kolekcja” prowadzą do zestawień kart
+await go('#/album');
+await page.click('.al-stats a.holo'); await page.waitForTimeout(400);
+ok(await page.evaluate(() => location.hash) === '#/album/blyszczace' && /błyszczące/i.test(await page.innerText('#scr-albumpage h1')), 'kafelek „błyszczące” otwiera zestawienie');
+await go('#/album/karty');
+ok(await page.locator('#scr-albumpage .ap-slot').count() === await page.evaluate(() => Object.values(App.album.cards).filter(c => !c.legacy).length), 'wszystkie karty: tyle samo co na kafelku');
+await go('#/album/pelne');
+ok(/10 miejsc/.test(await page.innerText('#scr-albumpage')) || await page.locator('#scr-albumpage .al-page').count() > 0, 'pełne strony: lista albo wyjaśnienie');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

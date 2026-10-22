@@ -504,7 +504,7 @@ const App = {};
     else if (h === '#/najlepsze') screen = 'cats';
     else if (h === '#/album') screen = 'album';
     else if (h === '#/odkrycia') screen = 'discoveries';
-    else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
+    else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics|karty|pelne|legendarne|blyszczace)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
     else if (h === '#/porownaj') screen = 'compare';
     else if (h === '#/uzupelnij') screen = 'fill';
