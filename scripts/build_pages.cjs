@@ -318,7 +318,7 @@ ${cta('Sprawdź swoje zakupy dla całej rodziny. Za darmo, bez konta.', '/app/',
 /* ---------- 2b. Aplikacje do sprawdzania składu w Polsce ---------- */
 const APPS_ASOF = '22.10.2026';
 function appsPage() {
-  const nProd = meta && meta.products ? `ok. ${num(Math.round(meta.products / 100) / 10)} tys. produktów z Polski` : 'produkty z Polski';
+  const nProd = meta && meta.products ? `ok. ${num(Math.round(meta.products / 100) / 10)} tys.` : 'kilkanaście tysięcy';
   const A_ = ['Lupka (nasza)', 'Zdrowe Zakupy', 'Yuka', 'Open Food Facts', 'SkanuJemy'];
   const rows = [
     ['Cena', ['Za darmo, bez limitu skanów', 'Darmowa z limitem skanów; płatna subskrypcja zdejmuje limit i reklamy [2]', 'Podstawa za darmo; Premium od 15 USD rocznie [5]', 'Za darmo (projekt non-profit) [7]', 'Plan darmowy, większość funkcji płatna [8]']],
@@ -327,7 +327,7 @@ function appsPage() {
     ['Jak ocenia jedzenie', ['0–100: 60% Nutri-Score, 30% dodatki według ryzyka, 10% przetworzenie (NOVA); metoda opisana publicznie', 'Ocena ze składników i wartości odżywczych [1]', '0–100: 60% Nutri-Score, 30% dodatki, 10% premia za bio [6]', 'Nutri-Score (A–E) i NOVA (1–4), bez jednej liczby [7]', 'Ocena dietetyka, analiza przez ekspertów bez AI [8]']],
     ['Alergie i diety', ['14 alergenów UE, 4 diety, własne słowa; „Pilnuję”: cukier, sól, tłuszcze i inne', 'Własna lista składników, np. alergeny, gluten, cukry proste, tłuszcze utwardzone [1]', 'Ostrzeżenia o preferencjach w Premium [5]', 'Alergeny i etykiety (bio, bezglutenowe, wegańskie) w danych produktu [7]', '22 diety i wykluczenia, np. low FODMAP, bezhistaminowa [8]']],
     ['Wyszukiwanie po nazwie', ['Za darmo', 'Tak [1]', 'W Premium [5]', 'Tak', 'Tak (filtry produktów) [8]']],
-    ['Baza produktów', [`Open Food Facts: ${nProd}`, 'Ponad 300 000 produktów [1]', '4 mln spożywczych i 2 mln kosmetyków [4]', 'Ponad 3 mln produktów na świecie [7]', '14 400 produktów z Biedronki, Lidla, Żabki i Auchan [8]']],
+    ['Baza produktów', [`Ta sama co Open Food Facts obok: ponad 3 mln produktów na świecie [7]. Polskie (${nProd}) działają też bez internetu`, 'Ponad 300 000 produktów [1]', '4 mln spożywczych i 2 mln kosmetyków [4]', 'Ponad 3 mln produktów na świecie [7]', '14 400 produktów z Biedronki, Lidla, Żabki i Auchan [8]']],
     ['Kosmetyki', ['Tak (skład INCI)', 'Tak [1]', 'Tak [4]', 'Osobna baza Open Beauty Facts', 'Nie znaleźliśmy w opisie']],
     ['Dodatki', ['Porównanie 2–3 produktów, półki (listy zakupów), album i nagrody', 'Porównywanie i dodawanie produktów [1]', 'Rekomendacje lepszych produktów [4]', 'Dodawanie produktów i zdjęć, ślad węglowy [7]', '480 przepisów, lista zakupów, kalorie [8]']],
     ['Ocena w Google Play', ['Jeszcze nie ma (wkrótce)', '4,9 (61,4 tys. opinii), ponad 1 mln pobrań [1]', '5,0 (189 tys. opinii), ponad 10 mln pobrań [4]', '3,4 (7,73 tys. opinii), ponad 1 mln pobrań [7]', '4,6 w App Store i Google Play (wg strony) [8]']]
@@ -345,7 +345,7 @@ function appsPage() {
   const cite = t => esc(t).replace(/\[(\d)\]/g, (m, n) => `<a href="#zr${n}" class="small">[${n}]</a>`);
   const body = `
 <p class="small muted">Stan na ${APPS_ASOF}. Stronę przygotował zespół Lupki, więc Lupka jest na pierwszym miejscu. Dane o innych aplikacjach pochodzą z ich stron i ze sklepu Google Play (numery w nawiasach prowadzą do źródeł). Jeśli coś się zmieniło, <a href="mailto:rafalmsolutions@gmail.com?subject=Por%C3%B3wnanie%20aplikacji">napisz do nas</a>, poprawimy.</p>
-<div class="card"><p style="margin:0"><b>W skrócie.</b> Wszystkie pięć aplikacji skanuje kod kreskowy i pokazuje skład. Różnią się tym, dla kogo liczą wynik, ile kosztują i jak dużą mają bazę. Z tego, co podają opisy aplikacji, tylko Lupka liczy wynik jednocześnie dla każdej osoby w rodzinie. Yuka i Open Food Facts mają największe bazy na świecie, Zdrowe Zakupy dużą bazę polskich produktów, a SkanuJemy specjalizuje się w dietach leczniczych.</p></div>
+<div class="card"><p style="margin:0"><b>W skrócie.</b> Wszystkie pięć aplikacji skanuje kod kreskowy i pokazuje skład. Różnią się tym, dla kogo liczą wynik, ile kosztują i jak dużą mają bazę. Z tego, co podają opisy aplikacji, tylko Lupka liczy wynik jednocześnie dla każdej osoby w rodzinie. Yuka i Open Food Facts (z jej bazy korzysta też Lupka) mają największe bazy na świecie, Zdrowe Zakupy dużą bazę polskich produktów, a SkanuJemy specjalizuje się w dietach leczniczych.</p></div>
 <h2>Porównanie</h2>
 <div class="scroll wide"><table class="tbl vs apps"><thead><tr><th></th>${A_.map(a => `<th>${esc(a)}</th>`).join('')}</tr></thead><tbody>
 ${rows.map(([k, v]) => `<tr><td><b>${esc(k)}</b></td>${v.map(x => `<td>${cite(x)}</td>`).join('')}</tr>`).join('')}
@@ -366,7 +366,7 @@ ${rows.map(([k, v]) => `<tr><td><b>${esc(k)}</b></td>${v.map(x => `<td>${cite(x)
 <li><b>Spokojny ton:</b> „na co dzień” i „od czasu do czasu” zamiast „szkodliwe”. Dodatki obniżają ocenę tylko przy umiarkowanych i dużych zastrzeżeniach.</li>
 <li><b>Za darmo bez reklam i limitów</b>, łącznie z wyszukiwaniem i porównaniem. Dane profilu zostają w telefonie.</li>
 </ul>
-<p>Gdzie Lupka jest słabsza: ma mniejszą bazę niż Zdrowe Zakupy czy Yuka i na razie działa w przeglądarce, bez aplikacji w sklepie. Brakujący produkt dodasz w minutę zdjęciem etykiety. Szczegółowe zestawienie z Yuką: <a href="/lupka-czy-yuka/">Lupka czy Yuka</a>.</p>
+<p>Gdzie Lupka jest słabsza: polskich produktów w Open Food Facts jest na razie mniej (${nProd}) niż w bazie Zdrowych Zakupów (ponad 300 tys. [1]), a Lupka na razie działa w przeglądarce, bez aplikacji w sklepie. Brakujący produkt dodasz w minutę zdjęciem etykiety. Szczegółowe zestawienie z Yuką: <a href="/lupka-czy-yuka/">Lupka czy Yuka</a>.</p>
 <h2>Źródła</h2>
 <ol class="src">${SRC.map(([t, u], i) => `<li id="zr${i + 1}"><a href="${esc(u)}">${esc(t)}</a></li>`).join('')}</ol>
 <p class="small muted">Nazwy aplikacji są znakami towarowymi ich właścicieli. Lupka nie jest z nimi powiązana.</p>
