@@ -16,14 +16,14 @@ for i in range(23000):
     cats = random.choice([['en:dairies', 'en:yogurts'], ['en:dairies', 'en:cheeses'], ['en:snacks'], ['en:rare-thing']])
     if i % 997 == 0:
         cats = ['en:only-few']
-    DB.append({'code': code, 'product_name': f'Produkt {i}' if i % 50 else '', 'product_name_pl': f'Produkt PL {i}' if i % 3 == 0 else None,
+    DB.append({'code': code, 'product_name': f'Produkt {i}' if i % 50 else '', 'product_name_pl': f'Produkt PL {i}' if i % 3 == 0 and i % 9 else None,
                'brands': ['Marka', 'Inna'] if i % 4 == 0 else 'Marka', 'nutriscore_grade': 'abcde'[i % 5], 'nova_group': (i % 4) + 1,
                'ingredients_tags': ['en:milk', 'en:e330'] if i % 2 else [], 'ingredients_n': 2 if i % 2 else None,
                'nutriments': {'salt_100g': (i % 30) / 10, 'sugars_100g': i % 40, 'junk_100g': 1, 'fat_100g': 'zle'},
                'categories_tags': cats, 'stores': ['Lidl'] if i % 5 == 0 else None, 'unique_scans_n': i % 100,
                'allergens_tags': ['en:milk'], 'image_front_small_url': '<script>',
                'states_tags': (['en:ingredients-to-be-completed', 'en:ingredients-photo-selected'] if i % 7 == 0 else []) + (['en:nutrition-facts-to-be-completed', 'en:nutrition-photo-selected'] if i % 11 == 0 else []) + (['en:nutrition-facts-to-be-completed'] if i % 13 == 0 else []),
-               'lang': 'pl'})
+               'lang': 'pl' if i % 9 else 'fr', 'image_front_url': f'https://images.openfoodfacts.org/images/products/{i}/front_fr.400.jpg' if i % 9 == 0 else ''})
 # kategoria z mniej niż 5 produktami (i=0, 997, ... → 24 sztuki – zostawiamy tylko 3)
 for k, p in enumerate([p for p in DB if p['categories_tags'] == ['en:only-few']]):
     if k >= 3:
@@ -46,6 +46,10 @@ class H(BaseHTTPRequestHandler):
             self.send_response(422); self.end_headers(); self.wfile.write(b'{"detail":"page_size too large"}'); return
         pres = re.findall(r'code:(\d+)\*', q)  # „code:590* AND … AND code:5901*” → kod musi pasować do każdego prefiksu
         hits = [p for p in DB if all(p['code'].startswith(x) for x in pres)]
+        if 'NOT countries_tags' in q:  # produkty bez oznaczenia „Polska” (co dziewiąty: opis po francusku)
+            hits = [p for p in hits if p.get('lang') == 'fr']
+        elif 'countries_tags' in q:
+            hits = [p for p in hits if p.get('lang') != 'fr']
         n = len(hits)
         fields = qs.get('fields', [''])[0].split(',')
         body = {'hits': [{k: v for k, v in p.items() if k in fields} for p in hits[:size]],
@@ -70,7 +74,7 @@ def t(name, cond, info=''):
 rc = B.main(['--out', out, '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0', '--min-products', '100', '--prev-hist', '', '--hist-url', ''])
 t('exit 0', rc == 0, rc)
 meta = json.load(open(os.path.join(out, 'meta.json')))
-named = [p for p in DB if p['product_name'] or p['product_name_pl']]
+named = [p for p in DB if (p['product_name'] or p['product_name_pl']) and p.get('lang') != 'fr']  # opisane po francusku: tylko jako kandydaci do polskiej nazwy
 t('wszystkie produkty z nazwą', meta['products'] == len(named), (meta, len(named)))
 shard = json.load(open(os.path.join(out, 'p', named[0]['code'][-3:] + '.json')))
 p = shard[named[0]['code']]
@@ -103,6 +107,7 @@ mis = json.load(open(os.path.join(out, 'uzupelnij.json')))
 t('misje: plik z kolejką', 0 < len(mis['items']) <= 500 and mis['count'] >= len(mis['items']), (len(mis['items']), mis.get('count')))
 t('misje: najpopularniejsze najpierw', [x['s'] for x in mis['items']] == sorted([x['s'] for x in mis['items']], reverse=True))
 t('misje: tylko gdy jest zdjęcie (s = skład, w = wartości)', all(x['k'] in ('s', 'w', 'sw') for x in mis['items']) and any(x['k'] == 'sw' for x in mis['items']))
+t('polskie nazwy: kandydaci tylko z polskim kodem, obcym opisem i zdjęciem przodu', isinstance(mis.get('names'), list) and len(mis['names']) > 0 and all(x['c'].startswith('590') and x['f'].startswith('https://images.openfoodfacts.org/') for x in mis['names']) and mis.get('namesCount', 0) >= len(mis['names']), (len(mis.get('names') or []), mis.get('namesCount')))
 t('encje HTML w nazwach zamienione na litery', B.text('Baton z czekolad&#261; &amp; orzechami') == 'Baton z czekoladą & orzechami')
 t('skład do przepisania tylko po polsku', B.needs({'en:ingredients-to-be-completed', 'en:ingredients-photo-selected', 'en:nutrition-facts-to-be-completed', 'en:nutrition-photo-selected'}, False) == 'w')
 t('polski kod bez „Polska”: tylko po polsku', B.polish_described({'lang': 'pl'}) and B.polish_described({'lang': 'fr', 'product_name_pl': 'Jabłka'}) and not B.polish_described({'lang': 'fr', 'product_name': 'Mousseline'}))

@@ -93,6 +93,12 @@
       "dailyCap": 50,
       "oncePerBarcode": true,
       "grantWhen": "Open Food Facts zapisał wartości odżywcze na 100 g"
+    },
+    "name_added": {
+      "points": 5,
+      "dailyCap": 50,
+      "oncePerBarcode": true,
+      "grantWhen": "Open Food Facts zapisał polską nazwę przepisaną z opakowania"
     }
   }
 }

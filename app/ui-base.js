@@ -88,7 +88,7 @@ const App = {};
     return {
       disc_best: (A.disc && A.disc.best) || 0,
       breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
-      data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0),
+      data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0) + (c.name_added || 0),
       profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0),
       ...(A.albumMetrics ? A.albumMetrics() : {})
     };
@@ -134,7 +134,7 @@ const App = {};
     const sent = A.store.get('weeksSent', []);
     if (!sent.includes(week)) { A.store.set('weeksSent', sent.concat(week).slice(-60)); A.track('aktywny-tydzien-' + week); }
   };
-  const EVENT_STATS = { product_checked: 'skan-znaleziony', guess_right: 'zgadnij-trafione', guess_wrong: 'zgadnij-pudlo', shelf_add: 'na-polke', swap_to_better: 'zamiana', list_completed: 'lista-kupiona', product_added: 'dodano-produkt', ingredients_added: 'uzupelniono-sklad', nutrition_added: 'uzupelniono-wartosci', photo_added: 'dodano-zdjecie', report_sent: 'zgloszenie', shelf_shared: 'polka-udostepniona', explanation_opened: 'wyjasnienie' };
+  const EVENT_STATS = { product_checked: 'skan-znaleziony', guess_right: 'zgadnij-trafione', guess_wrong: 'zgadnij-pudlo', shelf_add: 'na-polke', swap_to_better: 'zamiana', list_completed: 'lista-kupiona', product_added: 'dodano-produkt', ingredients_added: 'uzupelniono-sklad', nutrition_added: 'uzupelniono-wartosci', name_added: 'dodano-nazwe', photo_added: 'dodano-zdjecie', report_sent: 'zgloszenie', shelf_shared: 'polka-udostepniona', explanation_opened: 'wyjasnienie' };
 
   /* ---------- Wersja D: dźwięki i wibracje ----------
      Dźwięki są generowane w przeglądarce (Web Audio), bez plików. Wyłącza je przełącznik w profilu.

@@ -132,6 +132,13 @@ r = await run(ef({ code: '123' }), { path: '/ocr' }); ok(r.status === 400, 'OCR:
   imgs = {}; visionStatus = 200; r = await run(ef({ field: 'nutrition' }), { path: '/ocr' }); ok(r.j && r.j.error === 'no_image', 'OCR tabeli: brak zdjęcia tabeli');
   globalThis.fetch = prev;
 }
+existing = { product_name_pl: '' };
+r = await run(ef({ product_name: 'Mus jabłkowy <b>' }), { path: '/edit' });
+{ const sv = calls.find(c => c.url.includes('product_jqm2')); ok(r.status === 200 && r.j.saved.includes('name') && sv.body.product_name_pl === 'Mus jabłkowy b', 'polska nazwa: zapisana (' + JSON.stringify(r.j) + ')'); }
+existing = { product_name_pl: 'Już jest' };
+r = await run(ef({ product_name: 'Mus jabłkowy' }), { path: '/edit' }); ok(r.status === 409, 'polska nazwa: nie nadpisujemy istniejącej');
+r = await run(ef({ product_name: 'ab' }), { path: '/edit' }); ok(r.status === 400, 'polska nazwa: za krótka');
+existing = { ingredients_text_pl: '', nutriments: {} };
 r = await run(ef({ ingredients_text: 'mleko, kultury bakterii' }), { path: '/edit' });
 let save2 = calls.find(c => c.url.includes("jqm2"));
 ok(r.status === 200 && r.j.saved.join() === 'ingredients' && save2.body.ingredients_text_pl === 'mleko, kultury bakterii' && save2.body.password === 'sekret', 'skład zapisany kontem aplikacji');

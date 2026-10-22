@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Polskie nazwy (22.10.2026, wersja 2.7.1)
+- W Open Food Facts jest ok. 12 tys. produktów z polskim kodem 590…, opisanych tylko w obcym języku. Nie trafiają do naszej kopii (wyszukiwarka, listy), bo pokazywalibyśmy francuskie nazwy.
+- build_data zapisuje 500 najpopularniejszych z nich (ze zdjęciem przodu) w data/uzupelnij.json → names. W „Uzupełnij dane” zakładka „Polskie nazwy”: zdjęcie przodu, nazwa z bazy, pole na polską nazwę; Enter zapisuje i od razu otwiera następny; „Nie ma polskiej nazwy” pomija.
+- Pośrednik /edit przyjmuje product_name (zapis product_name_pl tylko, gdy go nie ma). Punkty: name_added (5 pkt, do 50 dziennie, raz na produkt). Po cotygodniowej aktualizacji produkt z polską nazwą trafia do wyszukiwarki i list.
+
 ## Więcej polskich produktów i łatwiejsze uzupełnianie (22.10.2026, wersja 2.7.0)
 - Kopia bazy: oprócz produktów z oznaczeniem „Polska” (ok. 21 tys.) dociągamy produkty z polskim kodem 590…, którym tego oznaczenia brakuje (ok. 12,6 tys.), ale tylko opisane po polsku (język „pl” albo polska nazwa).
 - data/uzupelnij.json (co tydzień): 500 najpopularniejszych produktów, które mają w bazie zdjęcie składu lub tabeli, ale nikt ich nie przepisał (stany Open Food Facts). Ekran #/uzupelnij („Uzupełnij dane” w Kolekcji): uzupełnianie bez produktu w ręku, od razu otwiera się na produkcie; zrobione i pominięte w d-fill.

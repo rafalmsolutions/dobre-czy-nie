@@ -179,7 +179,16 @@ def needs(st, pl=True):
     return k
 
 
-def fetch_all(src, limit=None, log=print, states=None):
+def name_candidate(h):
+    """Polski kod, opis w obcym języku, ale jest zdjęcie przodu: ktoś przepisze polską nazwę z opakowania."""
+    code, name, front = str(h.get('code') or ''), text(h.get('product_name')), text(h.get('image_front_url'), 300)
+    if not CODE_RE.match(code) or not name or not front.startswith('https://images.openfoodfacts.org/'):
+        return None
+    return {'c': code, 'n': name[:80], 'b': text(h.get('brands'), 60), 'i': text(h.get('image_front_small_url'), 300), 'f': front,
+            's': int(h.get('unique_scans_n') or 0)}
+
+
+def fetch_all(src, limit=None, log=print, states=None, names=None):
     base_q = f'countries_tags:"{COUNTRY}"'
     total = detect(src, base_q)
     log(f'Produktów w Polsce (wg wyszukiwarki): {total}; strona: {src.page_max}; prefiks: {src.prefix_style}')
@@ -206,7 +215,13 @@ def fetch_all(src, limit=None, log=print, states=None):
             log(f'Pominięta część z polskim kodem: {e}')
             continue
         for h in hits:
-            if not isinstance(h, dict) or (is_extra and (str(h.get('code')) in products or not polish_described(h))):
+            if not isinstance(h, dict):
+                continue
+            if is_extra and names is not None and not polish_described(h) and str(h.get('code')) not in products:
+                cand = name_candidate(h)
+                if cand:
+                    names[cand['c']] = cand
+            if is_extra and (str(h.get('code')) in products or not polish_described(h)):
                 continue
             r = compact(h)
             if r:
@@ -224,12 +239,14 @@ def fetch_all(src, limit=None, log=print, states=None):
     return products, pop
 
 
-def write_missions(products, pop, states, out, built, top=500):
-    """data/uzupelnij.json: najpopularniejsze produkty do uzupełnienia ze zdjęć (misje w aplikacji)."""
+def write_missions(products, pop, states, out, built, top=500, names=None):
+    """data/uzupelnij.json: najpopularniejsze produkty do uzupełnienia ze zdjęć (misje w aplikacji).
+    items – skład/wartości ze zdjęć; names – polskie kody opisane w obcym języku, do których brakuje polskiej nazwy."""
     codes = sorted((c for c in states if c in products), key=lambda c: (-pop.get(c, 0), c))[:top]
     items = [{'c': c, 'n': products[c].get('product_name', ''), 'b': products[c].get('brands', ''), 'i': products[c].get('image_front_small_url', ''),
               's': int(pop.get(c, 0)), 'k': states[c]} for c in codes]
-    write_json(os.path.join(out, 'uzupelnij.json'), {'built': built, 'count': len(states), 'items': items})
+    nm = sorted((names or {}).values(), key=lambda x: (-x['s'], x['c']))[:top]
+    write_json(os.path.join(out, 'uzupelnij.json'), {'built': built, 'count': len(states), 'items': items, 'namesCount': len(names or {}), 'names': nm})
     return len(items)
 
 
@@ -351,13 +368,13 @@ def main(argv=None):
     ap.add_argument('--hist-url', default=HIST_URL, help='zapas: historia z opublikowanej strony; pusty = bez')
     a = ap.parse_args(argv)
     src = Source(a.base, a.pause, a.page_max)
-    states = {}
-    products, pop = fetch_all(src, a.limit, states=states)
+    states, names = {}, {}
+    products, pop = fetch_all(src, a.limit, states=states, names=names)
     if len(products) < a.min_products:
         print(f'Za mało produktów ({len(products)} < {a.min_products}). Nie publikuję.', file=sys.stderr)
         return 1
     meta = build(products, pop, a.out, prev_hist=load_prev_hist(a.prev_hist, a.hist_url))
-    print(f'Do uzupełnienia ze zdjęć: {len(states)}, w kolejce: {write_missions(products, pop, states, a.out, meta["built"])}')
+    print(f'Do uzupełnienia ze zdjęć: {len(states)}, w kolejce: {write_missions(products, pop, states, a.out, meta["built"], names=names)}, bez polskiej nazwy: {len(names)}')
     print(f'Zapytań do wyszukiwarki: {src.calls}')
     return 0
 

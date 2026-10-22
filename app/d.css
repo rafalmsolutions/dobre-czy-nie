@@ -763,3 +763,5 @@ select.field.ocr{background:#FFF6D6;border-color:#E9C35A}
 .fill-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#FFF6D6;color:var(--ink);text-decoration:none;border:2px solid #F2D27A}
 .fill-banner b{display:block;font-family:var(--f-display);font-size:15px}.fill-banner .grow > span{display:block;font-size:12.5px;line-height:1.35;color:#5E4A12}
 .fill-ic{flex:none;width:40px;height:40px;border-radius:50%;background:#F2B43C;color:#fff;display:flex;align-items:center;justify-content:center}
+button.item.fill-item{width:100%;text-align:left;border:0;font:inherit;color:inherit;cursor:pointer}
+.fill-name .complete-photo{max-height:300px}

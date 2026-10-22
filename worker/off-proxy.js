@@ -180,13 +180,15 @@ export default {
       const ingredients = cleanText(form.get('ingredients_text'), 5000);
       const nut = parseNutriments(form.get('nutriments'));
       const store = storeLabel(form.get('store'));
+      const pname = cleanText(form.get('product_name'), 80); // polska nazwa przepisana z opakowania
       if (nut === 'bad') return reply(400, { ok: false, error: 'nutriments' });
       if (form.get('store') && !store) return reply(400, { ok: false, error: 'store' });
-      if (!ingredients && !nut && !store) return reply(400, { ok: false, error: 'empty' });
+      if (form.get('product_name') && pname.length < 3) return reply(400, { ok: false, error: 'name' });
+      if (!ingredients && !nut && !store && !pname) return reply(400, { ok: false, error: 'empty' });
       if (ingredients && ingredients.length < 3) return reply(400, { ok: false, error: 'ingredients' });
       let current = null;
       try {
-        const r = await fetch(`${o.base}/api/v2/product/${code}.json?fields=code,ingredients_text_${lang},ingredients_text,nutriments`, { headers: o.headers });
+        const r = await fetch(`${o.base}/api/v2/product/${code}.json?fields=code,ingredients_text_${lang},ingredients_text,nutriments,product_name_${lang}`, { headers: o.headers });
         const j = r.ok ? await r.json().catch(() => null) : null;
         current = j && j.status === 1 ? j.product : null;
       } catch (e) { current = null; }
@@ -201,6 +203,7 @@ export default {
         Object.entries(nut).forEach(([k, v]) => { fields['nutriment_' + k] = String(v); fields['nutriment_' + k + '_unit'] = k === 'energy-kcal' ? 'kcal' : 'g'; });
         saved.push('nutrition');
       }
+      if (pname && !String(current['product_name_' + lang] || '').trim()) { fields['product_name_' + lang] = pname; saved.push('name'); }
       if (store) { fields.add_stores = store; saved.push('store'); } // dopisanie sklepu nie usuwa innych
       if (!saved.length) return reply(409, { ok: false, error: 'exists' });
       const fd = new FormData();

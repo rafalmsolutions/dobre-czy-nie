@@ -305,18 +305,64 @@
     A.store.set('d-fill', f); A.fillFrom = null;
   };
   A.fillCount = async () => { const d = await fillList(); if (!d || !Array.isArray(d.items)) return 0; const f = fillState(); return d.items.filter(x => !f.done.includes(x.c)).length; };
+  let fillTab = A.store.get('d-filltab', 'data') === 'names' ? 'names' : 'data', nameOpen = null;
+  const what = k => [k.includes('s') && 'skład', k.includes('w') && 'wartości odżywcze'].filter(Boolean).join(' i ');
+  function drawFill(d) {
+    const box = A.$('fillList'); if (!box) return;
+    const f = fillState(), names = Array.isArray(d.names) ? d.names : [];
+    const todo = d.items.filter(x => !f.done.includes(x.c)).sort((a, b) => (f.skip.includes(a.c) - f.skip.includes(b.c)));
+    const ntodo = names.filter(x => !f.done.includes(x.c) && !f.skip.includes(x.c));
+    const tabs = `<div class="chips fill-tabs" role="tablist"><button class="cat-tab" type="button" role="tab" data-fill="tab-data" aria-pressed="${fillTab === 'data'}">Skład i wartości <span class="muted">${todo.length}</span></button><button class="cat-tab" type="button" role="tab" data-fill="tab-names" aria-pressed="${fillTab === 'names'}">Polskie nazwy <span class="muted">${ntodo.length}</span></button></div>`;
+    const done = f.done.length ? `<p class="small muted" style="font-weight:800">UZUPEŁNIŁEŚ: ${f.done.length}</p>` : '';
+    if (fillTab === 'data') {
+      box.innerHTML = `${tabs}<p class="small">Te popularne produkty mają w bazie zdjęcie składu albo tabeli wartości, ale nikt ich jeszcze nie przepisał, więc nie mają pełnej oceny. Odczytamy zdjęcie za Ciebie, Ty tylko sprawdzasz. Produkt nie musi być w domu.</p>${done}
+        ${todo.slice(0, 40).map(x => `<a class="item fill-item" href="#/p/${esc(x.c)}" data-act="fill-go" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n || x.c)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: ${what(x.k)}</span></span><span class="pct" style="background:#FFF2C2;color:#6B4A00">+${10 * x.k.length}</span></a>`).join('')}
+        ${todo.length ? '' : '<div class="empty">Wszystko z tej listy jest uzupełnione. Dziękujemy! Nowe produkty pojawią się po cotygodniowej aktualizacji bazy.</div>'}`;
+      return;
+    }
+    const cur = nameOpen && ntodo.find(x => x.c === nameOpen);
+    box.innerHTML = `${tabs}<p class="small">Polskie produkty, które w bazie mają nazwę tylko w obcym języku, więc nie widać ich w polskiej wyszukiwarce i na listach. Przepisz nazwę po polsku z opakowania na zdjęciu.</p>${done}
+      ${ntodo.slice(0, 40).map(x => x === cur ? `<div class="panel stack fill-name" id="fillName">
+          <img class="complete-photo" src="${esc(A.safeImg(x.f) || x.f)}" alt="Przód opakowania">
+          <p class="small">W bazie: <b>${esc(x.n)}</b>${x.b ? ` · ${esc(x.b)}` : ''}. Przepisz polską nazwę z opakowania, np. „Mus jabłkowy”. Markę pomiń, jeśli jest napisana osobno.</p>
+          <input class="field" id="fillNameIn" maxlength="80" autocomplete="off" placeholder="Nazwa po polsku" aria-label="Nazwa po polsku">
+          <p class="msg" id="fillNameMsg" role="status"></p>
+          <div class="actions"><button class="btn btn-gold" type="button" data-fill="name-save" data-code="${esc(x.c)}">Zapisz (+5 pkt)</button><button class="btn btn-white" type="button" data-fill="name-skip" data-code="${esc(x.c)}">Nie ma polskiej nazwy</button></div></div>`
+        : `<button type="button" class="item fill-item" data-fill="name-open" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: polskiej nazwy</span></span><span class="pct" style="background:#FFF2C2;color:#6B4A00">+5</span></button>`).join('')}
+      ${ntodo.length ? '' : '<div class="empty">Na tej liście nie ma już produktów bez polskiej nazwy. Dziękujemy!</div>'}`;
+    if (cur) { const inp = A.$('fillNameIn'); setTimeout(() => { try { inp.focus(); A.$('fillName').scrollIntoView({ block: 'nearest' }); } catch (e) { } }, 30); }
+  }
   A.route('fill', async () => {
-    const el = A.$('scr-fill'); const f = fillState();
+    const el = A.$('scr-fill');
     el.innerHTML = `<div class="wrap"><div class="topbar"><a class="btn btn-white iconbtn" href="#/postepy" aria-label="Wróć"><svg><use href="#i-back"/></svg></a><h1 class="grow" style="font-size:1.25rem">Uzupełnij dane</h1>${A.hudPill()}</div>
-      <p class="small">Te popularne produkty mają w bazie zdjęcie składu albo tabeli wartości, ale nikt ich jeszcze nie przepisał, więc nie mają pełnej oceny. Odczytamy zdjęcie za Ciebie, Ty tylko sprawdzasz. Produkt nie musi być w domu.</p>
       <div id="fillList" class="stack"><div class="sk" style="height:70px"></div><div class="sk" style="height:70px"></div></div></div>`;
     const d = await fillList();
-    const box = A.$('fillList'); if (!box || A.current.screen !== 'fill') return;
-    if (!d || !Array.isArray(d.items)) { box.innerHTML = '<div class="empty">Nie udało się wczytać listy. Sprawdź internet i spróbuj ponownie.</div>'; return; }
-    const todo = d.items.filter(x => !f.done.includes(x.c)).sort((a, b) => (f.skip.includes(a.c) - f.skip.includes(b.c)));
-    const what = k => [k.includes('s') && 'skład', k.includes('w') && 'wartości odżywcze'].filter(Boolean).join(' i ');
-    box.innerHTML = `<p class="small muted" style="font-weight:800">${f.done.length ? `UZUPEŁNIŁEŚ: ${f.done.length} · ` : ''}CZEKA: ${todo.length}</p>
-      ${todo.slice(0, 40).map(x => `<a class="item fill-item" href="#/p/${esc(x.c)}" data-act="fill-go" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n || x.c)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: ${what(x.k)}</span></span><span class="pct" style="background:#FFF2C2;color:#6B4A00">+${10 * x.k.length}</span></a>`).join('')}
-      ${todo.length ? '' : '<div class="empty">Wszystko z tej listy jest uzupełnione. Dziękujemy! Nowe produkty pojawią się po cotygodniowej aktualizacji bazy.</div>'}`;
+    if (!A.$('fillList') || A.current.screen !== 'fill') return;
+    if (!d || !Array.isArray(d.items)) { A.$('fillList').innerHTML = '<div class="empty">Nie udało się wczytać listy. Sprawdź internet i spróbuj ponownie.</div>'; return; }
+    drawFill(d);
+    el.onclick = async e => {
+      const b = e.target.closest('[data-fill]'); if (!b || b.disabled) return;
+      const act = b.dataset.fill, code = b.dataset.code;
+      if (act === 'tab-data' || act === 'tab-names') { fillTab = act === 'tab-names' ? 'names' : 'data'; A.store.set('d-filltab', fillTab); nameOpen = null; drawFill(d); return; }
+      if (act === 'name-open') { nameOpen = code; drawFill(d); return; }
+      if (act === 'name-skip') { A.fillDone(code, []); nameOpen = nextName(d, code); drawFill(d); return; }
+      if (act === 'name-save') {
+        const x = (d.names || []).find(n => n.c === code), inp = A.$('fillNameIn'), msg = A.$('fillNameMsg');
+        const name = inp.value.replace(/\s+/g, ' ').trim();
+        const problem = name.length < 3 ? 'Wpisz nazwę z opakowania (co najmniej 3 znaki).' : A.nameProblem ? A.nameProblem(name) : '';
+        if (problem) { msg.textContent = problem; inp.focus(); return; }
+        if (x && fold(name) === fold(x.n)) { msg.textContent = 'To ta sama nazwa co w bazie. Przepisz polską nazwę z opakowania albo wybierz „Nie ma polskiej nazwy”.'; inp.focus(); return; }
+        b.disabled = true; b.textContent = 'Zapisuję…';
+        const r = await post('/edit', { code, product_name: name });
+        if (r.ok || r.error === 'exists') {
+          if (r.ok && (r.saved || []).includes('name')) { A.award('name_added', { code }); A.fillDone(code, ['name']); A.toast('Dziękujemy! Produkt będzie widać w wyszukiwarce po najbliższej aktualizacji bazy.'); }
+          else { A.fillDone(code, []); A.toast('Ktoś już dodał polską nazwę tego produktu. Dziękujemy!'); }
+          nameOpen = nextName(d, code); drawFill(d);
+        } else { b.disabled = false; b.textContent = 'Zapisz (+5 pkt)'; msg.textContent = r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.'; }
+      }
+    };
+    el.onkeydown = e => { if (e.key === 'Enter' && e.target.id === 'fillNameIn') { e.preventDefault(); const s = el.querySelector('[data-fill=name-save]'); if (s) s.click(); } };
   });
+  // Po zapisie od razu następny produkt z listy.
+  const nextName = (d, code) => { const f = fillState(); const list = (d.names || []).filter(x => !f.done.includes(x.c) && !f.skip.includes(x.c) && x.c !== code); return list.length ? list[0].c : null; };
 })();

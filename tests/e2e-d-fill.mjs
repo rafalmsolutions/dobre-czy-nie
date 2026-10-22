@@ -7,13 +7,14 @@ const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.l
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 const S = { edit: [], ocr: [] };
 await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
-await ctx.route(/\/data\/uzupelnij\.json/, r => r.fulfill({ json: { built: '2026-10-22', count: 2, items: [{ c: C.missing2, n: 'Olej testowy', b: 'Marka', i: '', s: 50, k: 'sw' }, { c: C.milk, n: 'Mleko testowe', b: '', i: '', s: 20, k: 'w' }] } }));
+await ctx.route(/\/data\/uzupelnij\.json/, r => r.fulfill({ json: { built: '2026-10-22', count: 2, items: [{ c: C.missing2, n: 'Olej testowy', b: 'Marka', i: '', s: 50, k: 'sw' }, { c: C.milk, n: 'Mleko testowe', b: '', i: '', s: 20, k: 'w' }],
+  names: [{ c: '5901713014153', n: 'Mousseline de pomme', b: 'Dawtona', i: '', f: 'https://images.openfoodfacts.org/images/products/590/171/301/4153/front_fr.4.400.jpg', s: 9 }, { c: '5906874064009', n: 'Farine typ 450', b: 'Lubelskie Młyny', i: '', f: 'https://images.openfoodfacts.org/images/products/590/687/406/4009/front_fr.3.400.jpg', s: 2 }] } }));
 await ctx.route(/proxy\.test\/ocr/, async r => {
   const f = r.request().postData() || ''; S.ocr.push(f);
   if (/name="field"\s+nutrition/.test(f)) return r.fulfill({ json: { ok: true, text: 'Wartość odżywcza w 100 g\nWartość energetyczna 3404 kJ / 828 kcal\nTłuszcz 92 g\nw tym kwasy tłuszczowe nasycone 7 g\nWęglowodany 0 g\nw tym cukry 0 g\nBiałko 0 g\nSól 0 g' } });
   return r.fulfill({ json: { ok: true, text: 'Skład: olej rzepakowy 100%. Przechowywać w suchym miejscu.' } });
 });
-await ctx.route(/proxy\.test\/edit/, r => { S.edit.push(r.request().postData() || ''); return r.fulfill({ json: { ok: true, saved: ['ingredients', 'nutrition'] } }); });
+await ctx.route(/proxy\.test\/edit/, r => { const b = r.request().postData() || ''; S.edit.push(b); return r.fulfill({ json: { ok: true, saved: /name="product_name"/.test(b) ? ['name'] : ['ingredients', 'nutrition'] } }); });
 // Produkt bez składu i wartości, ze zdjęciami w bazie
 await ctx.route(new RegExp('openfoodfacts\\.org/api/v2/product/' + C.missing2), r => r.fulfill({ json: { status: 1, product: { code: C.missing2, product_name_pl: 'Olej testowy', brands: 'Marka', categories_hierarchy: ['en:vegetable-oils'],
   image_ingredients_url: 'https://images.openfoodfacts.org/images/products/x/ingredients_pl.400.jpg', image_nutrition_url: 'https://images.openfoodfacts.org/images/products/x/nutrition_pl.400.jpg' } } }));
@@ -40,6 +41,21 @@ if (both) {
 }
 await page.goto('http://localhost:8790/app/index.html#/uzupelnij'); await page.waitForTimeout(600);
 ok(!/Olej testowy/.test(await page.innerText('#scr-fill')), 'uzupełniony znika z listy');
+
+// Polskie nazwy: przepisanie z opakowania, od razu następny produkt
+await page.click('#scr-fill [data-fill=tab-names]'); await page.waitForTimeout(200);
+ok(await page.locator('#scr-fill [data-fill=name-open]').count() === 2, 'zakładka „Polskie nazwy”: 2 produkty');
+await page.click('#scr-fill [data-fill=name-open] >> nth=0'); await page.waitForTimeout(200);
+ok(await page.locator('#fillName img.complete-photo').count() === 1 && /Mousseline de pomme/.test(await page.innerText('#fillName')), 'zdjęcie przodu i nazwa z bazy');
+await page.fill('#fillNameIn', 'Mousseline de pomme'); await page.click('[data-fill=name-save]'); await page.waitForTimeout(150);
+ok(/ta sama nazwa/.test(await page.innerText('#fillNameMsg')), 'ta sama obca nazwa: komunikat');
+const n0 = S.edit.length, p0 = await page.evaluate(() => App.game.points);
+await page.fill('#fillNameIn', 'Mus jabłkowy'); await page.press('#fillNameIn', 'Enter'); await page.waitForTimeout(600);
+ok(S.edit.length === n0 + 1 && /Mus jabłkowy/.test(S.edit[n0]), 'zapis polskiej nazwy (Enter)');
+ok(await page.evaluate(() => App.game.points) >= p0 + 5, 'punkty za nazwę');
+ok(/Farine typ 450/.test(await page.innerText('#fillName')), 'od razu następny produkt');
+await closeCel(); await page.$eval('[data-fill=name-skip]', e => e.click()); await page.waitForTimeout(200);
+ok(/nie ma już produktów/.test(await page.innerText('#scr-fill')), 'pominięty znika, lista pusta');
 
 // Dodawanie: kategoria z nazwy
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.missing); await page.waitForTimeout(1500);
