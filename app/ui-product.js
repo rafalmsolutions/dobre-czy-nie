@@ -244,6 +244,8 @@
     }
     parts.push(detailsHtml(prod, an, !pm.personal));
     screen(parts.join(''));
+    // Wejście z „Uzupełnij dane”: od razu otwieramy uzupełnianie (zdjęcia są w bazie, odczyt robi się sam).
+    if (A.fillAuto === prod.code && A.$('completeBox')) { A.fillAuto = null; A.startComplete(); setTimeout(() => { const b = A.$('completeBox'); if (b) b.scrollIntoView({ block: 'start' }); }, 60); }
     if (A.discFill) A.discFill(prod.code);
     if (prod.kind === 'food' && prod.source !== 'local' && prod.category) loadCategory();
   }
@@ -432,6 +434,25 @@
     if (/(.)\1{4,}/.test(name) || /^(test|asdf|qwer|xxx|abc)/i.test(name.trim())) return 'Wpisz prawdziwą nazwę z opakowania.';
     return '';
   };
+  /* Kategoria z nazwy (pierwsze trafienie wygrywa, więc bardziej szczegółowe słowa są wyżej: „napój owsiany” przed „owsiane”). */
+  const GUESS = [['en:plant-based-milk-alternatives', ['napoj owsian', 'napoj sojow', 'napoj migdal', 'napoj roslin', 'napoj kokos', 'napoj ryzow']], ['en:quarks', ['twarog', 'serek']],
+    ['en:yogurts', ['jogurt', 'skyr', 'kefir']], ['en:cheeses', ['ser ', 'sery', 'gouda', 'mozzarell', 'feta', 'camembert', 'edam', 'cheddar', 'parmezan']], ['en:milks', ['mleko']], ['en:butters', ['maslo']],
+    ['en:dairy-desserts', ['budyn', 'deser', 'pudding']], ['en:mueslis', ['musli', 'granol']], ['en:breakfast-cereals', ['platki', 'owsian']], ['en:breads', ['chleb', 'bulk', 'bagiet', 'pieczyw', 'tortill', 'grahamk']],
+    ['en:sweet-spreads', ['krem orzech', 'krem kakao', 'krem czekol', 'nutella']], ['en:jams', ['dzem', 'powidl', 'konfitur']], ['en:hummus', ['hummus']],
+    ['en:sausages', ['kielbas', 'parowk', 'frankfurter']], ['en:prepared-meats', ['szynk', 'poledwic', 'boczek', 'salami', 'wedlin', 'kabanos', 'pasztet']],
+    ['en:canned-fishes', ['tunczyk', 'sardyn', 'szprot', 'makrela w', 'sledz', 'paprykarz']], ['en:fishes', ['losos', 'dorsz', 'mintaj', 'ryba', 'pstrag']],
+    ['en:pastas', ['makaron', 'spaghetti', 'penne', 'lasagne', 'tagliatelle', 'kluski']], ['en:groats', ['kasza', 'kuskus', 'bulgur']], ['en:rices', ['ryz ', 'ryz']], ['en:legumes', ['fasol', 'ciecierzyc', 'soczewic', 'groch']],
+    ['en:ketchup', ['ketchup']], ['en:sauces', ['sos ', 'sos', 'pesto', 'majonez', 'musztard']], ['en:vegetable-oils', ['olej', 'oliwa']], ['en:pickles', ['ogork', 'kiszon', 'marynow']],
+    ['en:canned-vegetables', ['kukurydz', 'groszek', 'pomidory', 'koncentrat']], ['en:pierogi', ['pierog']], ['en:pizzas', ['pizza']], ['en:soups', ['zupa', 'bulion', 'barszcz', 'rosol', 'zurek']],
+    ['en:meals', ['danie', 'gulasz', 'lazanki', 'krokiet', 'golabk']], ['en:frozen-vegetables', ['mieszanka warzyw', 'warzywa na patelni']], ['en:salty-snacks', ['paluszk', 'precel', 'krakers', 'orzeszki']],
+    ['en:nuts', ['orzech', 'migdal', 'nerkowc', 'pistacj']], ['en:dried-fruits', ['rodzynk', 'suszon', 'bakalie', 'daktyl', 'zurawin']], ['en:crisps', ['chips', 'chrupk']],
+    ['en:chocolates', ['czekolad']], ['en:biscuits', ['ciastk', 'herbatnik', 'wafel', 'wafl', 'biszkopt', 'markiz']], ['en:candies', ['cukierk', 'zelki', 'lizak', 'drazetk']], ['en:ice-creams', ['lody', 'lod ']],
+    ['en:fruit-juices', ['sok ', 'sok', 'nektar']], ['en:waters', ['woda']], ['en:sodas', ['cola', 'napoj gazow', 'lemoniad', 'oranzad', 'tonik']], ['en:teas', ['herbat']], ['en:coffees', ['kawa']]];
+  A.guessCategory = name => {
+    const f = ' ' + fold(name || '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+    const hit = GUESS.find(([k, words]) => SHOP_CATEGORIES.some(c => c.key === k) && words.some(w => f.includes(w.length <= 3 ? ' ' + w : w)));
+    return hit ? hit[0] : '';
+  };
   function renderMissing(code, reason) {
     cur = { prod: { code }, missing: true, reason, rendered: true };
     Object.keys(photos).forEach(k => { if (photos[k] && photos[k].url) URL.revokeObjectURL(photos[k].url); photos[k] = null; });
@@ -452,6 +473,10 @@
         parts.push(`<form class="stack" id="addForm" novalidate>
           <label for="addName"><b style="font-family:var(--f-display)">Nazwa produktu</b></label>
           <input class="field" id="addName" maxlength="80" autocomplete="off" placeholder="np. Jogurt naturalny 2%" required>
+          <label for="addCat"><b style="font-family:var(--f-display)">Kategoria</b> <span class="small muted">podpowiadamy z nazwy</span></label>
+          <select class="field" id="addCat" required><option value="">Wybierz kategorię</option>${SHOP_GROUPS.map(g => `<optgroup label="${esc(g.label)}">${SHOP_CATEGORIES.filter(c => c.group === g.key).map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join('')}</optgroup>`).join('')}<option value="other">Inna, nie ma jej na liście</option></select>
+          <div class="add-two"><label><span class="small" style="font-weight:800">Marka <span class="muted">(jeśli jest)</span></span><input class="field" id="addBrand" maxlength="60" autocomplete="off" placeholder="np. Piątnica"></label>
+            <label><span class="small" style="font-weight:800">Gramatura <span class="muted">(jeśli jest)</span></span><input class="field" id="addQty" maxlength="30" autocomplete="off" placeholder="np. 150 g"></label></div>
           ${A.storePickHtml('addStore')}
           <div class="sec-head"><b style="font-family:var(--f-display);font-size:1.1rem">Zrób 3 zdjęcia</b><span class="small" style="font-weight:800;color:var(--green-d)" id="photoCount">0 z 3 gotowe</span></div>
           ${PHOTO_STEPS.map(([k, t, d], i) => `<div class="photo-step" id="ps-${k}"><span class="num">${i + 1}</span><span class="grow"><b style="display:block">${t}</b><span class="small muted">${d}</span></span><span id="pv-${k}"></span><span class="btn btn-blue btn-sm filebtn"><span id="pb-${k}">Zrób zdjęcie</span><input type="file" accept="image/*" capture="environment" data-photo="${k}" aria-label="Zdjęcie: ${t}"></span></div>`).join('')}
@@ -469,6 +494,11 @@
     parts.push(`<details class="card more" id="ingDetails"><summary class="details-h">Oceń skład z etykiety</summary><div id="ingSlot" style="margin-top:10px"></div></details>`);
     if (!err) parts.push(`<p class="small muted center">Nie możesz teraz dodać produktu? <button class="linkbtn small" type="button" data-act="report-missing" data-code="${esc(code)}">Zgłoś brak</button></p>`);
     screen(parts.join(''));
+    const nm = A.$('addName'), cs = A.$('addCat');
+    if (nm && cs) {
+      cs.addEventListener('change', () => { cs.dataset.touched = '1'; });
+      nm.addEventListener('input', () => { if (cs.dataset.touched) return; const g = A.guessCategory(nm.value); cs.value = g || ''; cs.classList.toggle('ocr', !!g); });
+    }
     A.$('ingSlot').innerHTML = ingredientForm(code, 'food');
     if (!err && !badChecksum && A.discMiss) A.discMiss(code);
   }
@@ -508,13 +538,16 @@
     const name = A.$('addName').value.replace(/\s+/g, ' ').trim(), msg = A.$('addMsg');
     if (name.length < 3) { msg.textContent = 'Wpisz nazwę produktu z opakowania (co najmniej 3 znaki).'; A.$('addName').focus(); return; }
     const np = A.nameProblem(name); if (np) { msg.textContent = np; A.$('addName').focus(); return; }
+    const cat = A.$('addCat') ? A.$('addCat').value : 'other';
+    if (!cat) { msg.textContent = 'Wybierz kategorię. Dzięki niej produkt trafi do porównań, zamienników i albumu.'; A.$('addCat').focus(); return; }
+    const brand = (A.$('addBrand') ? A.$('addBrand').value : '').replace(/\s+/g, ' ').trim().slice(0, 60), qty = (A.$('addQty') ? A.$('addQty').value : '').replace(/\s+/g, ' ').trim().slice(0, 30);
     const bc = barcodeState(code);
     if (bc.s === 'other') { msg.textContent = 'Kod na zdjęciu nie zgadza się ze skanem. Zrób zdjęcia tego samego opakowania.'; return; }
     const missing = PHOTO_STEPS.filter(([k]) => !photos[k]).map(([, t]) => t.toLowerCase());
     if (missing.length) { msg.textContent = 'Brakuje zdjęcia: ' + missing.join(', ') + '.'; return; }
     const btn = A.$('addSend'); btn.disabled = true; btn.textContent = 'Wysyłam…'; msg.className = 'msg';
     const stIn = document.querySelector('#addForm input[name=addStore]:checked');
-    const rec = { id: code + '-' + Date.now(), code, name, store: stIn && stIn.value ? stIn.value : '', lang: 'pl', uuid: A.appUuid(), at: Date.now(), checks: { barcode: bc.s }, photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
+    const rec = { id: code + '-' + Date.now(), code, name, category: cat === 'other' ? '' : cat, brand, quantity: qty, store: stIn && stIn.value ? stIn.value : '', lang: 'pl', uuid: A.appUuid(), at: Date.now(), checks: { barcode: bc.s }, photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
     const res = await A.sendAdd(rec);
     if (res === 'ok') addedSuccess(code, name);
     else if (res === 'queued') { msg.className = 'msg ok'; msg.textContent = 'Nie ma teraz połączenia. Zapisaliśmy produkt w telefonie i wyślemy go, gdy internet wróci. Nagrodę dostaniesz po wysłaniu.'; btn.textContent = 'Zapisane do wysłania'; }
@@ -526,7 +559,7 @@
     A.rememberAdded(code, name);
     const shots = { ingredients: photos.ingredients && photos.ingredients.blob, nutrition: photos.nutrition && photos.nutrition.blob };
     box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small">Produkt jest już w bazie Open Food Facts. Gdy potwierdzą go 2 kolejne osoby, dostaniesz złotą kartę i +50 pkt. Jeszcze 2 krótkie kroki, a od razu zobaczysz jego ocenę.</p><a class="small" href="#/odkrycia">Twoje odkrycia</a></div><div id="completeBox"></div>`;
-    A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, photos: shots, storeDone: A.storeTagged(code), onDone: () => {
+    A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, fresh: true, photos: shots, storeDone: A.storeTagged(code), onDone: () => {
       const el = A.$('completeBox'); if (!el) return;
       el.innerHTML = `<div class="panel stack center" style="align-items:center">${A.mascot('wow', 70)}<b style="font-family:var(--f-display);font-size:1.15rem">Gotowe!</b><p class="small">Wszyscy zobaczą produkt w bazie zwykle w ciągu kilku minut. Ty możesz od razu sprawdzić jego ocenę.</p><button class="btn btn-gold btn-block" type="button" data-act="retry" data-code="${esc(code)}">Zobacz ocenę produktu</button><a class="small" href="#/postepy">Zobacz swoje odznaki</a></div>`;
     } });
@@ -547,6 +580,7 @@
       render();
       A.albumAdd(p, { touch: true }).catch(() => null).then(res => {
         if (res && res.revived) { A.toast('Karta ożyła! Dziękujemy za uzupełnienie danych.'); A.sound('badge'); }
+        else if (A.fillDone && A.fillFrom === p.code) { A.fillDone(p.code, saved); A.toast(saved.length ? 'Dziękujemy! Produkt uzupełniony.' : 'Pominięty. Wróci do listy później.', '<a href="#/uzupelnij">Następny produkt</a>'); }
         else A.toast(saved.length ? 'Dziękujemy! Ocena uwzględnia już Twoje dane.' : 'Możesz wrócić do uzupełniania w każdej chwili.');
       });
     } });
@@ -560,6 +594,9 @@
     fd.append('code', rec.code); fd.append('product_name', rec.name); fd.append('lang', rec.lang); fd.append('app_uuid', rec.uuid);
     fd.append('app_version', A.CFG.appVersion || '1.0');
     if (rec.store) fd.append('store', rec.store);
+    if (rec.category) fd.append('category', rec.category);
+    if (rec.brand) fd.append('brands', rec.brand);
+    if (rec.quantity) fd.append('quantity', rec.quantity);
     Object.entries(rec.photos).forEach(([k, b]) => fd.append('photo_' + k, b, k + '.jpg'));
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
     try {

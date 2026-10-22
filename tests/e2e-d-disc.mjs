@@ -48,17 +48,16 @@ await page.click('#addSend', { force: true }); await page.waitForTimeout(900); a
 ok(S.submit.length === 1 && S.submit[0].includes('"barcode":"match"') && S.submit[0].includes(C.missing), 'zgłoszenie do potwierdzenia z wynikiem sprawdzenia kodu');
 ok(await page.evaluate(c => App.disc.items[c] && App.disc.items[c].status === 'pending', C.missing), 'odkrycie zapisane jako „czeka na potwierdzenie”');
 ok(await pts() >= p0 + 10, 'od razu +10 pkt (' + (await pts() - p0) + ')');
-// 3. Skład niezgodny ze zdjęciem i kalorie, które się nie sumują
-await page.waitForSelector('#cmpIngr', { timeout: 5000 });
-await page.fill('#cmpIngr', 'czekolada, orzechy laskowe, karmel, sól morska, wanilia'); await page.click('[data-cmp=save-ingr]'); await page.waitForTimeout(200);
-ok((await txt('#cmpIngrMsg')).includes('różni się'), 'zmyślony skład: odrzucony');
-await page.fill('#cmpIngr', 'mleko pasteryzowane, żywe kultury bakterii jogurtowych, białka mleka'); await page.click('[data-cmp=save-ingr]'); await page.waitForTimeout(500);
-await page.waitForSelector('[data-nut=energy-kcal]');
+// 3. Po dodaniu jeden ekran: skład i wartości razem. Skład niezgodny ze zdjęciem i kalorie, które się nie sumują.
+await page.waitForSelector('#completeBoth #cmpIngr', { timeout: 8000 });
+ok(await page.locator('#completeBoth [data-nut=energy-kcal]').count() === 1 && await page.locator('[data-cmp=save-both]').count() === 1, 'po dodaniu: skład i wartości na jednym ekranie, jeden przycisk');
 const fillNut = async v => { for (const [k, x] of Object.entries(v)) await page.fill(`[data-nut=${k}]`, String(x)); };
 await fillNut({ 'energy-kcal': 450, fat: 2, 'saturated-fat': 1, carbohydrates: 5, sugars: 4, proteins: 2, salt: 0.1 });
-await page.click('[data-cmp=save-nut]'); await page.waitForTimeout(200);
+await page.fill('#cmpIngr', 'czekolada, orzechy laskowe, karmel, sól morska, wanilia'); await page.click('[data-cmp=save-both]'); await page.waitForTimeout(200);
+ok((await txt('#cmpIngrMsg')).includes('różni się'), 'zmyślony skład: odrzucony');
+await page.fill('#cmpIngr', 'mleko pasteryzowane, żywe kultury bakterii jogurtowych, białka mleka'); await page.click('[data-cmp=save-both]'); await page.waitForTimeout(300);
 ok((await txt('#cmpNutMsg')).includes('nie pasują'), 'kalorie niezgodne z makroskładnikami: komunikat');
-await fillNut({ 'energy-kcal': 61 }); await page.click('[data-cmp=save-nut]'); await page.waitForTimeout(500);
+await fillNut({ 'energy-kcal': 61 }); await page.click('[data-cmp=save-both]'); await page.waitForTimeout(600);
 ok(!(await txt('#cmpNutMsg')).includes('nie pasują'), 'poprawne wartości: zapisane');
 // 4. Kolejna osoba: pytanie tylko po skanie aparatem
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(300);

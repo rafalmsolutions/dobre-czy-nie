@@ -507,11 +507,12 @@ const App = {};
     else if ((m = h.match(/^#\/album\/((?:[a-z]{2}:[a-z0-9-]{2,60})|other|cosmetics)$/))) { screen = 'albumPage'; arg = m[1]; }
     else if ((m = h.match(/^#\/lista\/([a-z]{2}:[a-z0-9-]{2,60})$/))) { screen = 'list'; arg = m[1]; }
     else if (h === '#/porownaj') screen = 'compare';
+    else if (h === '#/uzupelnij') screen = 'fill';
     else if ((m = h.match(/^#\/szukaj(?:\/(.{1,60}))?$/))) { screen = 'search'; arg = m[1] || null; }
     if (screen === 'home' && !A.store.get('onboarded', false)) screen = 'start';
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === 'scr-' + screen.toLowerCase()));
     document.body.classList.toggle('no-nav', screen === 'start');
-    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' || screen === 'progress' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    document.querySelectorAll('.tab').forEach(t => { if (t.dataset.tab === (screen === 'albumPage' || screen === 'discoveries' || screen === 'progress' || screen === 'fill' ? 'album' : screen)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     const first = !A.current.screen;
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };

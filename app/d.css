@@ -755,3 +755,11 @@ button.ap-empty{font:inherit;color:inherit;cursor:pointer;text-align:center}
 .d-prog .xp{height:10px}
 .d-prog-l{font-size:12.5px;font-weight:700;color:#3E4046;line-height:1.35}
 .d-prog-go{font-size:22px;font-weight:800}
+/* 2.7.0: pola odczytane ze zdjęcia (do sprawdzenia) */
+.nut-in .field.ocr{background:#FFF6D6;border-color:#E9C35A}
+#completeBoth .complete-photo{max-height:180px;object-fit:contain}
+.add-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.add-two label{display:flex;flex-direction:column;gap:4px}
+select.field.ocr{background:#FFF6D6;border-color:#E9C35A}
+.fill-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:#FFF6D6;color:var(--ink);text-decoration:none;border:2px solid #F2D27A}
+.fill-banner b{display:block;font-family:var(--f-display);font-size:15px}.fill-banner .grow > span{display:block;font-size:12.5px;line-height:1.35;color:#5E4A12}
+.fill-ic{flex:none;width:40px;height:40px;border-radius:50%;background:#F2B43C;color:#fff;display:flex;align-items:center;justify-content:center}

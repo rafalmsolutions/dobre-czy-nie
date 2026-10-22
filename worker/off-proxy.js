@@ -142,6 +142,11 @@ export default {
       const o = offCtx(env, appVersion);
       // Odczyt składu ze zdjęcia (OCR Open Food Facts). Niczego nie zapisuje: tekst wraca do aplikacji do sprawdzenia.
       if (url.pathname === '/ocr') {
+        // Tabela wartości: Open Food Facts trzyma odczyt każdego zdjęcia (Google Vision) obok zdjęcia. Bierzemy słowa
+        // z wybranego wycinka i układamy je w wiersze („Białko 8 g”), aplikacja wyciąga z nich liczby do sprawdzenia.
+        if (String(form.get('field') || '') === 'nutrition') {
+          try { return reply(200, await nutritionText(o, code, lang)); } catch (e) { return reply(502, { ok: false, error: 'network' }); }
+        }
         try {
           const r = await fetch(`${o.base}/cgi/ingredients.pl?code=${code}&id=ingredients_${lang}&process_image=1&ocr_engine=google_cloud_vision`, { headers: o.headers });
           const j = r.ok ? await r.json().catch(() => null) : null;
@@ -258,7 +263,11 @@ export default {
     // --- Zapis produktu ---
     const fields = new FormData();
     const store = storeLabel(form.get('store'));
-    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Lupka' }, store ? { add_stores: store } : {}, common)).forEach(([k, v]) => fields.append(k, v));
+    // Kategoria z listy aplikacji (tag Open Food Facts), marka i gramatura – opcjonalne, ale bardzo pomagają w porównaniach.
+    const cat = String(form.get('category') || '');
+    const extra = Object.assign({}, /^en:[a-z0-9-]{2,60}$/.test(cat) ? { categories: cat } : {},
+      cleanText(form.get('brands'), 60) ? { brands: cleanText(form.get('brands'), 60) } : {}, cleanText(form.get('quantity'), 30) ? { quantity: cleanText(form.get('quantity'), 30) } : {});
+    Object.entries(Object.assign({ code, lang, lc: lang, cc: 'pl', ['product_name_' + lang]: name, comment: 'Dodane w aplikacji Lupka' }, store ? { add_stores: store } : {}, extra, common)).forEach(([k, v]) => fields.append(k, v));
     let saved, upstream = 0, verbose = '';
     try {
       const r = await fetch(`${base}/cgi/product_jqm2.pl`, { method: 'POST', body: fields, headers });
@@ -287,6 +296,59 @@ export default {
     return reply(200, { ok: true, images });
   }
 };
+
+/* Ścieżka zdjęć produktu w Open Food Facts: 5900197012723 → 590/019/701/2723 (krótkie kody bez podziału). */
+function imagePath(code) {
+  const c = code.length === 12 ? '0' + code : code;
+  const m = c.length >= 9 && c.match(/^(...)(...)(...)(.*)$/);
+  return m ? `${m[1]}/${m[2]}/${m[3]}/${m[4]}` : c;
+}
+/* Słowa z odczytu Google Vision leżące w wycinku [x1,y1,x2,y2] (współrzędne oryginału), ułożone w wiersze. */
+function ocrLines(vision, box) {
+  const res = vision && Array.isArray(vision.responses) ? vision.responses[0] : null;
+  const words = res && Array.isArray(res.textAnnotations) ? res.textAnnotations.slice(1) : [];
+  const items = [];
+  for (const w of words) {
+    const v = (w.boundingPoly && w.boundingPoly.vertices) || [];
+    if (v.length < 4 || typeof w.description !== 'string') continue;
+    const xs = v.map(p => p.x || 0), ys = v.map(p => p.y || 0);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2, h = Math.max(...ys) - Math.min(...ys);
+    if (box && (cx < box[0] || cx > box[2] || cy < box[1] || cy > box[3])) continue;
+    items.push({ t: w.description, x: Math.min(...xs), cy, h: Math.max(h, 1) });
+  }
+  if (!items.length) return '';
+  items.sort((a, b) => a.cy - b.cy);
+  const lines = [];
+  for (const it of items) {
+    const ln = lines[lines.length - 1];
+    if (ln && Math.abs(it.cy - ln.cy) < Math.max(ln.h, it.h) * 0.6) { ln.w.push(it); ln.cy = (ln.cy * (ln.w.length - 1) + it.cy) / ln.w.length; }
+    else lines.push({ cy: it.cy, h: it.h, w: [it] });
+  }
+  return lines.map(l => l.w.sort((a, b) => a.x - b.x).map(w => w.t).join(' ')).join('\n').slice(0, 4000);
+}
+async function nutritionText(o, code, lang) {
+  const r = await fetch(`${o.base}/api/v2/product/${code}.json?fields=images`, { headers: o.headers });
+  const j = r.ok ? await r.json().catch(() => null) : null;
+  const imgs = j && j.product && j.product.images ? j.product.images : null;
+  if (!imgs) return { ok: false, error: 'no_image' };
+  const selKey = ['nutrition_' + lang, 'nutrition_pl', 'nutrition_en', 'nutrition'].find(k => imgs[k]) || Object.keys(imgs).find(k => /^nutrition_[a-z]{2}$/.test(k));
+  const sel = selKey ? imgs[selKey] : null;
+  if (!sel || !sel.imgid || !/^\d{1,5}$/.test(String(sel.imgid))) return { ok: false, error: 'no_image' };
+  const orig = imgs[String(sel.imgid)];
+  let box = null;
+  const c = ['x1', 'y1', 'x2', 'y2'].map(k => Number(sel[k]));
+  if (c.every(n => isFinite(n)) && c[2] > c[0] && c[3] > c[1] && !Number(sel.angle)) {
+    let f = 1;
+    if (String(sel.coordinates_image_size || '') !== 'full' && orig && orig.sizes && orig.sizes.full && orig.sizes['400']) f = orig.sizes.full.w / orig.sizes['400'].w;
+    const pad = 0.02 * Math.max(c[2] - c[0], c[3] - c[1]) * f;
+    box = [c[0] * f - pad, c[1] * f - pad, c[2] * f + pad, c[3] * f + pad];
+  }
+  const v = await fetch(`https://images.openfoodfacts.org/images/products/${imagePath(code)}/${sel.imgid}.json`, { headers: o.headers });
+  if (v.status === 404) return { ok: false, error: 'not_ready' };
+  const vision = v.ok ? await v.json().catch(() => null) : null;
+  const text = ocrLines(vision, box) || ocrLines(vision, null);
+  return text ? { ok: true, text } : { ok: false, error: 'no_text' };
+}
 
 function rateOk(ip, per = RATE.perHour) {
   const now = Date.now(), hourAgo = now - 3600e3;

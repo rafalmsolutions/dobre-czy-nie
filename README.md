@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Więcej polskich produktów i łatwiejsze uzupełnianie (22.10.2026, wersja 2.7.0)
+- Kopia bazy: oprócz produktów z oznaczeniem „Polska” (ok. 21 tys.) dociągamy produkty z polskim kodem 590…, którym tego oznaczenia brakuje (ok. 12,6 tys.), ale tylko opisane po polsku (język „pl” albo polska nazwa).
+- data/uzupelnij.json (co tydzień): 500 najpopularniejszych produktów, które mają w bazie zdjęcie składu lub tabeli, ale nikt ich nie przepisał (stany Open Food Facts). Ekran #/uzupelnij („Uzupełnij dane” w Kolekcji): uzupełnianie bez produktu w ręku, od razu otwiera się na produkcie; zrobione i pominięte w d-fill.
+- Pośrednik /ocr z field=nutrition: odczyt Google Vision, który Open Food Facts trzyma przy każdym zdjęciu, tylko słowa z wybranego wycinka, ułożone w wiersze. Aplikacja (A.parseNutText) wyciąga liczby (wierszami albo kolumnami, wykrywa „na 100 ml”), pola odczytane są zaznaczone do sprawdzenia; A.nutProblem pilnuje, żeby kalorie pasowały do makroskładników.
+- Gdy brakuje i składu, i wartości: jeden ekran z oboma i jeden zapis (+20 pkt). Po dodaniu nowego produktu odczyt czeka na świeże zdjęcia (do 5 prób).
+- Dodawanie produktu: kategoria (podpowiadana z nazwy, wymagana, „Inna” dozwolona), marka i gramatura opcjonalnie; pośrednik zapisuje je w Open Food Facts.
+
 ## Ekran „Dla Ciebie”: najpierw zakupy (22.10.2026, wersja 2.6.0)
 - Kolejność: szukaj (także cyfry kodu kreskowego) → „Dla kogo dziś kupujesz?” w jednym wierszu (stuknięcie włącza/wyłącza osobę) → Ostatnio sprawdzone (z „Nie dla: …” przy kilku osobach) → Najlepsze (3 kategorie) → jedna karta postępów (poziom, wyzwanie, polowanie).
 - Duży przycisk „Skanuj” tylko przy pierwszym wejściu (bez historii); potem skan jest na dolnym pasku. Bez domowników: „Pilnujesz: …” w jednej linijce albo karta „Czego pilnujesz?”.

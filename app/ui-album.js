@@ -223,7 +223,9 @@
   A.collTabs = on => {
     const achs = ((A.cfg.achievements && A.cfg.achievements.achievements) || []), got = achs.filter(a => A.game.unlocked && A.game.unlocked[a.id]).length;
     const n = A.albumStats().cards;
-    return `<nav class="coll-tabs" aria-label="Kolekcja"><a href="#/album"${on === 'cards' ? ' aria-current="page"' : ''}>Karty <span>${n}</span></a><a href="#/postepy"${on === 'badges' ? ' aria-current="page"' : ''}>Odznaki i poziom <span>${got}</span></a></nav>`;
+    // „Uzupełnij dane”: popularne produkty do przepisania ze zdjęć (bez produktu w ręku), punkty za każdą część.
+    const fill = A.CFG.offProxyUrl ? `<a class="fill-banner" href="#/uzupelnij"><span class="fill-ic" aria-hidden="true"><svg width="22" height="22"><use href="#i-photo"/></svg></span><span class="grow"><b>Uzupełnij dane, zbieraj punkty</b><span>Popularne produkty czekają na przepisanie składu i wartości ze zdjęcia. Nie trzeba ich mieć w domu.</span></span><span aria-hidden="true">›</span></a>` : '';
+    return `<nav class="coll-tabs" aria-label="Kolekcja"><a href="#/album"${on === 'cards' ? ' aria-current="page"' : ''}>Karty <span>${n}</span></a><a href="#/postepy"${on === 'badges' ? ' aria-current="page"' : ''}>Odznaki i poziom <span>${got}</span></a></nav>${fill}`;
   };
   /* ---------- Album ---------- */
   A.route('album', () => {

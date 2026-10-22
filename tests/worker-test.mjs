@@ -38,6 +38,10 @@ let r = await run(form());
 ok(r.status === 200 && r.j.ok && r.j.images === 3, 'poprawne dodanie: 200 i 3 zdjęcia');
 const save = calls.find(c => c.url.includes('product_jqm2'));
 ok(save && save.body.user_id === 'dcn-app' && save.body.password === 'sekret', 'hasło dodane po stronie serwera');
+r = await run(form({ category: 'en:yogurts', brands: 'Piątnica <b>', quantity: '150 g' }));
+{ const sv = calls.find(c => c.url.includes('product_jqm2')); ok(r.status === 200 && sv.body.categories === 'en:yogurts' && sv.body.brands === 'Piątnica b' && sv.body.quantity === '150 g', 'nowy produkt: kategoria, marka i gramatura (' + JSON.stringify(sv && sv.body) + ')'); }
+r = await run(form({ category: 'zła kategoria' }));
+{ const sv = calls.find(c => c.url.includes('product_jqm2')); ok(r.status === 200 && !('categories' in sv.body), 'nowy produkt: zła kategoria pominięta'); }
 ok(save.body.product_name_pl === 'Jogurt b testowy /b', 'nazwa oczyszczona z < > (' + save.body.product_name_pl + ')');
 ok(save.body.app_name === 'Lupka' && save.body.app_uuid === '0123456789abcdef0123', 'app_name i app_uuid');
 ok(/^Lupka\/1\.0 \(.+@.+\)$/.test(save.headers['User-Agent']), 'User-Agent z kontaktem');
@@ -109,6 +113,25 @@ const ef = o => { const f = new FormData(); for (const [k, v] of Object.entries(
 r = await run(ef({}), { path: '/ocr' }); ok(r.status === 200 && r.j.ok && r.j.text === 'mleko, b kultury /b bakterii', 'OCR składu: tekst oczyszczony (' + JSON.stringify(r.j) + ')');
 ok(calls.some(c => c.url.includes('id=ingredients_pl&process_image=1')), 'OCR: właściwe pole zdjęcia');
 r = await run(ef({ code: '123' }), { path: '/ocr' }); ok(r.status === 400, 'OCR: zły kod');
+// Tabela wartości: słowa z odczytu Google Vision w wycinku zdjęcia, ułożone w wiersze.
+{
+  const W = (t, x, y) => ({ description: t, boundingPoly: { vertices: [{ x, y }, { x: x + 40, y }, { x: x + 40, y: y + 20 }, { x, y: y + 20 }] } });
+  const vision = { responses: [{ textAnnotations: [{ description: 'cały tekst' }, W('Białko', 100, 100), W('8', 300, 102), W('g', 330, 101), W('Sól', 100, 140), W('0,5', 300, 141), W('g', 340, 140), W('REKLAMA', 900, 900)] }] };
+  let visionStatus = 200, imgs = { nutrition_pl: { imgid: '3', x1: 20, y1: 20, x2: 100, y2: 50, coordinates_image_size: '400' }, 3: { sizes: { full: { w: 2000 }, 400: { w: 400 } } } };
+  const prev = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u.includes('fields=images')) { calls.push({ url: u }); return new Response(JSON.stringify({ status: 1, product: { images: imgs } })); }
+    if (u.startsWith('https://images.openfoodfacts.org/') && u.endsWith('.json')) { calls.push({ url: u }); return new Response(JSON.stringify(vision), { status: visionStatus }); }
+    return prev(url, init);
+  };
+  r = await run(ef({ field: 'nutrition' }), { path: '/ocr' });
+  ok(r.status === 200 && r.j.ok && r.j.text === 'Białko 8 g\nSól 0,5 g', 'OCR tabeli: wiersze z wycinka, bez tekstu spoza (' + JSON.stringify(r.j) + ')');
+  ok(calls.some(c => /images\/products\/590\/000\/000\/0113\/3\.json$/.test(c.url) || /\/3\.json$/.test(c.url)), 'OCR tabeli: odczyt wybranego zdjęcia');
+  visionStatus = 404; r = await run(ef({ field: 'nutrition' }), { path: '/ocr' }); ok(r.j && r.j.error === 'not_ready', 'OCR tabeli: zdjęcie jeszcze nieodczytane → not_ready');
+  imgs = {}; visionStatus = 200; r = await run(ef({ field: 'nutrition' }), { path: '/ocr' }); ok(r.j && r.j.error === 'no_image', 'OCR tabeli: brak zdjęcia tabeli');
+  globalThis.fetch = prev;
+}
 r = await run(ef({ ingredients_text: 'mleko, kultury bakterii' }), { path: '/edit' });
 let save2 = calls.find(c => c.url.includes("jqm2"));
 ok(r.status === 200 && r.j.saved.join() === 'ingredients' && save2.body.ingredients_text_pl === 'mleko, kultury bakterii' && save2.body.password === 'sekret', 'skład zapisany kontem aplikacji');

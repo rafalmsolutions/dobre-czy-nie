@@ -26,7 +26,7 @@ CAT_MAX = 200         # produktów w pliku kategorii
 CAT_MIN = 5           # kategorie z mniejszą liczbą produktów pomijamy (za mało do porównania)
 FIELDS = ('code,product_name,product_name_pl,brands,quantity,image_front_small_url,image_front_url,nutriscore_grade,'
           'nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,'
-          'nutriments,categories_tags,categories,stores,unique_scans_n')
+          'nutriments,categories_tags,categories,stores,unique_scans_n,states_tags,lang')
 NUTRIMENTS = ['energy-kcal_100g', 'fat_100g', 'saturated-fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g',
               'fiber_100g', 'carbohydrates_100g', 'alcohol_100g']
 CODE_RE = re.compile(r'^\d{8,14}$')
@@ -158,27 +158,77 @@ def compact(h):
     return {k: v for k, v in p.items() if v not in ('', [], {}) or k in ('additives_tags',) and v == []}, int(h.get('unique_scans_n') or 0)
 
 
-def fetch_all(src, limit=None, log=print):
+# Produkty z polskim kodem (590…), którym w bazie brakuje oznaczenia „Polska” (ok. 12,6 tys. w X 2026).
+# Bierzemy tylko te opisane po polsku (język produktu „pl” albo polska nazwa), żeby na listach nie było francuskich nazw.
+PL_CODE_Q = f'code:590* AND NOT countries_tags:"{COUNTRY}"'
+
+
+def polish_described(h):
+    return h.get('lang') == 'pl' or bool(text(h.get('product_name_pl')))
+
+
+# Do uzupełnienia bez produktu w ręku: zdjęcie jest w bazie, przepisanego tekstu brak.
+def needs(st):
+    k = ''
+    if 'en:ingredients-to-be-completed' in st and 'en:ingredients-photo-selected' in st:
+        k += 's'
+    if 'en:nutrition-facts-to-be-completed' in st and 'en:nutrition-photo-selected' in st:
+        k += 'w'
+    return k
+
+
+def fetch_all(src, limit=None, log=print, states=None):
     base_q = f'countries_tags:"{COUNTRY}"'
     total = detect(src, base_q)
     log(f'Produktów w Polsce (wg wyszukiwarki): {total}; strona: {src.page_max}; prefiks: {src.prefix_style}')
     parts = partitions(src, base_q)
     log(f'Części zapytania: {len(parts)}, produktów razem: {sum(n for _, n in parts)}')
+    try:
+        extra = partitions(src, PL_CODE_Q)
+    except Exception as e:  # dodatek: przy kłopocie z wyszukiwarką publikujemy samą Polskę
+        log(f'Polskie kody bez oznaczenia „Polska”: pominięte ({e})')
+        extra = []
+    log(f'Polskie kody bez oznaczenia „Polska”: {sum(n for _, n in extra)} w {len(extra)} częściach')
     products, pop = {}, {}
-    for q, n in parts:
-        d = src.get(q, size=src.page_max, fields=FIELDS)
-        hits = d.get('hits') or []
-        if len(hits) < min(n, src.page_max) * 0.98:
-            raise RuntimeError(f'Za mało wyników dla {q}: {len(hits)} z {n}')
+    added = 0
+    for q, n in parts + [(q, n) for q, n in extra]:
+        is_extra = q.startswith(PL_CODE_Q)
+        try:
+            d = src.get(q, size=src.page_max, fields=FIELDS)
+            hits = d.get('hits') or []
+            if len(hits) < min(n, src.page_max) * 0.98:
+                raise RuntimeError(f'Za mało wyników dla {q}: {len(hits)} z {n}')
+        except Exception as e:
+            if not is_extra:
+                raise
+            log(f'Pominięta część z polskim kodem: {e}')
+            continue
         for h in hits:
-            r = compact(h) if isinstance(h, dict) else None
+            if not isinstance(h, dict) or (is_extra and (str(h.get('code')) in products or not polish_described(h))):
+                continue
+            r = compact(h)
             if r:
                 p, scans = r
                 products[p['code']] = p
                 pop[p['code']] = scans
+                added += 1 if is_extra else 0
+                if states is not None:
+                    k = needs(set(tags(h.get('states_tags'), 80)))
+                    if k:
+                        states[p['code']] = k
         if limit and len(products) >= limit:
             break
+    log(f'Dodane z polskim kodem: {added}')
     return products, pop
+
+
+def write_missions(products, pop, states, out, built, top=500):
+    """data/uzupelnij.json: najpopularniejsze produkty do uzupełnienia ze zdjęć (misje w aplikacji)."""
+    codes = sorted((c for c in states if c in products), key=lambda c: (-pop.get(c, 0), c))[:top]
+    items = [{'c': c, 'n': products[c].get('product_name', ''), 'b': products[c].get('brands', ''), 'i': products[c].get('image_front_small_url', ''),
+              's': int(pop.get(c, 0)), 'k': states[c]} for c in codes]
+    write_json(os.path.join(out, 'uzupelnij.json'), {'built': built, 'count': len(states), 'items': items})
+    return len(items)
 
 
 def write_json(path, obj):
@@ -299,11 +349,13 @@ def main(argv=None):
     ap.add_argument('--hist-url', default=HIST_URL, help='zapas: historia z opublikowanej strony; pusty = bez')
     a = ap.parse_args(argv)
     src = Source(a.base, a.pause, a.page_max)
-    products, pop = fetch_all(src, a.limit)
+    states = {}
+    products, pop = fetch_all(src, a.limit, states=states)
     if len(products) < a.min_products:
         print(f'Za mało produktów ({len(products)} < {a.min_products}). Nie publikuję.', file=sys.stderr)
         return 1
-    build(products, pop, a.out, prev_hist=load_prev_hist(a.prev_hist, a.hist_url))
+    meta = build(products, pop, a.out, prev_hist=load_prev_hist(a.prev_hist, a.hist_url))
+    print(f'Do uzupełnienia ze zdjęć: {len(states)}, w kolejce: {write_missions(products, pop, states, a.out, meta["built"])}')
     print(f'Zapytań do wyszukiwarki: {src.calls}')
     return 0
 

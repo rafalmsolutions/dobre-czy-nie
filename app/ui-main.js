@@ -58,6 +58,7 @@
       case 'how': A.openDlg('howDlg'); break;
       case 'photo-open': A.openPhoto(); break;
       case 'complete': A.startComplete(); break;
+      case 'fill-go': A.fillAuto = el.dataset.code; A.fillFrom = el.dataset.code; break; // link prowadzi dalej do produktu
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
       case 'cel-ok': A.nextCelebration(); break;
