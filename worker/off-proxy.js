@@ -345,9 +345,10 @@ async function nutritionText(o, code, lang) {
   }
   const v = await fetch(`https://images.openfoodfacts.org/images/products/${imagePath(code)}/${sel.imgid}.json`, { headers: o.headers });
   if (v.status === 404) return { ok: false, error: 'not_ready' };
-  const vision = v.ok ? await v.json().catch(() => null) : null;
+  let vision = null, why = 'vision_' + v.status;
+  if (v.ok) { const raw = await v.text(); try { vision = JSON.parse(raw); why = 'no_words'; } catch (e) { why = 'vision_json_' + raw.length; } }
   const text = ocrLines(vision, box) || ocrLines(vision, null);
-  return text ? { ok: true, text } : { ok: false, error: 'no_text' };
+  return text ? { ok: true, text } : { ok: false, error: 'no_text', why };
 }
 
 function rateOk(ip, per = RATE.perHour) {
