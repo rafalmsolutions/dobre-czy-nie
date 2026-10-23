@@ -1,4 +1,4 @@
-// Lista zakupów 2.8.0: dyktowanie (rozbijanie wypowiedzi, przycisk mikrofonu), podpowiedzi podczas pisania,
+// Lista zakupów 2.8.0–2.8.2: dyktowanie (rozbijanie wypowiedzi także bez przecinków, ciągłe słuchanie z pauzami, przycisk mikrofonu), podpowiedzi podczas pisania,
 // zamiana ogólnej pozycji („mleko”) na zeskanowany produkt z „Cofnij”. Uruchom: node e2e-d-lista.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -13,12 +13,25 @@ async function newPage(fakeSpeech) {
   await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1');
     localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); });
   if (!fakeSpeech) await page.addInitScript(() => { delete window.SpeechRecognition; delete window.webkitSpeechRecognition; window.SpeechRecognition = undefined; window.webkitSpeechRecognition = undefined; });
-  if (fakeSpeech) await page.addInitScript(said => {
+  if (fakeSpeech) await page.addInitScript(() => {
     delete window.SpeechRecognition; window.SpeechRecognition = undefined;
-    // Udawane rozpoznawanie mowy: najpierw wynik pośredni, potem końcowy.
-    window.webkitSpeechRecognition = class { start() { window.__rec = this; setTimeout(() => { this.onresult && this.onresult({ results: [Object.assign([{ transcript: said.slice(0, 5) }], { isFinal: false })] }); window.__interim = document.getElementById('addItemInput').value; }, 50);
-      setTimeout(() => { this.onresult && this.onresult({ results: [Object.assign([{ transcript: said }], { isFinal: true })] }); this.onend && this.onend(); }, 150); } stop() { this.onend && this.onend(); } abort() { } };
-  }, fakeSpeech);
+    // Udawane rozpoznawanie mowy. window.__speech: kolejka sesji (jedna na każde start()), każda to lista kroków:
+    // { at: ms, results: [[tekst, końcowy?], …], index } – zdarzenie wyniku; { at, end: true } – przeglądarka sama kończy; { at, error }.
+    window.__speech = []; window.__starts = 0;
+    window.webkitSpeechRecognition = class {
+      start() { window.__starts++; window.__rec = this; this.timers = []; const steps = window.__speech.shift() || [];
+        steps.forEach(st => this.timers.push(setTimeout(() => {
+          if (st.end) { this.end(); return; }
+          if (st.error) { this.onerror && this.onerror({ error: st.error }); if (st.error !== 'no-speech') this.end(); return; }
+          const results = st.results.map(([t, f]) => Object.assign([{ transcript: t }], { isFinal: !!f }));
+          this.onresult && this.onresult({ results, resultIndex: st.index || 0 });
+          (window.__inputs = window.__inputs || []).push(document.getElementById('addItemInput') && document.getElementById('addItemInput').value);
+        }, st.at))); }
+      end() { if (this.ended) return; this.ended = true; this.timers.forEach(clearTimeout); this.onend && this.onend(); }
+      stop() { setTimeout(() => this.end(), 30); }
+      abort() { this.end(); }
+    };
+  });
   return page;
 }
 const closeCel = async page => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden().catch(() => true)) return; await page.click('#celebrate [data-act=cel-ok]').catch(() => {}); await page.waitForTimeout(120); } };
@@ -33,22 +46,53 @@ const sp = await page.evaluate(() => [Shelf.splitSpeech('mleko, chleb i dwa jogu
 ok(sp[0].length === 3 && sp[0].map(x => x.name).join('|') === 'mleko|chleb|jogurty' && sp[0][2].qty === 2, '„mleko, chleb i dwa jogurty” → 3 pozycje, jogurty ×2');
 ok(sp[1].length === 2 && sp[1][0].name === 'ziemniaki' && sp[1][0].qty === 2 && sp[1][0].unit === 'kg' && sp[1][1].name === 'masło', '„2 kg ziemniaki oraz masło” → 2 pozycje, 2 kg');
 ok(sp[2].length === 2 && sp[2][0].qty === 0.5 && sp[2][0].unit === 'kg' && sp[2][1].qty === 3, '„pół kilo …” i „a także” → 0,5 kg i 3 szt.');
+const sp2 = await page.evaluate(() => ['pomidory ziemniaki banany', 'chleb żytni masło orzechowe', 'pasta do zębów płyn do naczyń', 'mleko 2 litry chleb', 'mleko przecinek chleb'].map(t => Shelf.splitSpeech(t).map(x => x.name + (x.qty !== 1 || x.unit !== 'szt' ? ' ' + x.qty + x.unit : '')).join('|')));
+ok(sp2.join(' / ') === 'pomidory|ziemniaki|banany / chleb żytni|masło orzechowe / pasta do zębów|płyn do naczyń / mleko 2l|chleb / mleko|chleb', 'bez przecinków: dzielimy po nazwach produktów, nie po przymiotnikach i przyimkach (' + sp2.join(' / ') + ')');
 ok(await page.locator('#micBtn').count() === 0, 'bez rozpoznawania mowy w przeglądarce nie ma przycisku mikrofonu');
 const errs1 = page.errs; await page.context().close();
 
-// Udawany mikrofon: wynik trafia na półkę, z działem i ilością
-page = await newPage('mleko, chleb i dwa jogurty');
+// Udawany mikrofon
+page = await newPage(true);
 await go(page, '#/polki');
+await page.evaluate(() => { App.dictIdleMs = 900; });
 ok(await page.locator('#micBtn').count() === 1, 'z rozpoznawaniem mowy jest przycisk mikrofonu');
-await page.click('#micBtn'); await page.waitForTimeout(500);
+const speak = sessions => page.evaluate(x => { window.__speech = x; window.__starts = 0; }, sessions);
+const msg = () => page.innerText('#itemMsg');
+// a) Bez przecinków („pomidory ziemniaki banany”), przeglądarka sama kończy po pauzie → słuchamy dalej, koniec po ciszy
+await speak([[{ at: 50, results: [['pomidory ziem', false]] }, { at: 120, results: [['pomidory ziemniaki banany', true]] }, { at: 200, end: true }], [{ at: 300, error: 'no-speech' }]]);
+await page.click('#micBtn'); await page.waitForTimeout(100);
+ok(await page.evaluate(() => (window.__inputs || []).includes('pomidory ziem')), 'wynik pośredni widać w polu podczas mówienia');
+await page.waitForTimeout(250);
 let it = await items(page);
-ok(await page.evaluate(() => window.__interim) === 'mleko', 'wynik pośredni widać w polu podczas mówienia');
-ok(it.length === 3 && it.find(i => i.name === 'jogurty' && i.qty === 2) && it.find(i => i.name === 'mleko').dept !== 'other', 'dyktowanie: 3 rzeczy na półce, jogurty ×2, mleko w swoim dziale (' + JSON.stringify(it) + ')');
-ok(/Dodano 3 rzeczy: mleko, chleb, jogurty ×2/.test(await page.innerText('#itemMsg')), 'komunikat „Dodano 3 rzeczy: …” (' + await page.innerText('#itemMsg') + ')');
+ok(it.map(i => i.name).join('|') === 'pomidory|ziemniaki|banany' && it.every(i => i.dept === 'veg'), '„pomidory ziemniaki banany” bez przecinków → 3 pozycje w warzywach (' + it.map(i => i.name).join('|') + ')');
+ok(await page.getAttribute('#micBtn', 'aria-pressed') === 'true' && await page.evaluate(() => window.__starts) === 2, 'po pauzie przeglądarka skończyła, a my słuchamy dalej (wznowione rozpoznawanie)');
+ok(/Słucham dalej/.test(await msg()), 'w trakcie: „Słucham dalej… Stuknij mikrofon, gdy skończysz.”');
+await page.waitForTimeout(1100);
+ok(await page.getAttribute('#micBtn', 'aria-pressed') === 'false' && /Dodano 3 rzeczy: pomidory, ziemniaki, banany\./.test(await msg()), 'po ciszy koniec słuchania i podsumowanie (' + await msg() + ')');
 ok(await page.inputValue('#addItemInput') === '', 'pole wyczyszczone po dodaniu');
-await page.evaluate(() => { window.webkitSpeechRecognition.prototype.start = function () { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 30); }; });
+// b) Pauzy między produktami: każdy fragment od razu na półce; koniec stuknięciem
+await page.evaluate(() => { const st = App.shelves; st.shelves[0].items = []; App.saveShelves(); }); await page.click('[data-act=shelf-pick]'); await page.waitForTimeout(150);
+await speak([[{ at: 50, results: [['mleko', true]] }, { at: 400, results: [['mleko', true], [' chleb żytni', true]], index: 1 }, { at: 500, end: true }], [{ at: 100, results: [['dwa jogurty naturalne', true]] }]]);
 await page.click('#micBtn'); await page.waitForTimeout(200);
-ok(/zgody na mikrofon/.test(await page.innerText('#itemMsg')) && await page.isEnabled('#addItemInput'), 'brak zgody na mikrofon: krótki komunikat, pole działa');
+ok((await items(page)).map(i => i.name).join('|') === 'mleko', 'pierwszy produkt na półce od razu, w trakcie mówienia');
+await page.waitForTimeout(600);
+await page.click('#micBtn'); await page.waitForTimeout(200);
+it = await items(page);
+ok(it.map(i => i.name).join('|') === 'mleko|chleb żytni|jogurty naturalne' && it[2].qty === 2, 'z pauzami: mleko, chleb żytni, jogurty naturalne ×2 (' + it.map(i => i.name + '×' + i.qty).join('|') + ')');
+ok(await page.getAttribute('#micBtn', 'aria-pressed') === 'false' && /Dodano 3 rzeczy/.test(await msg()), 'stuknięcie mikrofonu kończy dyktowanie');
+// c) Android powtarza wcześniejsze słowa w kolejnym wyniku
+await speak([[{ at: 50, results: [['masło', true]] }, { at: 150, results: [['masło', true], ['masło ser żółty', true]], index: 1 }, { at: 250, results: [['masło', true], ['masło ser żółty', true], ['masło ser żółty', true]], index: 2 }]]);
+await page.click('#micBtn'); await page.waitForTimeout(400); await page.click('#micBtn'); await page.waitForTimeout(200);
+it = await items(page);
+ok(it.filter(i => i.name === 'masło').length === 1 && it.filter(i => i.name === 'ser żółty').length === 1 && it.length === 5, 'powtórzone słowa (Android) nie dodają rzeczy dwa razy (' + it.map(i => i.name).join('|') + ')');
+// d) Cisza od początku
+await speak([[{ at: 100, error: 'no-speech' }, { at: 150, end: true }], [], []]);
+await page.click('#micBtn'); await page.waitForTimeout(1300);
+ok(/Nic nie usłyszeliśmy/.test(await msg()) && await page.getAttribute('#micBtn', 'aria-pressed') === 'false', 'bez słów: po ciszy komunikat „Nic nie usłyszeliśmy”');
+// e) Brak zgody na mikrofon
+await speak([[{ at: 30, error: 'not-allowed' }]]);
+await page.click('#micBtn'); await page.waitForTimeout(200);
+ok(/zgody na mikrofon/.test(await msg()) && await page.isEnabled('#addItemInput') && await page.getAttribute('#micBtn', 'aria-pressed') === 'false', 'brak zgody na mikrofon: krótki komunikat, pole działa');
 const errs2 = page.errs; await page.context().close();
 
 // 2. Podpowiedzi podczas pisania

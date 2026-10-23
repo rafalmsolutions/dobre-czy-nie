@@ -104,45 +104,100 @@
   /* ---------- Dyktowanie listy (2.8.0): Web Speech API, po polsku, jedna wypowiedź ---------- */
   const SR = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
   const MIC = '<svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
-  let rec = null, listening = false;
-  const SR_ERR = { 'not-allowed': 'Nie mamy zgody na mikrofon. Zezwól na niego w ustawieniach przeglądarki albo wpisz rzecz.', 'service-not-allowed': 'Ta przeglądarka nie pozwala tu dyktować. Wpisz rzecz ręcznie.', network: 'Dyktowanie wymaga internetu. Wpisz rzecz ręcznie.', 'no-speech': 'Nic nie usłyszeliśmy. Stuknij mikrofon i powiedz np. „mleko, chleb i dwa jogurty”.', 'audio-capture': 'Nie znaleźliśmy mikrofonu.' };
+  /* 2.8.2: słuchamy w trybie ciągłym. Każdy fragment po pauzie od razu trafia na półkę. Gdy przeglądarka sama zakończy
+     rozpoznawanie (Android, iPhone robią to po kilku sekundach ciszy), uruchamiamy je ponownie. Koniec: stuknięcie mikrofonu,
+     IDLE ms ciszy albo 2 minuty. Android potrafi powtarzać wcześniejsze słowa w kolejnych wynikach – usuwamy powtórzenia. */
+  let rec = null, listening = false, sess = null;
+  A.dictIdleMs = 8000;
+  const DICT_MAX = 120000;
+  const SR_ERR = { 'not-allowed': 'Nie mamy zgody na mikrofon. Zezwól na niego w ustawieniach przeglądarki albo wpisz rzecz.', 'service-not-allowed': 'Ta przeglądarka nie pozwala tu dyktować. Wpisz rzecz ręcznie.', network: 'Dyktowanie wymaga internetu. Wpisz rzecz ręcznie.', 'audio-capture': 'Nie znaleźliśmy mikrofonu.' };
   const setMsg = m => { ui.msg = m; const el = A.$('itemMsg'); if (el) el.textContent = m; };
-  const micState = () => { const b = A.$('micBtn'); if (b) { b.setAttribute('aria-pressed', listening ? 'true' : 'false'); b.setAttribute('aria-label', listening ? 'Zatrzymaj dyktowanie' : 'Dyktuj listę'); b.classList.toggle('on', listening); } };
-  function addSpoken(text) {
-    const parts = Shelf.splitSpeech(text), added = [], dup = [];
-    let full = false;
+  const micState = () => { const b = A.$('micBtn'); if (b) { b.setAttribute('aria-pressed', listening ? 'true' : 'false'); b.setAttribute('aria-label', listening ? 'Zakończ dyktowanie' : 'Dyktuj listę'); b.classList.toggle('on', listening); } };
+  const shelvesOpen = () => A.current && A.current.screen === 'shelves';
+  const label = it => it.name + (it.unit === 'szt' ? (it.qty !== 1 ? ' ×' + String(it.qty).replace('.', ',') : '') : ' ' + Shelf.fmtQty(it));
+  function sessMsg(final) {
+    const s = sess, n = s.added.length;
+    return [n ? `Dodano ${n} ${plural(n, 'rzecz', 'rzeczy', 'rzeczy')}: ${s.added.join(', ')}.` : '', s.dup.length ? `Już na półce: ${s.dup.join(', ')}.` : '', s.full ? ERR.full : '',
+      final ? (!n && !s.dup.length ? (s.heard ? 'Nie rozpoznaliśmy żadnej rzeczy. Spróbuj jeszcze raz.' : 'Nic nie usłyszeliśmy. Stuknij mikrofon i wymieniaj produkty, np. „pomidory, ziemniaki, banany”.') : '')
+        : 'Słucham dalej… Stuknij mikrofon, gdy skończysz.'].filter(Boolean).join(' ');
+  }
+  function addChunk(text) {
+    const parts = Shelf.splitSpeech(text); let changed = false;
     parts.forEach(p => {
       const r = Shelf.addItem(A.shelves, active().id, { name: p.text });
-      if (r.error === 'full') full = true;
-      else if (r.error) { if (r.item) dup.push(r.item.name); }
-      else { A.shelves = r.state; added.push(r.item.name + (r.item.unit === 'szt' ? (r.item.qty !== 1 ? ' ×' + String(r.item.qty).replace('.', ',') : '') : ' ' + Shelf.fmtQty(r.item))); }
+      if (r.error === 'full') sess.full = true;
+      else if (r.error) { if (r.item && !sess.dup.includes(r.item.name)) sess.dup.push(r.item.name); }
+      else { A.shelves = r.state; sess.added.push(label(r.item)); changed = true; }
     });
-    if (added.length) A.saveShelves();
-    const msg = [added.length ? `Dodano ${added.length} ${plural(added.length, 'rzecz', 'rzeczy', 'rzeczy')}: ${added.join(', ')}.` : '', dup.length ? `Już na półce: ${dup.join(', ')}.` : '', full ? ERR.full : '', !parts.length ? 'Nie rozpoznaliśmy żadnej rzeczy. Spróbuj jeszcze raz.' : ''].filter(Boolean).join(' ');
-    ui.msg = msg; render('#addItemInput'); A.announce(msg);
+    if (changed) A.saveShelves();
+    ui.msg = sessMsg(false);
+    if (shelvesOpen()) render(); // bez przenoszenia fokusu (na telefonie nie wyskakuje klawiatura)
+  }
+  // Nowy końcowy fragment; Android bywa, że powtarza w nim poprzednie słowa.
+  function takeFinal(t) {
+    let txt = t.trim(); if (!txt) return;
+    const prev = sess.lastFinal, ft = fold(txt), fp = fold(prev);
+    if (fp && ft === fp) return;
+    if (fp && ft.startsWith(fp + ' ')) txt = txt.slice(prev.length).trim();
+    sess.lastFinal = t.trim(); sess.heard = true;
+    if (txt) addChunk(txt);
+  }
+  function idle() { clearTimeout(sess.timer); sess.timer = setTimeout(() => stopDict(), A.dictIdleMs); }
+  function finish() {
+    const s = sess; if (!s) return;
+    clearTimeout(s.timer); listening = false; rec = null;
+    if (s.interim) { takeFinal(s.interim); s.interim = ''; }
+    const msg = sessMsg(true); sess = null;
+    ui.msg = msg;
+    const inp = A.$('addItemInput'); if (inp) inp.value = '';
+    if (shelvesOpen()) render(); else micState();
+    A.announce(msg);
+  }
+  function stopDict() { if (!sess) return; sess.stopping = true; clearTimeout(sess.timer); if (rec) { try { rec.stop(); } catch (e) { finish(); } } else finish(); }
+  function startRec() {
+    const s = sess; let r;
+    try { r = new SR(); } catch (e) { setMsg('Dyktowanie nie działa w tej przeglądarce.'); sess = null; listening = false; micState(); return; }
+    rec = r; s.done = new Set();
+    r.lang = 'pl-PL'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    r.onresult = ev => {
+      if (sess !== s) return;
+      let interim = '';
+      for (let n = ev.resultIndex || 0; n < ev.results.length; n++) {
+        const res = ev.results[n], t = res[0].transcript;
+        if (res.isFinal) { if (!s.done.has(n)) { s.done.add(n); takeFinal(t); } }
+        else interim += t;
+      }
+      s.interim = interim.trim();
+      const inp = A.$('addItemInput'); if (inp) inp.value = s.interim.slice(0, 200);
+      idle();
+    };
+    r.onerror = ev => {
+      if (sess !== s) return;
+      if (ev.error === 'no-speech' || ev.error === 'aborted') return; // cisza: decyduje licznik ciszy
+      s.fatal = SR_ERR[ev.error] || 'Nie udało się rozpoznać mowy. Wpisz rzecz ręcznie.';
+      s.stopping = true;
+    };
+    r.onend = () => {
+      if (sess !== s) return;
+      if (rec === r) rec = null;
+      if (s.fatal) { const m = s.fatal; finish(); setMsg((ui.msg && s.added.length ? ui.msg + ' ' : '') + m); return; }
+      if (s.stopping || Date.now() - s.started > DICT_MAX) { finish(); return; }
+      // Przeglądarka skończyła sama po pauzie – słuchamy dalej (chyba że minął czas ciszy; wtedy kończy licznik).
+      if (s.interim) { takeFinal(s.interim); s.interim = ''; }
+      setTimeout(() => { if (sess === s && !s.stopping) startRec(); }, 120);
+    };
+    try { r.start(); } catch (e) { setMsg('Nie udało się włączyć mikrofonu.'); sess = null; listening = false; rec = null; micState(); }
   }
   A.dictate = () => {
     if (!SR) return;
-    if (listening && rec) { try { rec.stop(); } catch (e) { } return; }
+    if (sess) { stopDict(); return; }
     closeSug();
-    let finalText = '', lastText = '';
-    try { rec = new SR(); } catch (e) { setMsg('Dyktowanie nie działa w tej przeglądarce.'); return; }
-    rec.lang = 'pl-PL'; rec.continuous = false; rec.interimResults = true; rec.maxAlternatives = 1;
-    rec.onresult = ev => {
-      let interim = ''; finalText = '';
-      for (let n = 0; n < ev.results.length; n++) { const t = ev.results[n][0].transcript; if (ev.results[n].isFinal) finalText += t; else interim += t; }
-      const inp = A.$('addItemInput'); if (inp) inp.value = (finalText + ' ' + interim).trim().slice(0, 200);
-      lastText = (finalText + ' ' + interim).trim();
-    };
-    rec.onerror = ev => { listening = false; micState(); if (ev.error !== 'aborted') setMsg(SR_ERR[ev.error] || 'Nie udało się rozpoznać mowy. Wpisz rzecz ręcznie.'); };
-    rec.onend = () => {
-      listening = false; micState(); rec = null;
-      const inp = A.$('addItemInput'), text = (finalText || lastText).trim();
-      if (text) { if (inp) inp.value = ''; addSpoken(text); }
-    };
-    try { rec.start(); listening = true; micState(); setMsg('Słucham… Powiedz np. „mleko, chleb i dwa jogurty”.'); }
-    catch (e) { listening = false; micState(); setMsg('Nie udało się włączyć mikrofonu.'); }
+    sess = { added: [], dup: [], full: false, heard: false, lastFinal: '', interim: '', started: Date.now(), timer: null, stopping: false, fatal: '' };
+    listening = true; micState();
+    setMsg('Słucham… Wymieniaj produkty, np. „pomidory, ziemniaki, dwa jogurty”. Stuknij mikrofon, gdy skończysz.');
+    idle(); startRec();
   };
+  A.stopDictation = () => { if (sess) stopDict(); };
 
   function render(focusSel) {
     sug = []; sugIdx = -1;

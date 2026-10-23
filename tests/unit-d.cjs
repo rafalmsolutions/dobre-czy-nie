@@ -85,6 +85,14 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   const b2 = S.splitSpeech('2 kg ziemniaki oraz masło');
   ok(b2.length === 2 && b2[0].unit === 'kg' && b2[0].qty === 2 && b2[1].name === 'masło', 'dyktowanie: „2 kg ziemniaki oraz masło” → 2 pozycje');
   ok(S.splitSpeech('1,5 l mleka a także dziesięć jajek').map(x => x.qty + x.unit).join() === '1.5l,10szt', 'dyktowanie: przecinek w liczbie nie dzieli, „a także”, „dziesięć”');
+  const j = t => S.splitSpeech(t).map(x => x.name + (x.qty !== 1 || x.unit !== 'szt' ? ' ' + x.qty + x.unit : '')).join('|');
+  ok(j('pomidory ziemniaki banany') === 'pomidory|ziemniaki|banany', 'dyktowanie bez przecinków: 3 produkty');
+  ok(j('chleb żytni masło orzechowe') === 'chleb żytni|masło orzechowe', 'dyktowanie: przymiotnik zostaje przy produkcie');
+  ok(j('pasta do zębów płyn do naczyń') === 'pasta do zębów|płyn do naczyń' && j('pierś z kurczaka ryż') === 'pierś z kurczaka|ryż', 'dyktowanie: po przyimku nie dzielimy');
+  ok(j('jogurt naturalny dwa banany') === 'jogurt naturalny|banany 2szt' && j('dwa litry mleka trzy jogurty') === 'mleka 2l|jogurty 3szt', 'dyktowanie: liczebnik zaczyna nową pozycję');
+  ok(j('mleko 2 litry chleb') === 'mleko 2l|chleb' && j('jajka 10 sztuk masło') === 'jajka 10szt|masło' && j('ser 2 kg ziemniaków') === 'ser|ziemniaków 2kg', 'dyktowanie: ilość po nazwie albo przed dopełniaczem');
+  ok(j('warzywa mrożone') === 'warzywa mrożone' && j('kasza gryczana') === 'kasza gryczana' && j('makarony ryż') === 'makarony|ryż', 'dyktowanie: odmiana vs przymiotnik');
+  ok(j('mleko przecinek chleb') === 'mleko|chleb' && j('cebula czosnek jeszcze pietruszka') === 'cebula|czosnek|pietruszka', 'dyktowanie: „przecinek”, „jeszcze”');
   ok(S.splitSpeech('chleb').length === 1 && S.splitSpeech('  ').length === 0, 'dyktowanie: jedna rzecz / pusto');
   let st = S.newState(); const sid = st.active;
   for (const n of ['chleb', '2 l mleko', 'jogurty']) st = S.addItem(st, sid, { name: n }).state;

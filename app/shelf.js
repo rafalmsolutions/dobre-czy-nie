@@ -28,18 +28,63 @@ const Shelf = (() => {
      zamieniamy na cyfry, mówione jednostki („kilo”, „litry”, „gramów”) na skróty; resztę robi parseQty, jak przy wpisywaniu. */
   const NUM = { jeden: 1, jedna: 1, jedno: 1, dwa: 2, dwie: 2, trzy: 3, cztery: 4, piec: 5, szesc: 6, siedem: 7, osiem: 8, dziewiec: 9, dziesiec: 10, pol: 0.5 };
   const SPOKEN_UNIT = [[/^(kilo|kilogram\w*)$/, 'kg'], [/^(litr\w*)$/, 'l'], [/^(gram\w*|deko\w*)$/, 'g'], [/^(mililitr\w*)$/, 'ml'], [/^(sztuk\w*)$/, 'szt']];
+  /* 2.8.2: rozpoznawanie mowy zwykle nie wstawia przecinków („pomidory ziemniaki banany”). Nową pozycję zaczyna wtedy słowo,
+     które jest nazwą produktu (rdzeń ze słownika poniżej i z działów sklepu), gdy bieżąca pozycja ma już swój produkt.
+     Nie dzielimy po przyimku („pasta do zębów”, „sok z pomarańczy”) ani przed przymiotnikiem („masło orzechowe”, „chleb żytni”). */
+  const NOUNS = ['marchew', 'ziemniak', 'pomidor', 'ogor', 'ogorek', 'cebul', 'czosn', 'jablk', 'jablek', 'banan', 'grusz', 'cytryn', 'limonk', 'pomarancz', 'salat', 'kapust', 'papryk', 'brokul', 'kalafior', 'pietrusz', 'seler', 'burak',
+    'owoc', 'warzyw', 'winogr', 'truskaw', 'malin', 'borowk', 'jagod', 'awokado', 'kiwi', 'mandaryn', 'grzyb', 'pieczark', 'rzodkiew', 'szpinak', 'cukini', 'dyni', 'dynia', 'arbuz', 'melon', 'sliwk', 'czeresn', 'wisni', 'brzoskwin', 'morel', 'ananas', 'mango',
+    'imbir', 'koper', 'szczypior', 'natk', 'rukol', 'kukurydz', 'groszek', 'fasolk', 'chleb', 'bulk', 'bulecz', 'bagiet', 'rogal', 'pieczyw', 'tortill', 'grahamk', 'kajzerk', 'drozdzowk', 'paczk', 'paczek', 'ciast',
+    'mleko', 'mleka', 'jogurt', 'kefir', 'maslank', 'ser', 'sery', 'serek', 'serk', 'twarog', 'twarozek', 'smietan', 'maslo', 'masla', 'margaryn', 'jaja', 'jajk', 'jajek', 'skyr', 'mozzarell', 'feta', 'parmezan',
+    'mieso', 'miesa', 'kurczak', 'indyk', 'wolowin', 'wieprzowin', 'schab', 'karkowk', 'szynk', 'kielbas', 'parowk', 'boczek', 'boczk', 'salami', 'kabanos', 'poledwic', 'ryba', 'ryby', 'losos', 'dorsz', 'tunczyk', 'sledz', 'krewet', 'pasztet', 'filet', 'piers', 'udk', 'skrzydel',
+    'lody', 'pierog', 'pizz', 'makaron', 'ryz', 'kasz', 'maka', 'maki', 'cukier', 'cukru', 'sol', 'olej', 'oliw', 'ocet', 'przypraw', 'pieprz', 'sos', 'ketchup', 'musztard', 'majonez', 'chrzan', 'konserw', 'fasol', 'ciecierzyc', 'soczewic', 'groch', 'koncentrat', 'passat', 'drozdz',
+    'platki', 'platk', 'musli', 'granol', 'owsiank', 'dzem', 'miod', 'nutell', 'krem', 'pasta', 'paste', 'chips', 'czips', 'paluszk', 'precl', 'wafl', 'wafel', 'ciastk', 'herbatnik', 'czekolad', 'baton', 'cukierk', 'zelk', 'orzeszk', 'orzech', 'krakers', 'popcorn', 'chrupk',
+    'woda', 'wody', 'wode', 'sok', 'soki', 'napoj', 'cola', 'kawa', 'kawe', 'kawy', 'herbat', 'kakao', 'piwo', 'piwa', 'wino', 'wina', 'lemoniad', 'bulion', 'zupa', 'zupe',
+    'papier', 'recznik', 'proszek', 'plyn', 'mydlo', 'szampon', 'odzywk', 'dezodorant', 'gabk', 'worki', 'workow', 'folia', 'folie', 'chusteczk', 'pieluch', 'kapsulk', 'tabletk', 'zapalk', 'baterie', 'zarowk'];
+  const NOUN_SET = [...new Set(NOUNS)].sort((x, y) => y.length - x.length);
+  // Przymiotnik: końcówka po rdzeniu („orzech” + „owe”). Odmiana rzeczownika („makaron” + „y”) zostaje rzeczownikiem.
+  const ADJ = /(ow[yaei]|owych|owej|owym|owego|[cs]ki|[cs]kie|[cs]ka|aln[yae]|czn[yae]|tni[e]?|ist[yae]|ysty|yste|owan[yae]|on[yae]|czan[yae]|ian[yae]|n[yae]|ow)$/;
+  const PREP = new Set(['z', 'ze', 'w', 'we', 'do', 'na', 'bez', 'od', 'dla', 'po', 'o', 'pod', 'typu', 'albo', 'lub']);
+  const UNIT_W = /^(kg|g|ml|l|szt|kilo|kilogram\w*|litr\w*|gram\w*|deko\w*|mililitr\w*|sztuk\w*|opakowan\w*|paczk[aiey]|puszk[aiey]|butelk[aiey]|kostk[aiey]|sloik\w*|karton\w*)$/;
+  const isNum = w => /^\d+(?:[.,]\d+)?$/.test(w) || NUM[fold(w)] != null;
+  const isNoun = w => { const f = fold(w); return NOUN_SET.some(s => f.startsWith(s) && (f.length - s.length <= (s.length <= 3 ? 2 : 3)) && !(f.length - s.length >= 2 && ADJ.test(f))); };
+  const FILLER = /^(?:jeszcze|tez|no|yyy+|eee+|i|a|potem|oraz|takze)\s+/i;
+  // Ilość po nazwie („mleko 2 litry”, „jajka 10 sztuk”) należy do poprzedniej rzeczy, chyba że po jednostce jest dopełniacz
+  // („2 kilo ziemniaków”, „litr mleka”) – wtedy to ilość następnej.
+  const GEN = /(a|y|i|ow|ek|ich|ych)$/;
+  function splitWords(part) {
+    const ws = part.split(' '), out = []; let cur = [], hasNoun = false, force = false;
+    ws.forEach((w, n) => {
+      const prev = ws[n - 1] ? fold(ws[n - 1]) : '';
+      const afterLink = PREP.has(prev) || (prev && (isNum(ws[n - 1]) || UNIT_W.test(prev)));
+      let startsNew = cur.length && hasNoun && (force || (!afterLink && (isNum(w) || isNoun(w))));
+      if (startsNew && !force && isNum(w) && ws[n + 1] && UNIT_W.test(fold(ws[n + 1]))) {
+        const nx = ws[n + 2] ? fold(ws[n + 2]) : '';
+        if (!nx || isNum(ws[n + 2]) || !GEN.test(nx)) { startsNew = false; cur.push(w, ws[n + 1]); ws[n + 1] = null; force = true; return; }
+      }
+      if (w === null) return;
+      if (startsNew) { out.push(cur.join(' ')); cur = []; hasNoun = false; force = false; }
+      cur.push(w); if (isNoun(w)) hasNoun = true;
+    });
+    if (cur.length) out.push(cur.join(' '));
+    return out;
+  }
   function splitSpeech(text) {
-    const parts = clean(text, 400).split(/\s*(?:;|(?<!\d)[,.]|[,.](?!\d))\s*|\s+(?:a\s+także|a\s+takze|oraz|i)\s+/i).map(p => p.trim()).filter(Boolean);
+    const parts = clean(text, 600).split(/\s*(?:;|(?<!\d)[,.]|[,.](?!\d))\s*|\s+(?:a\s+także|a\s+takze|oraz|i|przecinek|kropka|średnik|srednik|potem|następnie|nastepnie|plus|jeszcze|też|tez)\s+/i)
+      .map(p => { let t = p.trim(); while (FILLER.test(t)) t = t.replace(FILLER, ''); return t.replace(/\s+(?:przecinek|kropka)$/i, ''); }).filter(Boolean).flatMap(splitWords);
     return parts.map(p => {
       const w = p.split(' ');
-      const n = NUM[fold(w[0])];
-      if (n != null && w.length > 1) w[0] = String(n);
-      if (/^\d+(?:[.,]\d+)?$/.test(w[0]) && w.length > 2) { const u = SPOKEN_UNIT.find(([re]) => re.test(fold(w[1]))); if (u) { w[1] = u[1]; if (w[2] === 'po' || w[2] === 'z') w.splice(2, 1); } }
-      // Gramy po słowie „deko” = dekagramy
-      if (/^deko/.test(fold(p.split(' ')[1] || '')) && /^\d/.test(w[0])) w[0] = String(parseFloat(w[0].replace(',', '.')) * 10);
+      // Liczebnik na początku albo przed jednostką/na końcu („mleko dwa litry”, „jogurt trzy”) → cyfra; mówiona jednostka → skrót.
+      for (let k = 0; k < w.length; k++) {
+        const n = NUM[fold(w[k])];
+        if (n != null && w.length > 1 && (k === 0 || k === w.length - 1 || (w[k + 1] && UNIT_W.test(fold(w[k + 1]))))) w[k] = String(n);
+        if (/^\d+(?:[.,]\d+)?$/.test(w[k]) && w[k + 1]) {
+          const f = fold(w[k + 1]), u = SPOKEN_UNIT.find(([re]) => re.test(f));
+          if (u) { if (/^deko/.test(f)) w[k] = String(parseFloat(w[k].replace(',', '.')) * 10); w[k + 1] = u[1]; if (k === 0 && (w[k + 2] === 'po' || w[k + 2] === 'z')) w.splice(k + 2, 1); }
+        }
+      }
       const textN = w.join(' ').slice(0, MAX_NAME + 12), q = parseQty(textN);
       return { text: textN, name: clean(q.name, MAX_NAME), qty: q.qty, unit: q.unit };
-    }).filter(x => x.name);
+    }).filter(x => x.name && !/^(przecinek|kropka|i|oraz)$/i.test(x.name));
   }
   /* Zamiana ogólnej pozycji (2.8.0): pierwsza nieodhaczona rzecz bez kodu, której nazwa zaczyna słowo w nazwie produktu
      („mleko” → „Mleko 2%”, „jogurty” → „Jogurt naturalny”) albo której kategoria (zgadnięta z nazwy) jest kategorią produktu. */

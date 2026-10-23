@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Dyktowanie z pauzami i bez przecinków (23.10.2026, wersja 2.8.2)
+- Po teście: słuchanie wyłączało się po pierwszej pauzie, a „pomidory ziemniaki banany” (rozpoznawanie mowy nie wstawia przecinków) było jedną pozycją.
+- Słuchanie ciągłe (continuous): każdy fragment po pauzie od razu trafia na półkę. Gdy przeglądarka sama zakończy rozpoznawanie, uruchamiamy je ponownie. Koniec: stuknięcie mikrofonu, 8 s ciszy (A.dictIdleMs) albo 2 minuty; przejście na inny ekran też kończy. Android potrafi powtarzać poprzednie słowa w kolejnym wyniku – takie powtórzenia pomijamy.
+- Shelf.splitSpeech bez przecinków: nową pozycję zaczyna rzeczownik produktu (słownik NOUNS: rdzenie z działów sklepu i popularne zakupy) albo liczebnik, gdy bieżąca pozycja ma już produkt. Nie dzielimy po przyimku („pasta do zębów”, „sok z pomarańczy”), przed przymiotnikiem („masło orzechowe”, „chleb żytni”; końcówka po rdzeniu, odmiana typu „makarony” zostaje rzeczownikiem) ani po liczbie i jednostce. Ilość po nazwie („mleko 2 litry chleb”) należy do poprzedniej rzeczy, przed dopełniaczem („2 kilo ziemniaków”) do następnej. Separatory słowne: i, oraz, a także, przecinek, kropka, potem, jeszcze, też, plus.
+- Słowa spoza słownika nigdy nie dzielą pozycji (np. „pomidory cherry”); w razie wątpliwości lepiej powiedzieć „i” między produktami.
+- Testy: `tests/e2e-d-lista.mjs` (udawane rozpoznawanie: pauzy, samoczynne kończenie, powtórzenia z Androida, cisza), `tests/unit-d.cjs`.
+
 ## Alergeny tylko od początku wyrazu (23.10.2026, wersja 2.8.1)
 - Słowa alergenów i składników (gluten, mleko, orzechy, cukier, olej palmowy…) szukamy tylko na początku wyrazu. Wcześniej dżem malinowy ze składem „100 g malin zużyto…” był oznaczany jako zawierający gluten, bo „zużyto” zawiera „żyto”. To samo w archiwum. Testy: unit-d, unit-core.
 

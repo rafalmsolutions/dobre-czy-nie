@@ -150,7 +150,7 @@
   window.addEventListener('offline', () => A.toast('Jesteś offline. Sprawdzone wcześniej produkty nadal działają.'));
 
   /* ---------- Start ---------- */
-  window.addEventListener('hashchange', () => { depth++; if (!A.$('scanner').hidden) A.closeScanner(true); A.render(); });
+  window.addEventListener('hashchange', () => { depth++; if (A.stopDictation) A.stopDictation(); if (!A.$('scanner').hidden) A.closeScanner(true); A.render(); });
   async function boot() {
     document.body.classList.toggle('no-scores', !!A.profile.noScores);
     const hadCfg = !!(A.cfg.levels && A.cfg.levels.levels);
