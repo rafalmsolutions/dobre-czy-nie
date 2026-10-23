@@ -408,14 +408,43 @@
   A.addToShelf = (prod, pm, quiet) => {
     const sh = A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
     const fam = A.familyShort ? A.familyShort(prod, cur && cur.prod === prod ? cur.an : null, cur && cur.prod === prod ? cur.fam : null) : null;
+    // 2.8.0: zeskanowany produkt zastępuje pasującą ogólną pozycję („mleko”) i od razu ląduje w koszyku.
+    const gen = prod.code && !sh.items.some(i => i.code === prod.code) ? Shelf.findGeneric(sh, { name: prod.name || '', categories: prod.categories }, A.guessCategory) : null;
+    if (gen) {
+      const rr = Shelf.replaceItem(A.shelves, sh.id, gen.id, { name: prod.name || ('Produkt ' + prod.code), code: prod.code, pct: pm ? pm.pct : null, categories: prod.categories, fam });
+      if (!rr.error) {
+        const bought = A.store.get('d-bought', {}), bk = rr.item.code, prevBought = bought[bk] ? Object.assign({}, bought[bk]) : null;
+        A.shelves = rr.state; A.saveShelves();
+        A.rememberBought(rr.item); A.rememberAdded(prod, pm ? pm.pct : null);
+        lastGeneric = { shelfId: sh.id, newId: rr.item.id, old: rr.old, bk, prevBought };
+        A.award('shelf_add', { code: prod.code });
+        if (rr.completed) A.award('list_completed', { shelfId: sh.id });
+        A.toast(`Zamieniono „${rr.old.name}” na ${rr.item.name} · w koszyku`, '<button class="toast-btn" type="button" data-act="undo-generic">Cofnij</button>', 7000);
+        A.announce(`Zamieniono „${rr.old.name}” na ${rr.item.name}, w koszyku.`);
+        A.renderShelvesIfOpen();
+        return true;
+      }
+    }
     const r = Shelf.addItem(A.shelves, sh.id, { name: prod.name || ('Produkt ' + prod.code), code: prod.code, pct: pm ? pm.pct : null, categories: prod.categories, qty: 1, unit: 'szt', fam });
     if (r.error === 'duplicate') { if (!quiet) A.toast(`Ten produkt już jest na półce „${sh.name}”.`); return false; }
     if (r.error === 'full') { A.toast('Ta półka jest pełna. Usuń kupione rzeczy albo wybierz inną półkę.'); return false; }
     if (r.error) { A.toast('Nie udało się dodać produktu.'); return false; }
-    A.shelves = r.state; A.saveShelves();
+    A.shelves = r.state; A.saveShelves(); A.rememberAdded(prod, pm ? pm.pct : null);
     A.award('shelf_add', { code: prod.code });
     if (!quiet) A.toast(`Dodano na półkę „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
     return true;
+  };
+  let lastGeneric = null;
+  A.undoGeneric = () => {
+    const u = lastGeneric; if (!u) return;
+    lastGeneric = null;
+    const r = Shelf.undoReplace(A.shelves, u.shelfId, u.newId, u.old);
+    if (r.error) return;
+    A.shelves = r.state; A.saveShelves();
+    const b = A.store.get('d-bought', {}); if (u.prevBought) b[u.bk] = u.prevBought; else delete b[u.bk]; A.store.set('d-bought', b);
+    A.toast(`Przywrócono „${u.old.name}” na listę.`);
+    A.renderShelvesIfOpen();
+    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na półkę (+5 pkt)'; }
   };
   A.swapTo = (fromCode, alt) => {
     // Usuwamy słabszy produkt z półki (jeśli tam był) i dodajemy zamiennik.
@@ -423,6 +452,7 @@
     const sh = A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
     const r = Shelf.addItem(A.shelves, sh.id, { name: alt.name, code: alt.code, pct: alt.pct, categories: alt.categories });
     if (!r.error || r.error === 'duplicate') { if (!r.error) A.shelves = r.state; A.saveShelves(); }
+    if (!r.error) A.rememberAdded(alt, alt.pct);
     const g = A.award('swap_to_better', { code: alt.code });
     A.toast(g.blocked === 'once_product_day' ? 'Ten zamiennik już dziś wybrałeś. Jest na półce.' : `Zamienione! „${alt.name}” jest na półce „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
   };

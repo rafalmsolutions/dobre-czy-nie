@@ -357,10 +357,10 @@ const App = {};
 
   /* ---------- Komunikaty ---------- */
   let toastTimer;
-  A.toast = (msg, actionHtml) => {
+  A.toast = (msg, actionHtml, ms) => {
     const t = A.$('toast');
     t.innerHTML = A.esc(msg) + (actionHtml ? ' ' + actionHtml : '');
-    t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+    t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms || 3800);
   };
   A.announce = msg => { let l = A.$('srLive'); if (!l) { l = document.createElement('div'); l.id = 'srLive'; l.className = 'sr'; l.setAttribute('aria-live', 'polite'); document.body.appendChild(l); } l.textContent = msg; };
   A.openDlg = id => { const d = A.$(id); if (d.showModal) { if (!d.open) d.showModal(); } else d.setAttribute('open', ''); };

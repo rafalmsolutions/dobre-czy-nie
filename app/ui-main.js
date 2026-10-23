@@ -14,7 +14,7 @@
   }, true);
 
   /* ---------- Kliknięcia ---------- */
-  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd'];
+  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
@@ -27,6 +27,7 @@
     const act = el.dataset.act, cur = A.currentProduct();
     switch (act) {
       case 'scan': A.openScanner(); break;
+      case 'undo-generic': A.undoGeneric(); break;
       case 'close-scan': A.closeScanner(); break;
       case 'back': if (depth > 0) history.back(); else A.go('#/'); break;
       case 'guess': A.doGuess(el.dataset.v); break;
@@ -103,6 +104,7 @@
   });
   // Enter w polu własnego składnika dodaje składnik zamiast zapisywać cały profil.
   document.addEventListener('keydown', e => {
+    if (e.target.id === 'addItemInput' && A.shelfKey && A.shelfKey(e)) return;
     if (e.key === 'Enter' && e.target.id === 'customInput') { e.preventDefault(); A.profAction('add-custom', e.target); return; }
     if (e.key === 'Escape') {
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
@@ -133,6 +135,7 @@
     }
   });
   document.addEventListener('input', e => {
+    if (e.target.id === 'addItemInput') { A.shelfSuggest(e.target.value); return; }
     if (e.target.id === 'catSearch') { A.filterCats(e.target.value); return; }
     if (e.target.id === 'profName') { clearTimeout(nameTimer); nameTimer = setTimeout(A.profAutoSave, 500); return; }
     if (e.target.id === 'repComment') A.$('repCount').textContent = e.target.value.length + '/1000';

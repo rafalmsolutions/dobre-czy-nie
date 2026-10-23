@@ -774,3 +774,14 @@ button.item.fill-item{width:100%;text-align:left;border:0;font:inherit;color:inh
 details.bought{background:rgba(255,255,255,.55);border-radius:18px;padding:12px 14px}details.bought summary{font-weight:800;cursor:pointer}
 .chip.qadd{border:0;cursor:pointer;font:inherit;font-weight:700;background:#fff}
 .filebtn.busy{opacity:.6;pointer-events:none}
+/* 2.8.0: podpowiedzi przy dodawaniu, mikrofon, „Cofnij” w komunikacie */
+.add-item-form{position:relative}.add-item-form .sug-wrap{flex:1;min-width:0}
+.sug-list{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.sug-list .sug{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:700}
+.sug-list .sug.on,.sug-list .sug:hover{background:#F1F2F3}
+.sug-list .sug-ic{width:20px;text-align:center;color:var(--muted,#6B6E76)}.sug-list .sug-ic.fav{color:#E5533D}
+.mic-btn{flex:0 0 auto}.mic-btn svg{width:22px;height:22px}
+.mic-btn.on{background:#E5533D;color:#fff;border-color:#E5533D;animation:micpulse 1.2s ease-in-out infinite}
+@keyframes micpulse{50%{box-shadow:0 0 0 6px rgba(229,83,61,.25)}}
+@media (prefers-reduced-motion:reduce){.mic-btn.on{animation:none}}
+.toast .toast-btn{background:none;border:0;color:#FFE27A;font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:4px 6px;margin-left:4px}

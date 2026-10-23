@@ -76,5 +76,28 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(M(P({ ingredients_text_pl: 'śliwki, cukier, spirytus 5%' }), { avoid: ['alcohol'] }).status === 'fail', 'spirytus nadal jest alkoholem');
   ok(M(P({ ingredients_text_pl: 'czekolada, wino 3%, ocet spirytusowy' }), { avoid: ['alcohol'] }).status === 'fail', 'wino obok octu nadal jest alkoholem');
 }
+// 2.8.0: dyktowanie listy (rozbijanie wypowiedzi) i zamiana ogólnej pozycji na produkt.
+{
+  vm.runInContext(fs.readFileSync(path.join(dir, 'shelf.js'), 'utf8').replace(/^'use strict';/m, ''), ctx, { filename: 'shelf.js' });
+  const S = vm.runInContext('Shelf', ctx);
+  const a = S.splitSpeech('mleko, chleb i dwa jogurty');
+  ok(a.length === 3 && a[2].name === 'jogurty' && a[2].qty === 2, 'dyktowanie: „mleko, chleb i dwa jogurty” → 3 pozycje, jogurty ×2');
+  const b2 = S.splitSpeech('2 kg ziemniaki oraz masło');
+  ok(b2.length === 2 && b2[0].unit === 'kg' && b2[0].qty === 2 && b2[1].name === 'masło', 'dyktowanie: „2 kg ziemniaki oraz masło” → 2 pozycje');
+  ok(S.splitSpeech('1,5 l mleka a także dziesięć jajek').map(x => x.qty + x.unit).join() === '1.5l,10szt', 'dyktowanie: przecinek w liczbie nie dzieli, „a także”, „dziesięć”');
+  ok(S.splitSpeech('chleb').length === 1 && S.splitSpeech('  ').length === 0, 'dyktowanie: jedna rzecz / pusto');
+  let st = S.newState(); const sid = st.active;
+  for (const n of ['chleb', '2 l mleko', 'jogurty']) st = S.addItem(st, sid, { name: n }).state;
+  const sh = () => st.shelves[0];
+  const g = S.findGeneric(sh(), { name: 'Mleko 2%', categories: ['en:milks'] });
+  ok(g && g.name === 'mleko', 'zamiana: „mleko” pasuje do „Mleko 2%” (nazwa)');
+  ok(S.findGeneric(sh(), { name: 'Skyr naturalny', categories: ['en:yogurts'] }, n => /jogurt/.test(n) ? 'en:yogurts' : '').name === 'jogurty', 'zamiana: „jogurty” pasuje przez kategorię');
+  ok(!S.findGeneric(sh(), { name: 'Ketchup', categories: ['en:ketchup'] }), 'zamiana: niepasujący produkt → brak');
+  const r = S.replaceItem(st, sid, g.id, { name: 'Mleko 2%', code: '5900000000999', pct: 70, categories: ['en:milks'] });
+  const i1 = r.state.shelves[0].items[1];
+  ok(i1.code === '5900000000999' && i1.checked && i1.qty === 2 && i1.unit === 'l' && i1.added === g.added, 'zamiana: to samo miejsce i ilość, w koszyku');
+  const u = S.undoReplace(r.state, sid, i1.id, r.old).state.shelves[0].items;
+  ok(u.length === 3 && u[1].name === 'mleko' && !u[1].checked && !u.some(i => i.code), 'cofnięcie zamiany przywraca pozycję ogólną');
+}
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

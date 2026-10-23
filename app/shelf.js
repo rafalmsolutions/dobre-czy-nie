@@ -24,6 +24,57 @@ const Shelf = (() => {
     if (m) return { name: m[1], qty: cleanQty(m[2]), unit: cleanUnit(m[3].toLowerCase()) };
     return { name: t, qty: 1, unit: 'szt' };
   }
+  /* Dyktowanie (2.8.0): „mleko, chleb i dwa jogurty” → pozycje z ilością. Liczebniki słownie 1–10 (i „pół”) na początku
+     zamieniamy na cyfry, mówione jednostki („kilo”, „litry”, „gramów”) na skróty; resztę robi parseQty, jak przy wpisywaniu. */
+  const NUM = { jeden: 1, jedna: 1, jedno: 1, dwa: 2, dwie: 2, trzy: 3, cztery: 4, piec: 5, szesc: 6, siedem: 7, osiem: 8, dziewiec: 9, dziesiec: 10, pol: 0.5 };
+  const SPOKEN_UNIT = [[/^(kilo|kilogram\w*)$/, 'kg'], [/^(litr\w*)$/, 'l'], [/^(gram\w*|deko\w*)$/, 'g'], [/^(mililitr\w*)$/, 'ml'], [/^(sztuk\w*)$/, 'szt']];
+  function splitSpeech(text) {
+    const parts = clean(text, 400).split(/\s*(?:;|(?<!\d)[,.]|[,.](?!\d))\s*|\s+(?:a\s+także|a\s+takze|oraz|i)\s+/i).map(p => p.trim()).filter(Boolean);
+    return parts.map(p => {
+      const w = p.split(' ');
+      const n = NUM[fold(w[0])];
+      if (n != null && w.length > 1) w[0] = String(n);
+      if (/^\d+(?:[.,]\d+)?$/.test(w[0]) && w.length > 2) { const u = SPOKEN_UNIT.find(([re]) => re.test(fold(w[1]))); if (u) { w[1] = u[1]; if (w[2] === 'po' || w[2] === 'z') w.splice(2, 1); } }
+      // Gramy po słowie „deko” = dekagramy
+      if (/^deko/.test(fold(p.split(' ')[1] || '')) && /^\d/.test(w[0])) w[0] = String(parseFloat(w[0].replace(',', '.')) * 10);
+      const textN = w.join(' ').slice(0, MAX_NAME + 12), q = parseQty(textN);
+      return { text: textN, name: clean(q.name, MAX_NAME), qty: q.qty, unit: q.unit };
+    }).filter(x => x.name);
+  }
+  /* Zamiana ogólnej pozycji (2.8.0): pierwsza nieodhaczona rzecz bez kodu, której nazwa zaczyna słowo w nazwie produktu
+     („mleko” → „Mleko 2%”, „jogurty” → „Jogurt naturalny”) albo której kategoria (zgadnięta z nazwy) jest kategorią produktu. */
+  const words = s => fold(s).replace(/[^a-z0-9]+/g, ' ').trim();
+  function findGeneric(sh, prod, guess) {
+    if (!sh || !prod) return null;
+    const pn = ' ' + words(prod.name) + ' ', cats = prod.categories || [];
+    return sh.items.find(i => {
+      if (i.code || i.checked) return false;
+      const n = words(i.name); if (!n) return false;
+      if (pn.includes(' ' + n)) return true;
+      if (!n.includes(' ') && n.length >= 5 && pn.includes(' ' + n.slice(0, Math.max(4, n.length - 2)))) return true;
+      const g = guess ? guess(i.name) : ''; return !!(g && cats.includes(g));
+    }) || null;
+  }
+  /* Podmienia rzecz na produkt w tym samym miejscu listy (ta sama ilość, kolejność), od razu „w koszyku”. */
+  function replaceItem(st, shelfId, itemId, prod) {
+    const s = copy(st), sh = find(s, shelfId), idx = sh ? sh.items.findIndex(i => i.id === itemId) : -1;
+    if (idx < 0) return { state: st, error: 'missing' };
+    const old = sh.items[idx], code = prod.code && /^\d{6,14}$/.test(String(prod.code)) ? String(prod.code) : null;
+    if (!code) return { state: st, error: 'code' };
+    if (sh.items.some(i => i.code === code)) return { state: st, error: 'duplicate' };
+    const name = clean(prod.name, MAX_NAME) || 'Produkt ' + code;
+    const it = { id: uid(), name, code, pct: typeof prod.pct === 'number' && isFinite(prod.pct) ? Math.max(0, Math.min(100, Math.round(prod.pct))) : null,
+      dept: departmentFor({ name, categories: prod.categories }), checked: true, qty: old.qty, unit: old.unit, fam: cleanFam(prod.fam), added: old.added };
+    sh.items[idx] = it;
+    return { state: s, item: it, old: JSON.parse(JSON.stringify(old)), completed: isComplete(sh) };
+  }
+  /* Cofnięcie zamiany: wraca dawna rzecz (nieodhaczona) w to samo miejsce, produkt znika. */
+  function undoReplace(st, shelfId, newId, old) {
+    const s = copy(st), sh = find(s, shelfId); if (!sh) return { state: st, error: 'missing' };
+    const idx = sh.items.findIndex(i => i.id === newId), back = Object.assign({}, old, { checked: false });
+    if (idx >= 0) sh.items[idx] = back; else if (!sh.items.some(i => i.id === old.id)) sh.items.push(back);
+    return { state: s, item: back };
+  }
   const fmtQty = it => { const q = String(it.qty).replace('.', ','); return it.unit === 'szt' ? `${q} szt.` : `${q} ${it.unit}`; };
 
   function newShelf(name) { return { id: uid(), name: clean(name, MAX_SHELF_NAME) || 'Zakupy', items: [], created: Date.now() }; }
@@ -164,7 +215,7 @@ const Shelf = (() => {
   }
   function hasCode(st, code) { return st.shelves.some(sh => sh.items.some(i => i.code === code && !i.checked)); }
 
-  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, fmtQty, setQty, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, shareText, breakfastGood, hasCode };
+  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, splitSpeech, findGeneric, replaceItem, undoReplace, fmtQty, setQty, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, shareText, breakfastGood, hasCode };
 })();
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') module.exports = Shelf;
