@@ -177,6 +177,9 @@ t('clean profile custom', JSON.stringify(A.cleanProfile({ custom: ['Sól', 'sól
 // Nowe diety
 t('glutenfree fail', st({ ingredients: 'mąka pszenna, woda', additiveTags: [] }, { diet: ['glutenfree'] }) === 'fail');
 t('glutenfree label ok', st({ labels: ['en:gluten-free'], ingredients: 'mąka kukurydziana', additiveTags: [] }, { diet: ['glutenfree'] }) === 'ok');
+t('gluten: zużyto to nie żyto', M({ ingredients: 'Maliny (100 g malin zużyto na 100 g produktu), cukry pochodzące z owoców, substancja żelująca - pektyny. SPORZĄDZONO ZE 100g OWOCÓW', additiveTags: ['en:e440'] }, { allergens: ['gluten'] }).status !== 'fail');
+t('gluten: mąka pszenno-żytnia', M({ ingredients: 'mąka pszenno-żytnia, woda', additiveTags: [] }, { allergens: ['gluten'] }).status === 'fail');
+t('gluten: płatki owsiane', st({ ingredients: 'płatki owsiane 100%', additiveTags: [] }, { diet: ['glutenfree'] }) === 'fail');
 t('glutenfree negation', st({ ingredients: 'mąka ryżowa, skrobia. Bez glutenu.', additiveTags: [] }, { diet: ['glutenfree'] }) === 'ok');
 t('lowsodium fail', /dieta niskosodowa/.test(why0({ nutriments: { salt: 0.9 }, ingredients: 'x', additiveTags: [] }, { diet: ['lowsodium'] })));
 t('lowsodium ok', st({ nutriments: { salt: 0.1 }, ingredients: 'x', additiveTags: [] }, { diet: ['lowsodium'] }) === 'ok');

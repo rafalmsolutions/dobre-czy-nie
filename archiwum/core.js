@@ -378,7 +378,8 @@ function matchProfile(prod, an, profile) {
   const fail = (label, why) => res.fails.push({ label, why });
   const fmtG = v => String(Math.round(v * 10) / 10).replace('.', ',');
   const unknown = label => res.unknowns.push(label);
-  const hasWord = (txt, words) => words.some(w => txt.includes(fold(w)));
+  // Słowo musi zaczynać wyraz: „zużyto” to nie „żyto”, „bezglutenowy” to nie „gluten”.
+  const hasWord = (txt, words) => words.some(w => txt.includes(' ' + fold(w)));
 
   if (isFood) {
     const allergenDataKnown = hasIng || tags.size > 0;

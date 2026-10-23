@@ -99,5 +99,12 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   const u = S.undoReplace(r.state, sid, i1.id, r.old).state.shelves[0].items;
   ok(u.length === 3 && u[1].name === 'mleko' && !u[1].checked && !u.some(i => i.code), 'cofnięcie zamiany przywraca pozycję ogólną');
 }
+// Alergeny: słowo musi zaczynać wyraz (dżem: „malin zużyto” to nie „żyto”).
+{ const jam = P({ product_name_pl: 'Dżem malinowy', ingredients_text_pl: 'Maliny (100 g malin zużyto na 100 g produktu), cukry pochodzące z owoców, substancja żelująca - pektyny. SPORZĄDZONO ZE 100g OWOCÓW NA 100 g PRODUKTU', additives_tags: ['en:e440'] });
+  ok(M(jam, { allergens: ['gluten'] }).status !== 'fail', 'dżem: „zużyto” nie oznacza glutenu');
+  ok(M(jam, { diet: ['glutenfree'] }).status !== 'fail', 'dżem: dieta bezglutenowa nie odrzuca');
+  ok(M(P({ ingredients_text_pl: 'mąka pszenno-żytnia, woda, sól' }), { allergens: ['gluten'] }).status === 'fail', 'mąka pszenno-żytnia: gluten');
+  ok(M(P({ ingredients_text_pl: 'płatki owsiane 100%' }), { allergens: ['gluten'] }).status === 'fail', 'płatki owsiane: gluten');
+  ok(M(P({ ingredients_text_pl: 'mleko, ser (mleko, sól)' }), { allergens: ['milk'] }).status === 'fail', 'ser: mleko'); }
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

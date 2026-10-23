@@ -19,5 +19,5 @@ const CONFIG = {
   // Anonimowe statystyki bez ciasteczek: które ekrany i funkcje są używane, ile osób wraca w kolejnych tygodniach.
   // Puste pole = statystyki wyłączone.
   goatcounter: 'dobreczynie',
-  appVersion: '2.8.0'
+  appVersion: '2.8.1'
 };
