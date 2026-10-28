@@ -1,6 +1,6 @@
 /* Dobre czy nie? 1.0 – wygląd według projektu ekranów (pastelowe tło, drewniane ramki, złote przyciski, Ziarenko). */
 :root{
-  color-scheme: light;
+  color-scheme: only light;
   --bg: linear-gradient(165deg, #E3F5EA 0%, #F2F7EA 38%, #FCEFE3 72%, #FBE2D8 100%);
   --ink:#2B1B0E; --muted:#6B5A45; --line:#EBD7B4; --line-2:#D9E6DC;
   --surface:#FFFFFF; --surface-2:#F6F1E6; --cream:#FFFBF0;

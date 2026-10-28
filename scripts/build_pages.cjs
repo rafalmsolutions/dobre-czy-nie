@@ -105,6 +105,7 @@ const page = ({ path: p, title, desc, h1, kick, lead, body, ld, crumbs, ogImage 
 <html lang="pl">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="only light">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(desc)}">
