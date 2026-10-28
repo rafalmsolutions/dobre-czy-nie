@@ -54,9 +54,9 @@ ok(/Pasuje Wam obojgu/.test(ans2) && (await page.innerText('#matchBox')).include
 // Te same inicjały: dwie litery.
 const lab = await page.evaluate(() => { App.family.push({ id: 'fx', name: 'Kasia', p: cleanProfile({}) }); const pr = normalizeProduct({ code: '5900000000017', product_name: 'Test', nutriscore_grade: 'a', nova_group: 1, ingredients_text: 'woda', additives_tags: [], allergens_tags: [], nutriments: { sugars_100g: 1 } }, 'off'); const v = App.familyView(pr, analyze(pr)); App.family.pop(); return v.rows.map(r => r.label); });
 ok(lab.includes('Ku') && lab.includes('Ka'), 'te same inicjały: dwie litery ' + lab.join(','));
-await page.goto('http://localhost:8790/app/index.html#/profil'); await page.waitForTimeout(500);
-await page.click('.fam-tab:has-text("Kuba")'); await page.waitForTimeout(200);
-await page.click('[data-act=fam-del]', { force: true }); await page.click('[data-act=fam-del-yes]', { force: true }); await page.waitForTimeout(300);
+await page.goto('http://localhost:8790/app/index.html#/profil/osoby'); await page.waitForTimeout(500);
+await page.click('.pf-osoby .fam-tab:has-text("Kuba")'); await page.waitForTimeout(200);
+await page.click('[data-act=fam-del]'); await page.click('[data-act=fam-del-yes]'); await page.waitForTimeout(300);
 ok(await page.evaluate(() => App.family.length === 0), 'usunięcie domownika');
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.oil); await page.waitForTimeout(1500);
 ok(await page.locator('#scr-product .fam-hero').count() === 0 && await page.locator('#scr-product .d-badge').count() === 1, 'bez domowników: jeden kwadrat oceny jak dotąd');
