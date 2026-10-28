@@ -76,6 +76,6 @@ ok(/Nie liczymy: Ola/.test(await page.innerText('#scr-list').catch(() => '')), '
 await page.evaluate(() => App.celebrate([{ type: 'challenge', name: 'Zgadnij 5 razy: dobre czy nie?', points: 50 }]));
 await page.waitForTimeout(400);
 const cel = await page.$eval('#celebrate', e => e.innerHTML);
-ok(!/strawberry|truskaw/i.test(cel) && /Kolekcji/.test(cel), 'wyzwanie ukończone: medal, bez truskawki, wskazówka gdzie je widać');
+ok(!/strawberry|truskaw/i.test(cel) && /Kartach/.test(cel), 'wyzwanie ukończone: medal, bez truskawki, wskazówka gdzie je widać');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);
