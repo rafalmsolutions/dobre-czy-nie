@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Aplikacja na Androida (28.10.2026, wersja 3.0.6)
+- Google Play: konto osobiste „Lupka”, pakiet `app.lupka` (Trusted Web Activity – lupka.app/app/ w Chrome). Projekt z `android/twa-manifest.json` budowany przez @bubblewrap/core w GitHub Actions (`.github/workflows/android.yml`, ręcznie albo po zmianie android/), podpis kluczem przesyłania z sekretów ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD (klucz poza repozytorium). Wynik: artefakt `lupka-android` (.aab). minSdk 24.
+- `/.well-known/assetlinks.json`: odcisk klucza przesyłania; po pierwszym wgraniu trzeba dopisać odcisk klucza podpisu Google Play (App integrity), inaczej TWA pokazuje pasek adresu.
+- `color-scheme: only light` w aplikacji i na stronach: Chrome nie przyciemnia automatycznie (tryb ciemny telefonu).
+- Polityka prywatności 28.10.2026: sekcja o Google Play i głosach na sklepy.
+
 ## Poprawki sklepów po teście 3.0.4 (28.10.2026, wersja 3.0.5)
 - Lista sieci działających w Polsce rozszerzona do 28 (m.in. E.Leclerc, Społem, Mila, Globus, Delikatesy Centrum, Topaz, Chata Polska, Groszek, Freshmarket, Makro, Selgros, Dealz; bez Tesco). Ta sama lista w pośredniku (STORE_NAMES).
 - A.storeKeyOf łączy warianty i literówki ze znaną siecią (alias, odległość edycyjna 1–2), krótkie nazwy tylko jako osobne słowo („Kamila” ≠ Mila).
