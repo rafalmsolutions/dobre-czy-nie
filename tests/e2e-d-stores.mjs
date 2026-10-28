@@ -23,11 +23,11 @@ const txt = async sel => (await page.locator(sel).innerText().catch(() => '')) |
 const go = async code => { await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(200); await page.goto('http://localhost:8790/app/index.html#/p/' + code); await page.waitForTimeout(1500); };
 
 // 1. Profil: „Gdzie robisz zakupy”
-await page.goto('http://localhost:8790/app/index.html#/profil'); await page.waitForTimeout(600);
+await page.goto('http://localhost:8790/app/index.html#/profil/sklepy'); await page.waitForTimeout(600);
 ok(await page.locator('input[name=mystore][value=lidl]').isChecked() && await page.locator('input[name=mystore][value=biedronka]').isChecked(), 'profil: zaznaczone moje sklepy');
-await page.locator('label.pchip:has(input[name=mystore][value=dino])').click(); await page.waitForTimeout(200);
+await page.locator('label.ck-row:has(input[name=mystore][value=dino])').click(); await page.waitForTimeout(200);
 ok(await page.evaluate(() => App.myStores().join()) === 'biedronka,lidl,dino' || await page.evaluate(() => App.myStores().includes('dino')), 'profil: dodanie sklepu zapisane od razu');
-await page.locator('label.pchip:has(input[name=mystore][value=dino])').click(); await page.waitForTimeout(200);
+await page.locator('label.ck-row:has(input[name=mystore][value=dino])').click(); await page.waitForTimeout(200);
 
 // 2. Po skanie: „Kupujesz to w:” – jedno stuknięcie
 await go(C.milk);

@@ -143,6 +143,13 @@
   }
 
   /* ---------- Widok produktu ---------- */
+  /* 3.0: „Na listę” i „Porównaj” zaraz pod nazwą – najczęstsze ruchy bez przewijania. Kolejny skan jest w dolnym menu. */
+  function heroActs(prod) {
+    if (!cur || cur.guess === null) return '';
+    const onShelf = Shelf.hasCode(A.shelves, prod.code);
+    const inCmp = A.inCmp && A.inCmp(prod.code), canCmp = A.cmpAdd && prod.code && prod.kind !== 'cosmetic';
+    return `<div class="d-acts actions"><button class="btn btn-dark" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na liście' : A.quiet && A.quiet() ? 'Na listę' : 'Na listę (+5 pkt)'}</button>${canCmp ? `<button class="btn btn-white" type="button" data-act="cmp-prod" aria-pressed="${!!inCmp}">${inCmp ? (A.cmp.length > 1 ? 'Pokaż porównanie' : 'W porównaniu ✓') : 'Porównaj'}</button>` : ''}</div>`;
+  }
   function prodCard(p, pm) {
     const img = A.safeImg(p.image), key = A.prodCatKey(p), dish = A.catImg(key);
     const catLabel = key ? ((SHOP_CATEGORIES.find(c => c.key === key) || {}).label || '') : '';
@@ -157,7 +164,7 @@
     const main = img ? `<button class="prod-img-btn d-plate${ring}" type="button" data-act="photo-open" aria-label="Powiększ zdjęcie produktu"><img class="prod-img" src="${esc(img)}" alt="Zdjęcie produktu"></button>`
       : dish ? `<span class="d-dishwrap"><img class="d-dish" src="${esc(dish)}" alt="" width="480" height="480"></span>`
       : `<span class="d-plate d-plate-art${ring}">${art(p.kind === 'cosmetic' ? 'dept_home' : 'dept_' + departmentFor(p), 80)}</span>`;
-    const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
+    const chip = catLabel ? `<a class="d-catlink" href="#/lista/${esc(key)}" aria-label="Kategoria: ${esc(catLabel)}. Zobacz najlepsze w kategorii">${esc(catLabel)}</a>` : '';
     // Domownicy: obok zdjęcia odpowiedź dla całej rodziny, pod spodem kółka osób (najpierw te z problemem).
     const fv = pm && cur.fam ? cur.fam : null;
     const gaps = A.dataGaps(p, cur.snapshot);
@@ -168,8 +175,8 @@
     const gapHtml = gaps.length && pm && (pm.pct != null || fv) ? `<div class="d-gaps" role="note"><b>Wynik wstępny</b> Brakuje ${gaps.join(' i ')} produktu. Dopasowanie jest wstępne i może się zmienić po uzupełnieniu danych.</div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
-      <div class="d-hside">${chip}${verdict}${gapHtml}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
-      <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
+      <div class="d-hside">${verdict}${gapHtml}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
+      <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}${chip ? ' · ' + chip : ''}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div>${heroActs(p)}</div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
   function billHtml(pm, who, noIngr) {
@@ -199,7 +206,7 @@
       const up = Shelf.updateInfo(A.shelves, prod.code, { pct: pm.pct, fam: A.familyShort ? A.familyShort(prod, an, cur.fam) : null });
       if (up.changed) { A.shelves = up.state; A.saveShelves(); }
     }
-    const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : 'Zeskanowany produkt', prod.kind === 'food' ? favBtn(prod) : ''), prodCard(prod, cur.guess === null ? null : pm)];
+    const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : '', prod.kind === 'food' ? favBtn(prod) : ''), prodCard(prod, cur.guess === null ? null : pm)];
     if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
     if (cur.guess === null) {
@@ -224,7 +231,7 @@
     const fp = cur.fam ? cur.fam.focus : null, other = fp && fp.id !== 'me';
     const bpm = other ? fp.pm : pm;
     parts.push(`<div class="panel stack${bpm.personal ? '' : ' general'}" id="matchBox">
-      <span class="small muted" style="font-weight:800;letter-spacing:.06em">${other ? 'DLACZEGO DLA: ' + esc(fp.name.toUpperCase()) : bpm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
+      <h2 class="sec-h">${other ? 'Dlaczego dla: ' + esc(fp.name) : bpm.personal ? 'Dlaczego dla Ciebie' : 'Ocena ogólna'}</h2>
       ${other && !bpm.personal ? `<p class="small">${esc(fp.name)} nie ma jeszcze ustawień profilu, więc to ogólna ocena składu. <a href="#/profil">Ustaw</a></p>` : ''}
       ${bpm.personal ? billHtml(bpm, other ? fp.name : '', A.dataGaps(prod, cur.snapshot).includes('składu')) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
@@ -236,12 +243,6 @@
       const less = num(z) < num(a), pct = Math.round(Math.abs(num(z) - num(a)) / num(a) * 100);
       parts.push(`<div class="panel stack qchg${less ? ' less' : ''}" id="qchgBox"><b>${less ? 'Mniej w opakowaniu' : 'Więcej w opakowaniu'}</b><p class="small">Według bazy Open Food Facts opakowanie zmieniło się z <b>${esc(a[2])}</b> (${esc(mon(a[0]))}) na <b>${esc(z[2])}</b> (${esc(mon(z[0]))}), czyli o ${pct}%.${less ? ' Sprawdź cenę za kilogram lub litr.' : ''}</p><p class="small muted">Gramaturę wpisują użytkownicy bazy, więc może zawierać błędy.</p></div>`);
     }
-    const onShelf = Shelf.hasCode(A.shelves, prod.code);
-    const inCmp = A.inCmp && A.inCmp(prod.code), canCmp = A.cmpAdd && prod.code && prod.kind !== 'cosmetic';
-    parts.push(`<div class="actions" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <button class="btn btn-green" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na półce' : 'Na półkę (+5 pkt)'}</button>
-      ${canCmp ? `<button class="btn btn-white" type="button" data-act="cmp-prod" aria-pressed="${!!inCmp}">${inCmp ? (A.cmp.length > 1 ? 'Pokaż porównanie' : 'W porównaniu ✓') : 'Porównaj'}</button>` : ''}
-      <button class="btn btn-white" type="button" data-act="scan"${canCmp ? ' style="grid-column:1 / -1"' : ''}>Skanuj kolejny</button></div>`);
     parts.push('</div>');
     // Brakuje składu albo wartości odżywczych: zachęta do uzupełnienia (dane trafią do Open Food Facts).
     const miss = missingParts(prod, cur.snapshot);
@@ -308,8 +309,8 @@
     const note = scoreNote(prod, an);
     const s = [`<h2 style="font-size:1.3rem;margin-top:6px">Szczegóły oceny</h2>`];
     const noIngr = A.dataGaps(prod, cur && cur.snapshot).includes('składu');
-    if (!general && noIngr) s.push(`<div class="card score"><div>${ring(null, '#9A9CA1')}</div><div><span class="small muted" style="font-weight:800">OCENA SKŁADU</span><h2 style="color:#5E6066">Brak danych</h2><p>W bazie brakuje składu, więc nie oceniamy dodatków ani przetworzenia. Wynik liczymy wstępnie z tego, co jest (np. wartości odżywczych).</p></div></div>`);
-    else if (!general) s.push(`<div class="card score"><div>${ring(an.score, g.color)}</div><div><span class="small muted" style="font-weight:800">OCENA SKŁADU</span><h2 style="color:${g.color}">${esc(onlyAdditives ? 'Dodatki: ' + g.label.toLowerCase() : g.label)}</h2><p>${esc(note)}</p></div></div>`);
+    if (!general && noIngr) s.push(`<div class="card score"><div>${ring(null, '#9A9CA1')}</div><div><span class="small muted" style="font-weight:800">Ocena składu</span><h2 style="color:#5E6066">Brak danych</h2><p>W bazie brakuje składu, więc nie oceniamy dodatków ani przetworzenia. Wynik liczymy wstępnie z tego, co jest (np. wartości odżywczych).</p></div></div>`);
+    else if (!general) s.push(`<div class="card score"><div>${ring(an.score, g.color)}</div><div><span class="small muted" style="font-weight:800">Ocena składu</span><h2 style="color:${g.color}">${esc(onlyAdditives ? 'Dodatki: ' + g.label.toLowerCase() : g.label)}</h2><p>${esc(note)}</p></div></div>`);
     const why = explain(prod, an);
     if (why.length) {
       const icon = { '+': ['why-plus', '+'], '-': ['why-minus', '−'], 'i': ['why-info', 'i'] };
@@ -410,7 +411,7 @@
       if (alts.length) {
         const best = alts[0];
         A.setHistoryAlt(mine.prod.code, { code: best.pr.code, name: best.pr.name, image: A.safeImg(best.pr.image), pct: best.pm.pct, level: best.pm.level, label: best.pm.label });
-        out.push(`<h3 style="font-size:1rem">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik na półkę (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
+        out.push(`<h3 class="sec-h alt-h">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik do listy zakupów (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
       } else if (cmp.enough && mine.an.score != null) out.push(`<p class="small muted">${cmp.betterThan >= 70 ? 'To jeden z lepszych wyborów w tej kategorii.' : 'Nie znaleźliśmy wyraźnie lepszego zamiennika.'}</p>`);
       body().innerHTML = out.join('') || '<p class="small muted">Nie mamy jeszcze podobnych produktów do porównania.</p>';
     } catch (e) {
@@ -443,11 +444,11 @@
     }
     const r = Shelf.addItem(A.shelves, sh.id, { name: prod.name || ('Produkt ' + prod.code), code: prod.code, pct: pm ? pm.pct : null, categories: prod.categories, qty: 1, unit: 'szt', fam });
     if (r.error === 'duplicate') { if (!quiet) A.toast(`Ten produkt już jest na półce „${sh.name}”.`); return false; }
-    if (r.error === 'full') { A.toast('Ta półka jest pełna. Usuń kupione rzeczy albo wybierz inną półkę.'); return false; }
+    if (r.error === 'full') { A.toast('Ta lista jest pełna. Usuń kupione rzeczy albo wybierz inną listę.'); return false; }
     if (r.error) { A.toast('Nie udało się dodać produktu.'); return false; }
     A.shelves = r.state; A.saveShelves(); A.rememberAdded(prod, pm ? pm.pct : null);
     A.award('shelf_add', { code: prod.code });
-    if (!quiet) A.toast(`Dodano na półkę „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
+    if (!quiet) A.toast(`Dodano na listę „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
     return true;
   };
   let lastGeneric = null;
@@ -460,7 +461,7 @@
     const b = A.store.get('d-bought', {}); if (u.prevBought) b[u.bk] = u.prevBought; else delete b[u.bk]; A.store.set('d-bought', b);
     A.toast(`Przywrócono „${u.old.name}” na listę.`);
     A.renderShelvesIfOpen();
-    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na półkę (+5 pkt)'; }
+    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę (+5 pkt)'; }
   };
   A.swapTo = (fromCode, alt) => {
     // Usuwamy słabszy produkt z półki (jeśli tam był) i dodajemy zamiennik.

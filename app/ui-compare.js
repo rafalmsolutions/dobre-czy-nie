@@ -159,13 +159,13 @@
     const vc = vtone === 'ok' && B.m.pct != null ? A.scoreColor(B.m.pct) : null;
     const chips = fam ? `<div class="chips cmp-who" role="group" aria-label="Wynik dla">${[['all', off.length ? 'Wybrani' : 'Wszyscy']].concat(fam.map(r => [r.id, nameOf(r)])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="cmp-who" data-who="${esc(k)}" aria-pressed="${k === who}">${esc(l)}</button>`).join('')}</div>` : '';
     const grid = `style="grid-template-columns:${cols === 2 ? '1fr 1fr' : '1fr 1fr 1fr'}"`, rgrid = `style="grid-template-columns:${cols === 2 ? 'minmax(84px,.9fr) 1fr 1fr' : 'minmax(74px,.8fr) 1fr 1fr 1fr'}"`;
-    const famTable = fam ? `<div class="panel cmp-tab"><span class="cmp-k">DLA KOGO</span>${fam.map(r => `<div class="cmp-row" ${rgrid}><b>${esc(nameOf(r))}</b>${items.map(x => { const s = A.personState(x.p, x.an, r.p);
+    const famTable = fam ? `<div class="panel cmp-tab"><span class="cmp-k">Dla kogo</span>${fam.map(r => `<div class="cmp-row" ${rgrid}><b>${esc(nameOf(r))}</b>${items.map(x => { const s = A.personState(x.p, x.an, r.p);
         const v = s.st === 'bad' ? '✕' : s.st === 'unk' ? '?' : ns ? (s.st === 'ok' ? 'pasuje' : 'słabo') : s.pm.pct + '%';
         return `<span class="cmp-cell"><span class="cmp-chip"${s.st === 'bad' ? ' style="background:#FDE6E1"' : s.st === 'unk' || ns ? '' : A.pctStyle(s.pm.pct)}>${esc(v)}</span>${s.st === 'ok' ? '' : `<small>${esc(s.why)}</small>`}</span>`; }).join('')}</div>`).join('')}</div>` : '';
     const rows = diffRows(items, fam);
-    const diff = `<div class="panel cmp-tab"><span class="cmp-k">CO JE RÓŻNI · NA 100 G</span>${rows.map(r => `<div class="cmp-row" ${rgrid}><span class="cmp-rt"><b>${esc(r.t)}</b>${r.who ? `<small>${esc(r.who)}</small>` : ''}</span>${r.cells.map(c => `<span class="cmp-val${c.good ? ' good' : ''}${c.worse || c.bad ? ' worse' : ''}">${esc(c.t)}</span>`).join('')}</div>`).join('')}
+    const diff = `<div class="panel cmp-tab"><span class="cmp-k">Co je różni · na 100 g</span>${rows.map(r => `<div class="cmp-row" ${rgrid}><span class="cmp-rt"><b>${esc(r.t)}</b>${r.who ? `<small>${esc(r.who)}</small>` : ''}</span>${r.cells.map(c => `<span class="cmp-val${c.good ? ' good' : ''}${c.worse || c.bad ? ' worse' : ''}">${esc(c.t)}</span>`).join('')}</div>`).join('')}
       <p class="small muted" style="margin:6px 0 0">Zielona kropka: lepsza wartość. Najpierw to, czego pilnujecie.</p></div>`;
-    const acts = `<div class="cmp-acts" ${grid}>${items.map((x, i) => i === best ? `<button class="btn btn-dark btn-sm" type="button" data-act="cmp-shelf" data-code="${esc(x.code)}"${Shelf.hasCode(A.shelves, x.code) ? ' disabled' : ''}>${Shelf.hasCode(A.shelves, x.code) ? 'Już na półce' : 'Na półkę'}</button>` : `<button class="btn btn-white btn-sm" type="button" data-act="cmp-remove" data-code="${esc(x.code)}">Usuń</button>`).join('')}</div>`;
+    const acts = `<div class="cmp-acts" ${grid}>${items.map((x, i) => i === best ? `<button class="btn btn-dark btn-sm" type="button" data-act="cmp-shelf" data-code="${esc(x.code)}"${Shelf.hasCode(A.shelves, x.code) ? ' disabled' : ''}>${Shelf.hasCode(A.shelves, x.code) ? 'Już na liście' : 'Na listę'}</button>` : `<button class="btn btn-white btn-sm" type="button" data-act="cmp-remove" data-code="${esc(x.code)}">Usuń</button>`).join('')}</div>`;
     const more = items.length < MAX ? `<div class="row" style="gap:10px"><button class="btn btn-white grow" type="button" data-act="cmp-scan"><svg><use href="#i-scan"/></svg>Skanuj trzeci</button><a class="btn btn-white grow" href="#/szukaj">Szukaj</a></div>` : '<p class="small muted center">Najwyżej 3 produkty naraz. Kolejny zastąpi najstarszy.</p>';
     el.innerHTML = `<div class="wrap cmp"${vc ? ` style="--sc:${vc}"` : ''}><span class="d-arc" aria-hidden="true"></span>${top}${chips}
       <div class="cmp-cards" ${grid}>${items.map(card).join('')}</div>
@@ -270,7 +270,7 @@
   function drawEmpty() {
     const box = A.$('srchRes'); if (!box) return; sItems = [];
     const r = recent();
-    box.innerHTML = r.length ? `<p class="small muted" style="font-weight:800;letter-spacing:.05em">OSTATNIO SZUKANE</p><div class="chips">${r.map(x => `<button class="cat-tab" type="button" data-act="srch-again" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`
+    box.innerHTML = r.length ? `<p class="small muted" style="font-weight:800;">Ostatnio szukane</p><div class="chips">${r.map(x => `<button class="cat-tab" type="button" data-act="srch-again" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`
       : '<p class="small muted">Wpisz nazwę produktu albo marki, np. „skyr”, „płatki owsiane”, „pierogi ruskie”, albo cyfry spod kodu kreskowego.</p>';
   }
   A.searchSet = q => { const i = A.$('srchQ'); if (i) { i.value = q; } sQuery = q; history.replaceState(null, '', '#/szukaj/' + encodeURIComponent(q)); runSearch(q); };

@@ -43,7 +43,7 @@ ok(await page.locator('#cmpBar').isHidden(), 'na ekranie porównania bez paska')
 const verdict = await page.innerText('#scr-compare .cmp-verdict');
 ok(/Lepszy wybór|Podobnie|Żaden|Za mało danych/.test(verdict), 'werdykt: ' + verdict.replace(/\n/g, ' · '));
 ok(await page.locator('#scr-compare .cmp-who [data-who]').count() === 3, 'wybór osoby: Wszyscy, Ty, Kuba');
-ok(/CO JE RÓŻNI/.test(await page.innerText('#scr-compare')) && /Cukier/.test(await page.innerText('#scr-compare')), 'tabela „Co je różni” z cukrem (Ty pilnujesz)');
+ok(/Co je różni/.test(await page.innerText('#scr-compare')) && /Cukier/.test(await page.innerText('#scr-compare')), 'tabela „Co je różni” z cukrem (Ty pilnujesz)');
 ok(/Kuba: nie je/.test(await page.innerText('#scr-compare')), 'wiersz „Kuba: nie je”');
 // Wynik kolumny = wynik z „Ostatnio sprawdzone”/listy (A.groupMatch).
 const consistent = await page.evaluate(() => App.cmp.every(x => { const g = App.groupMatch(x.p, analyze(x.p)); const card = [...document.querySelectorAll('#scr-compare .cmp-card')].find(c => c.getAttribute('href') === '#/p/' + x.code); const t = card.querySelector('.cmp-badge b').textContent; return g.status === 'fail' ? t === '✕' : g.pct == null ? t === '?' : t === g.pct + '%'; }));

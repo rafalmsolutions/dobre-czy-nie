@@ -78,7 +78,7 @@ if (other) { await page.$eval(`#scr-product .fam-c[data-id="${other}"]`, e => e.
 const rg2 = await ring();
 ok(other && rg2.deg === rg.deg && rg2.pct === rg.pct, `stuknięcie osoby zmienia tylko rachunek, wynik rodziny zostaje (${rg2.deg}°, ${rg2.pct}%)`);
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(700);
-const histPct = async () => page.$$eval('#scr-home .list .item', it => { const x = it.find(e => /Gulasz/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; });
+const histPct = async () => page.$$eval('#scr-home .recent .rc', it => { const x = it.find(e => /Gulasz/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; });
 ok(await histPct() === rg.pct, `„Ostatnio sprawdzone” = wynik rodziny (${await histPct()}% ↔ ${rg.pct}%)`);
 // Tylko Ty na zakupach: wszędzie Twój wynik.
 await page.evaluate(() => App.setShopOn('f1', false)); await page.goto('http://localhost:8790/app/index.html#/p/5900000002001'); await page.waitForTimeout(400);

@@ -28,7 +28,7 @@ await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(15
 const regs = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname).sort());
 ok(regs.includes('/app/') && regs.includes('/archiwum/'), 'service workery: ' + regs.join(', '));
 let keys = await p.evaluate(() => caches.keys());
-ok(keys.some(k => k.startsWith('dcn-arch-')) && keys.some(k => k.startsWith('lupka-2')), 'aplikacja nie kasuje pamięci archiwum: ' + keys.join(', '));
+ok(keys.some(k => k.startsWith('dcn-arch-')) && keys.some(k => k.startsWith('lupka-')), 'aplikacja nie kasuje pamięci archiwum: ' + keys.join(', '));
 ok(!keys.includes('dcn-d-2.4.1'), 'aplikacja usuwa pamięć sprzed przenosin');
 
 // 3. Bez internetu aplikacja dalej się otwiera.
@@ -57,7 +57,7 @@ await p.evaluate(() => navigator.serviceWorker.register('/sw.js', { scope: '/' }
 const regs2 = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => new URL(r.scope).pathname));
 ok(!regs2.includes('/'), 'stary service worker z „/” wyrejestrowany: ' + regs2.join(', '));
 keys = await p.evaluate(() => caches.keys());
-ok(keys.some(k => k.startsWith('lupka-2')) && keys.some(k => k.startsWith('dcn-arch-')), 'pamięć aplikacji i archiwum zostaje: ' + keys.join(', '));
+ok(keys.some(k => k.startsWith('lupka-')) && keys.some(k => k.startsWith('dcn-arch-')), 'pamięć aplikacji i archiwum zostaje: ' + keys.join(', '));
 
 // 7. Stary service worker z /d/ usuwa się sam.
 await p.goto(B + 'app/'); await p.waitForTimeout(800);

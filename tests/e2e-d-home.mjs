@@ -15,27 +15,31 @@ await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTim
 ok(/Pilnujesz:\s*cukier/i.test(await page.locator('#scr-home .who-solo').innerText()), 'bez domowników: „Pilnujesz: cukier” w jednej linijce');
 ok(await page.locator('#scr-home .who-row').count() === 0, 'bez domowników: bez wiersza „Dla kogo dziś kupujesz?”');
 ok(await page.locator('#scr-home .d-scanbtn').count() === 1 && await page.locator('#hHist').count() === 0, 'pierwsze wejście: duży „Skanuj”, bez pustej sekcji „Ostatnio sprawdzone”');
-ok(await page.locator('#scr-home .d-prog').count() === 1 && await page.locator('#scr-home .level-card, #scr-home .al-week').count() === 0, 'nagrody w jednej karcie postępów');
+ok(await page.locator('#scr-home .d-prog, #scr-home .level-card, #scr-home .al-week').count() === 0, '3.0: postępy i nagrody są w Kartach, nie na Starcie');
+ok(/Czego szukasz|Szukaj produktu/.test(await page.innerText('#homeSearch')) && /kod kreskowy/.test(await page.innerText('#homeSearch')), 'wyszukiwarka mówi, co można wpisać');
+ok(await page.locator('#scr-home .list-card[href="#/polki"]').count() === 1, 'karta bieżącej listy zakupów');
 ok(await page.locator('#homeCode').count() === 0, 'bez osobnej sekcji „Nie masz aparatu?” (kod wpisuje się w wyszukiwarkę)');
 const order = await page.$$eval('#scr-home .wrap > *', l => l.map(e => e.id || e.className.split(' ')[0]));
-ok(order.indexOf('homeSearch') > -1 && order.indexOf('homeSearch') < order.indexOf('panel'), 'szukaj nad nagrodami: ' + order.join(','));
+ok(order.indexOf('homeSearch') > -1 && order.indexOf('homeSearch') < order.indexOf('list-card'), 'szukaj nad listą zakupów: ' + order.join(','));
 ok(await page.locator('#boot').count() === 0, 'testy automatyczne: ekran ładowania od razu znika');
 
 // Dwóch domowników: jeden z alergią, drugi bez ustawień. Plus historia: znika duży przycisk, „Ostatnio sprawdzone” wyżej.
 await page.evaluate(() => { localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['nuts'] } }, { id: 'f2', name: 'Ola', p: {} }]));
   localStorage.setItem('dcn-history', JSON.stringify([{ code: '3017620422003', name: 'Krem orzechowy', pct: 30, level: 'poor', t: Date.now() }])); });
 await page.reload(); await page.waitForTimeout(900);
-ok(await page.locator('#hProf').innerText() === 'Dla kogo dziś kupujesz?', 'z domownikami: „Dla kogo dziś kupujesz?”');
-const rows = await page.$$eval('#scr-home .who-p', r => r.map(x => x.innerText.replace(/\s+/g, ' ')));
-ok(rows.length === 3, 'trzy osoby w jednym wierszu: Ty, Kuba, Ola (' + rows.length + ')');
-ok(/^R?\s*Ty\b/.test(rows[0].replace(/^T /, '')) && /cukier/i.test(rows[0]), 'Ty: to, czego pilnujesz ' + rows[0]);
+ok(await page.locator('#scr-home .seg [data-act=shop-all][aria-pressed=true]').count() === 1, 'z domownikami: przełącznik „Cała rodzina” włączony');
+ok(/całej rodziny \(3 osoby\)/.test(await page.innerText('#scr-home .who-line')), 'jedna linia: dla kogo liczymy');
+await page.click('#scr-home [data-act=who-sheet]'); await page.waitForTimeout(300);
+const rows = await page.$$eval('.who-ck', r => r.map(x => x.innerText.replace(/\s+/g, ' ')));
+ok(rows.length === 3, 'panel „Dla kogo kupujesz?”: trzy osoby (' + rows.length + ')');
+ok(/^Ty\b/.test(rows[0]) && /cukier/i.test(rows[0]), 'Ty: to, czego pilnujesz ' + rows[0]);
 ok(/Kuba/.test(rows[1]) && /✕ orzechy/i.test(rows[1]), 'Kuba: „✕ orzechy” ' + rows[1]);
 ok(/Ola/.test(rows[2]) && /bez ustawień/.test(rows[2]), 'Ola: bez ustawień');
-const h = await page.evaluate(() => { const y = id => document.getElementById(id).getBoundingClientRect().top; return { who: y('hProf'), hist: y('hHist'), best: y('hBest') }; });
+await page.click('.ls-sheet [data-act=who-close]'); await page.waitForTimeout(200);
+ok(await page.locator('.ls-sheet').count() === 0, 'Gotowe zamyka panel');
+const h = await page.evaluate(() => { const y = el => el.getBoundingClientRect().top; return { who: y(document.querySelector('.who-seg')), hist: y(document.getElementById('hHist')), best: y(document.getElementById('hBest')) }; });
 ok(h.who < h.hist && h.hist < h.best && h.hist < 700, 'kolejność: dla kogo → ostatnio sprawdzone (na pierwszym ekranie) → najlepsze');
-ok(await page.locator('#scr-home .d-scanbtn').count() === 0 && await page.locator('#scr-home .d-hi').count() === 1, 'z historią: powitanie zamiast dużego przycisku (skan na dolnym pasku)');
-await page.click('#scr-home a[href="#/profil"]'); await page.waitForTimeout(500);
-ok(await page.evaluate(() => location.hash) === '#/profil', '„Profile” otwiera zakładkę Profil (szczegóły każdej osoby)');
+ok(await page.locator('#scr-home .d-scanbtn').count() === 0 && /kod kreskowy/.test(await page.innerText('#homeSearch')), 'z historią: bez dużego przycisku (skan na dolnym pasku)');
 
 // Ekran ładowania z animacją dla zwykłej przeglądarki (bez znacznika testów automatycznych).
 const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));

@@ -124,17 +124,16 @@
   };
   /* Odpowiedź dla rodziny (obok zdjęcia). */
   A.familyAnswerHtml = fv => fv ? `<div class="fam-ans" data-tone="${fv.tone}" role="status"><b>${esc(fv.head)}</b><span>${esc(fv.sub)}</span></div>` : '';
-  /* Kółka domowników pod zdjęciem: pierścień = dopasowanie (pusty przy „nie pasuje” i „nie wiemy”), znak ✓ ! ✕ ?. */
+  /* 3.0: osoby pod talerzem jako plakietki z pełnym imieniem i kolorowym wynikiem (✕ = nie pasuje, ? = nie wiemy). Stuknięcie = wyjaśnienie dla tej osoby. */
   A.familyCirclesHtml = fv => {
     if (!fv) return '';
     const noScores = !!A.profile.noScores;
     const note = A.offNoteHtml();
     return `${note ? '<div class="fam-box">' : ''}<div class="fam-circles" role="group" aria-label="Domownicy">${fv.rows.map(r => {
-      const on = fv.focus && fv.focus.id === r.id;
-      const deg = r.st === 'bad' || r.st === 'unk' ? 0 : noScores ? 360 : Math.max(24, Math.round(r.pm.pct * 3.6));
-      return `<button type="button" class="fam-c${on ? ' on' : ''}" data-st="${r.st}"${r.st === 'bad' ? ` style="--c:${A.scoreColor(0)}"` : (r.st === 'ok' || r.st === 'mid') && !noScores ? ` style="--c:${A.scoreColor(r.pm.pct)}"` : ''} data-act="fam-focus" data-id="${esc(r.id)}" aria-pressed="${on}" aria-label="${esc(r.name)}: ${esc(r.st === 'bad' ? 'nie pasuje, ' + r.why : r.st === 'unk' ? 'nie wiemy, ' + r.why : r.word)}${on ? ', wyjaśnienie poniżej' : ''}">
-        <span class="fam-ring" style="--deg:${deg}deg${r.st === 'ok' || r.st === 'mid' ? (noScores ? '' : ';--c:' + A.scoreColor(r.pm.pct)) : r.st === 'bad' ? ';--c:' + A.scoreColor(0) : ''}"><span class="fam-ini${r.label.length > 1 ? ' two' : ''}">${esc(r.label)}</span><span class="fam-mark"><svg viewBox="0 0 24 24" aria-hidden="true">${MARK[r.st]}</svg></span></span>
-        <span class="fam-nm">${esc(r.name)}</span><span class="fam-wd">${esc(r.word)}</span></button>`;
+      const on = fv.focus && fv.focus.id === r.id, has = (r.st === 'ok' || r.st === 'mid') && r.pm && r.pm.pct != null;
+      const val = r.st === 'bad' ? '✕' : r.st === 'unk' ? '?' : noScores || !has ? (r.st === 'ok' ? '✓' : '!') : r.pm.pct + '%';
+      const col = r.st === 'bad' ? A.scoreColor(0) : r.st === 'unk' ? '#8A8C91' : has && !noScores ? A.scoreColor(r.pm.pct) : r.st === 'ok' ? A.scoreColor(100) : A.scoreColor(55);
+      return `<button type="button" class="fam-c${on ? ' on' : ''}" data-st="${r.st}" data-act="fam-focus" data-id="${esc(r.id)}" aria-pressed="${on}" aria-label="${esc(r.name)}: ${esc(r.st === 'bad' ? 'nie pasuje, ' + r.why : r.st === 'unk' ? 'nie wiemy, ' + r.why : r.word)}${on ? ', wyjaśnienie poniżej' : ''}"><span class="fam-pill" style="background:${col}">${esc(val)}</span><span class="fam-nm">${esc(r.name)}</span></button>`;
     }).join('')}</div>${note ? note + '</div>' : ''}`;
   };
   /* Kogo teraz nie liczymy, z szybkim powrotem do wszystkich. */

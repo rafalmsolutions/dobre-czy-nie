@@ -14,7 +14,7 @@
   }, true);
 
   /* ---------- Kliknięcia ---------- */
-  const SHELF_ACTS = ['shelf-pick', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate'];
+  const SHELF_ACTS = ['shelf-pick', 'shelf-sheet', 'shelf-sheet-close', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
@@ -32,11 +32,11 @@
       case 'back': if (depth > 0) history.back(); else A.go('#/'); break;
       case 'guess': A.doGuess(el.dataset.v); break;
       case 'shelf-add':
-        if (cur && cur.prod && !cur.missing && A.addToShelf(cur.prod, cur.pm)) { el.disabled = true; el.textContent = 'Już na półce'; }
+        if (cur && cur.prod && !cur.missing && A.addToShelf(cur.prod, cur.pm)) { el.disabled = true; el.textContent = 'Już na liście'; }
         break;
       case 'shelf-add-code': {
         const x = (A.listCache || []).find(i => i.pr.code === el.dataset.code);
-        if (x && A.addToShelf(x.pr, x.pm)) { el.disabled = true; el.innerHTML = '<svg><use href="#i-check"/></svg>'; el.setAttribute('aria-label', 'Na półce'); }
+        if (x && A.addToShelf(x.pr, x.pm)) { el.disabled = true; el.innerHTML = '<svg><use href="#i-check"/></svg>'; el.setAttribute('aria-label', 'Na liście'); }
         break;
       }
       case 'swap': {
@@ -46,7 +46,7 @@
       }
       case 'swap-alt': {
         const x = A.findAlt(el.dataset.code);
-        if (x && cur && cur.prod) { A.swapTo(cur.prod.code, { name: x.pr.name || 'Produkt ' + x.pr.code, code: x.pr.code, pct: x.pm.pct, categories: x.pr.categories }); el.disabled = true; el.textContent = 'Na półce'; const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na półkę (+5 pkt)'; } }
+        if (x && cur && cur.prod) { A.swapTo(cur.prod.code, { name: x.pr.name || 'Produkt ' + x.pr.code, code: x.pr.code, pct: x.pm.pct, categories: x.pr.categories }); el.disabled = true; el.textContent = 'Na liście'; const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę (+5 pkt)'; } }
         break;
       }
       case 'retry': A.retryProduct(el.dataset.code); break;
@@ -59,7 +59,7 @@
       case 'how': A.openDlg('howDlg'); break;
       case 'photo-open': A.openPhoto(); break;
       case 'complete': A.startComplete(); break;
-      case 'fav-toggle': if (cur && cur.prod && A.toggleFav) { const on = A.toggleFav(cur.prod, cur.pm); el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); el.setAttribute('aria-label', on ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'); A.toast(on ? 'Dodano do ulubionych. Na Półkach dodasz je jednym stuknięciem.' : 'Usunięto z ulubionych.'); } break;
+      case 'fav-toggle': if (cur && cur.prod && A.toggleFav) { const on = A.toggleFav(cur.prod, cur.pm); el.classList.toggle('on', on); el.setAttribute('aria-pressed', String(on)); el.setAttribute('aria-label', on ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'); A.toast(on ? 'Dodano do ulubionych. W Zakupach dodasz je jednym stuknięciem.' : 'Usunięto z ulubionych.'); } break;
       case 'fill-go': A.fillAuto = el.dataset.code; A.fillFrom = el.dataset.code; break; // link prowadzi dalej do produktu
       case 'photo-report': A.reportPhoto(); break;
       case 'close-dlg': A.closeDlg(el.closest('dialog')); break;
@@ -76,6 +76,9 @@
         if (!A.setShopOn(id, on)) { A.toast('Przynajmniej jedna osoba musi zostać włączona.'); break; }
         A.render(); { const b = document.querySelector(`[data-act=shop-on][data-id="${id}"]`); if (b) b.focus(); } break;
       }
+      case 'shop-me': A.shopAll(); A.familyRows().forEach(r => { if (r.id !== 'me') A.setShopOn(r.id, false); }); A.render(); { const b = document.querySelector('[data-act=shop-me]'); if (b) b.focus(); } break;
+      case 'who-sheet': A.whoSheet = true; A.render(); { const b = document.querySelector('.who-ck'); if (b) b.focus(); } break;
+      case 'who-close': A.whoSheet = false; A.render(); { const b = document.querySelector('.who-seg .seg-b.on'); if (b) b.focus(); } break;
       case 'shop-all': A.shopAll(); if (A.current.screen === 'product' && A.rerenderProduct) A.rerenderProduct(); else A.render(); break;
       case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
@@ -110,6 +113,7 @@
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
       if (!A.$('scanner').hidden) { e.preventDefault(); A.closeScanner(); return; }
       if (!A.$('reveal').hidden) { e.preventDefault(); A.closeReveal(); return; }
+      if (document.body.classList.contains('sheet-open')) { e.preventDefault(); if (A.whoSheet) { A.whoSheet = false; A.render(); } else if (A.closeSheet) A.closeSheet(); return; }
     }
     // Pułapka fokusu w pełnoekranowych gratulacjach.
     // Pułapka fokusu w nakładce nowej karty.

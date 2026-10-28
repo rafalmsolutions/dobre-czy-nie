@@ -40,14 +40,14 @@ await page.screenshot({ path: shots + 'shelf-qty.png', fullPage: true });
 
 // 4. Karty i odznaki w jednej zakładce
 await page.goto('http://localhost:8790/app/index.html#/postepy'); await page.waitForTimeout(700);
-ok(await page.locator('#scr-progress .coll-tabs a[aria-current]').innerText().then(t => /Odznaki/.test(t)), 'odznaki: przełącznik Karty | Odznaki');
-ok(await page.locator('.tab[data-tab=album][aria-current=page]').count() === 1 && /Kolekcja/.test(await page.locator('.tab[data-tab=album]').innerText()), 'dolne menu: „Kolekcja” zaznaczona przy odznakach');
-await page.click('#scr-progress .coll-tabs a[href="#/album"]'); await page.waitForTimeout(500);
-ok(await page.locator('#scr-album .coll-tabs a[aria-current]').innerText().then(t => /Karty/.test(t)), 'karty: ten sam przełącznik');
+ok(await page.locator('#scr-progress .seg a[aria-current]').innerText().then(t => /Odznaki/.test(t)), 'odznaki: przełącznik Karty | Odznaki');
+ok(await page.locator('.tab[data-tab=album][aria-current=page]').count() === 1 && /Karty/.test(await page.locator('.tab[data-tab=album]').innerText()), 'dolne menu: „Karty” zaznaczona przy odznakach');
+await page.click('#scr-progress .seg a[href="#/album"]'); await page.waitForTimeout(500);
+ok(await page.locator('#scr-album .seg a[aria-current]').innerText().then(t => /Album/.test(t)), 'karty: ten sam przełącznik (Album)');
 await page.screenshot({ path: shots + 'collection.png' });
 
 // 5. „Usuń wszystkie moje dane” kasuje też dane na serwerze odkrywców
-await page.goto('http://localhost:8790/app/index.html#/profil'); await page.waitForTimeout(600);
+await page.goto('http://localhost:8790/app/index.html#/profil/ustawienia'); await page.waitForTimeout(600);
 await page.$eval('[data-act=wipe]', e => e.click()); await page.waitForTimeout(300);
 await page.$eval('[data-act=wipe-yes]', e => e.click()); await page.waitForTimeout(2000);
 ok(forgot === 1, 'usunięcie danych: zapytanie /disc/forget do serwera');

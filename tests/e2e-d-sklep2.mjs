@@ -34,8 +34,8 @@ ok(/W koszyku: 1/.test(await page.innerText('#boughtBox summary')), 'licznik kup
 await page.click('#boughtBox summary'); await page.waitForTimeout(150);
 ok(await page.locator('#boughtBox .sitem.checked').count() === 1, 'po rozwinięciu widać kupione (można odznaczyć)');
 // „Często kupujesz”: druga zakupiona „mleko” → szybkie dodawanie
-await page.click('[data-act=shelf-clear]'); await page.waitForTimeout(200);
-await add('mleko'); await tick('mleko'); await page.click('[data-act=shelf-clear]'); await page.waitForTimeout(200);
+await page.click('[data-act=shelf-sheet] >> nth=0'); await page.click('.ls-sheet [data-act=shelf-clear]'); await page.waitForTimeout(200);
+await add('mleko'); await tick('mleko'); await page.click('[data-act=shelf-sheet] >> nth=0'); await page.click('.ls-sheet [data-act=shelf-clear]'); await page.waitForTimeout(200);
 ok(await page.locator('.quick-add [data-act=qadd]:has-text("mleko")').count() === 1, '„Szybko dodaj”: mleko kupione 2 razy');
 await page.click('.quick-add [data-act=qadd]:has-text("mleko")'); await page.waitForTimeout(200);
 ok(await page.locator('#shelfItems .sitem:has-text("mleko")').count() === 1 && await page.locator('.quick-add [data-act=qadd]:has-text("mleko")').count() === 0, 'stuknięcie dodaje na półkę i znika z podpowiedzi');
@@ -95,7 +95,7 @@ ok(await page.locator('[data-front-photo]').count() === 0, 'po wysłaniu nie pro
 
 // 7. Kafelki „Twoja kolekcja” prowadzą do zestawień kart
 await go('#/album');
-await page.click('.al-stats a.holo'); await page.waitForTimeout(400);
+await page.click('.kt-stats a[href="#/album/blyszczace"]'); await page.waitForTimeout(400);
 ok(await page.evaluate(() => location.hash) === '#/album/blyszczace' && /błyszczące/i.test(await page.innerText('#scr-albumpage h1')), 'kafelek „błyszczące” otwiera zestawienie');
 await go('#/album/karty');
 ok(await page.locator('#scr-albumpage .ap-slot').count() === await page.evaluate(() => Object.values(App.album.cards).filter(c => !c.legacy).length), 'wszystkie karty: tyle samo co na kafelku');

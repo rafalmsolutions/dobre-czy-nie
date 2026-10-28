@@ -34,6 +34,6 @@ await page.fill('#cmpIngr', 'maliny, cukier, pektyny'); await page.click('[data-
 const mid = await circ();
 await page.waitForTimeout(3000);
 const after = await circ();
-ok(/Ania nie wiemy/.test(before) && !/Ania nie wiemy/.test(after) && /Ania \d+%/.test(after), `kółka domowników odświeżone po zapisie bez przeładowania (${before} → ${mid} → ${after})`);
+ok(/\? Ania/.test(before) && !/\? Ania/.test(after) && /\d+% Ania/.test(after), `kółka domowników odświeżone po zapisie bez przeładowania (${before} → ${mid} → ${after})`);
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);
