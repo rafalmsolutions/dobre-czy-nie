@@ -154,7 +154,7 @@
           <button class="btn btn-green btn-block" type="button" data-act="swap" data-from="${esc(swap.code)}">Zamień i dodaj na półkę (+15 pkt)</button></div></section>` : ''}
       <section class="stack" aria-labelledby="hBest"><div class="sec-head"><h2 id="hBest">${fam && A.famOn() ? 'Najlepsze dla Was' : A.hasProfile() ? 'Najlepsze dla Ciebie' : 'Najlepsze w sklepie'}</h2><a href="#/najlepsze">Wszystkie</a></div>
         <div class="tiles t3">${HOME_TILES.map(t => `<a class="tile" href="#/lista/${t.cat}"><img class="d-tile-img" src="${A.catImg(t.cat)}" alt="" width="72" height="72"><b>${esc(t.label)}</b></a>`).join('')}</div></section>
-      ${prog}
+      ${A.quiet() ? '' : prog}
     </div>`;
   });
 

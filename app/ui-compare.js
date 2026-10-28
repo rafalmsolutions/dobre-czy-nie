@@ -133,21 +133,26 @@
     const tie = !B.bad && !S2.bad && B.m.pct != null && S2.m.pct != null && B.m.pct - S2.m.pct < TIE;
     const allBad = items.every(x => x.bad);
     const best = tie || allBad || B.m.pct == null ? -1 : bi;
+    // Wynik produktu z brakami w bazie jest wstępny: nie mówimy, że jest gorszy, tylko że o nim mniej wiemy.
+    items.forEach(x => { x.gaps = A.dataGaps ? A.dataGaps(x.p) : []; });
+    const unsure = best >= 0 && !B.gaps.length && items.some((x, i) => i !== bi && !x.bad && x.gaps.length);
     const off = A.offRows ? A.offRows() : [];
     const whoLbl = !fam ? 'dla Ciebie' : who === 'all' ? (off.length ? fam.length + (fam.length < 5 ? ' osoby' : ' osób') : 'rodzina') : who === 'me' ? 'dla Ciebie' : (fam.find(r => r.id === who) || {}).name;
     const lbl = x => x.bad ? x.m.label || 'Nie pasuje' : (who === 'all' ? x.m.label : x.m.label);
     const cols = items.length;
     const card = (x, i) => { const img = A.safeImg(x.p.image), pct = x.m.pct, c = pct != null ? A.scoreColor(pct) : null;
-      return `<a class="cmp-card${i === best ? ' best' : ''}${x.bad ? ' bad' : ''}" href="#/p/${esc(x.code)}">${i === best ? '<span class="cmp-crown">Lepszy wybór</span>' : ''}
+      return `<a class="cmp-card${i === best ? ' best' : ''}${x.bad ? ' bad' : ''}" href="#/p/${esc(x.code)}">${i === best ? `<span class="cmp-crown">${unsure ? 'Pełniejsze dane' : 'Lepszy wybór'}</span>` : ''}
         ${img ? `<span class="cmp-plate${ns || pct == null ? '' : ' has-score'}"${ns || pct == null ? '' : ` style="--sc:${c};--pdeg:${Math.max(4, Math.round(pct * 3.6))}deg"`}><img src="${esc(img)}" alt=""></span>` : `<span class="cmp-plate noimg">${art('dept_' + departmentFor(x.p), 54)}</span>`}
         ${ns ? '' : `<span class="cmp-badge"${pct != null ? A.pctStyle(pct) : ''}><b>${x.bad ? '✕' : pct == null ? '?' : pct + '%'}</b><span>${esc(whoLbl)}</span></span>`}
         <span class="cmp-name">${A.splitName(x.p.name)}</span><span class="cmp-meta">${esc([x.p.brand, x.p.quantity].filter(Boolean).join(' · '))}</span>
-        <span class="cmp-lbl"${x.bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(lbl(x))}</span></a>`; };
+        <span class="cmp-lbl"${x.bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(lbl(x))}</span>${x.gaps.length && !x.bad ? `<span class="cmp-gap">dane niepełne: brak ${esc(x.gaps.join(' i '))}</span>` : ''}</a>`; };
     const nm = x => x.p.name;
     let vh, vs, vtone;
     if (allBad) { vh = 'Żaden nie pasuje'; vs = items.map(x => nm(x) + ': ' + lbl(x)).join(' · '); vtone = 'bad'; }
     else if (B.m.pct == null) { vh = 'Za mało danych, żeby wybrać'; vs = items.map(x => nm(x) + ': ' + lbl(x)).join(' · ') + '. Sprawdź etykiety.'; vtone = 'tie'; }
     else if (tie) { vh = 'Podobnie: ' + (ns ? '' : `${B.m.pct}% i ${S2.m.pct}%`); vs = 'Różnica poniżej 5 punktów. Wybierz, co bardziej lubicie.'; vtone = 'tie'; }
+    else if (unsure) { vh = 'Pełniejsze dane: ' + nm(B) + (ns ? '' : ` (${B.m.pct}%)`);
+      vs = items.filter((x, i) => i !== bi && x.gaps.length && !x.bad).map(x => `${nm(x)}: w bazie brakuje ${x.gaps.join(' i ')}`).join(' · ') + '. Nie wiemy, czy jest gorszy – sprawdź etykietę.'; vtone = 'tie'; }
     else { vh = 'Lepszy wybór' + (!fam ? ' dla Ciebie' : who === 'all' ? (fam.length === 2 ? ' dla Was obojga' : ' dla wszystkich') : who === 'me' ? ' dla Ciebie' : ' · ' + whoLbl) + ': ' + nm(B);
       vs = items.filter((x, i) => i !== bi).map(x => nm(x) + ': ' + (x.bad || ns || x.m.pct == null ? lbl(x).replace(/^./, c => c.toLowerCase()) : x.m.pct + '%')).join(' · '); vtone = 'ok'; }
     const vc = vtone === 'ok' && B.m.pct != null ? A.scoreColor(B.m.pct) : null;

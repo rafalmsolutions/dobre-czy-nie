@@ -290,19 +290,23 @@ const App = {};
     A.refreshHud();
     return r;
   };
+  // Tryb zakupowy: bez punktów na ekranie, gratulacji i „Zgadnij” (postępy liczą się dalej w tle).
+  A.quiet = () => !!(A.settings && A.settings.shopMode);
   A.plusFly = n => {
+    if (A.quiet()) return;
     const el = document.createElement('div');
     el.className = 'plus-fly'; el.textContent = '+' + n + ' pkt'; el.setAttribute('aria-hidden', 'true');
     document.body.appendChild(el); setTimeout(() => el.remove(), 1700);
     A.announce('Zdobywasz ' + n + ' ' + plural(n, 'punkt', 'punkty', 'punktów') + '.');
   };
   A.refreshHud = () => document.querySelectorAll('[data-hud=points]').forEach(e => { e.textContent = A.game.points; });
-  A.hudPill = () => `<a class="pill" href="#/postepy"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Punkty: </span><span data-hud="points">${A.game.points}</span><span class="sr"> – przejdź do postępów</span></a>`;
+  A.hudPill = () => A.quiet() ? '' : `<a class="pill" href="#/postepy"><svg aria-hidden="true"><use href="#i-star"/></svg><span class="sr">Punkty: </span><span data-hud="points">${A.game.points}</span><span class="sr"> – przejdź do postępów</span></a>`;
 
   const celQueue = [];
   /* Na ekranie produktu gratulacje nie zasłaniają wyniku: czekają na pasku nagród (A.rewardBar), aż ktoś go stuknie. */
   A.holdRewards = () => A.current && A.current.screen === 'product';
   A.celebrate = events => {
+    if (A.quiet()) return;
     events.forEach(e => celQueue.push(e));
     if (A.holdRewards() || (A.$('reveal') && !A.$('reveal').hidden)) { if (A.rewardBar) A.rewardBar(); return; }
     if (A.$('celebrate').hidden) A.nextCelebration();
@@ -742,6 +746,7 @@ const App = {};
   let stream = null, scanning = false, detector = null, lastCand = null, sameCount = 0, canvas = null, zxReader = null, scanReturn = null, scanStart = 0, hinted = false;
   A.openScanner = async () => {
     scanReturn = document.activeElement;
+    document.body.classList.add('scanning'); // paski porównania i nagród nie zasłaniają skanera
     A.$('scanner').hidden = false; A.$('scanErr').hidden = true; A.$('reticle').hidden = false; A.$('torchBtn').hidden = true; A.$('torchSpacer').hidden = false;
     A.$('scanHint').textContent = 'Skieruj aparat na kod kreskowy. Odczyt nastąpi sam.'; A.$('scanMsg').textContent = '';
     document.body.style.overflow = 'hidden';
@@ -869,7 +874,7 @@ const App = {};
   }
   function stopStream() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
   A.closeScanner = (silent) => {
-    scanning = false; stopStream();
+    scanning = false; stopStream(); document.body.classList.remove('scanning');
     A.$('video').srcObject = null; A.$('scanner').hidden = true; document.body.style.overflow = '';
     A.$('torchBtn').setAttribute('aria-pressed', 'false');
     if (!silent && scanReturn && scanReturn.focus) scanReturn.focus();

@@ -121,7 +121,12 @@
     }
     bar.innerHTML = `${ic}<span class="grow"><b>${esc(t1)}</b><span>${esc(t2)}</span></span><button class="btn btn-gold btn-sm" type="button" data-act="rw-open">Odbierz</button><button class="rw-x" type="button" data-act="rw-close" aria-label="Później"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
     bar.hidden = false; document.body.classList.add('has-rwbar');
+    // Po chwili (albo przy przewijaniu) pasek zwija się do małego przycisku z prawej, żeby nie zasłaniał wyniku i przycisków.
+    bar.classList.remove('mini'); clearTimeout(rwMiniT);
+    rwMiniT = setTimeout(() => bar.classList.add('mini'), 4000);
   };
+  let rwMiniT = 0;
+  addEventListener('scroll', () => { const b = A.$('rwBar'); if (b && !b.hidden && scrollY > 40) b.classList.add('mini'); }, { passive: true });
   const RARITY_WORD = { zwykla: 'zwykłe miejsce', rzadka: 'rzadkie miejsce', epicka: 'epickie miejsce', legendarna: 'legendarne miejsce' };
   A.rewardAction = act => {
     if (act === 'rw-open') {
@@ -135,6 +140,7 @@
   /* Po skanie: punkty od razu, karta czeka na pasku. */
   A.albumGot = res => {
     if (!res || !res.isNew || res.quiet) return;
+    if (A.quiet && A.quiet()) { A.albumReward(res); res.rewarded = true; return; } // karta w albumie, bez paska
     A.pendingCard = res; // poprzednia nieodebrana karta i tak jest już w albumie
     A.albumReward(res); res.rewarded = true;
     A.rewardBar();

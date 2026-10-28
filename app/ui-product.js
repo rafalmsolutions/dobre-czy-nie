@@ -96,6 +96,8 @@
     return { ingr: !prod.ingredients && !(snapshot && prod.additiveTags != null), nut: !Object.values(prod.nutriments || {}).some(v => v != null),
       name: !prod.name, front: !prod.image, cat: !(prod.categories || []).length };
   }
+  // Czego brakuje do pewnej oceny (skład, wartości). Wynik przy brakach jest wstępny: pokazujemy to przy wyniku i w porównaniu.
+  A.dataGaps = (p, snapshot) => { if (!p || p.kind === 'cosmetic') return []; const m = missingParts(p, snapshot); return [m.ingr && 'składu', m.nut && 'wartości odżywczych'].filter(Boolean); };
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
     mergeLocal(prod);
@@ -123,7 +125,7 @@
       A.store.set('askedFeedback', true);
       setTimeout(() => A.toast('Sprawdziłeś już 5 produktów. Co działa, a co nie?', `<a href="${A.feedbackHref()}">Napisz nam</a>`), 1500);
     }
-    const ask = A.settings.guess !== false && pm.pct != null && !guessedToday(prod.code) && !opts.local;
+    const ask = A.settings.guess !== false && !A.quiet() && pm.pct != null && !guessedToday(prod.code) && !opts.local;
     if (!ask) cur.guess = 'skip-silent';
     render();
     if (A.discAsk && !opts.local) A.discAsk(prod);
@@ -158,13 +160,15 @@
     const chip = catLabel ? `<a class="d-catchip" href="#/lista/${esc(key)}">${img && dish ? `<img src="${esc(dish)}" alt="" width="40" height="40">` : ''}<span>${esc(catLabel)}</span></a>` : '';
     // Domownicy: obok zdjęcia odpowiedź dla całej rodziny, pod spodem kółka osób (najpierw te z problemem).
     const fv = pm && cur.fam ? cur.fam : null;
+    const gaps = A.dataGaps(p, cur.snapshot);
     const gm = fv && fv.gm, gWho = fv ? (fv.n === 1 ? (fv.rows[0].id === 'me' ? 'dla Ciebie' : fv.rows[0].name) : fv.off.length ? fv.n + (fv.n < 5 ? ' osoby' : ' osób') : 'rodzina') : '';
     const famBadge = gm ? (gm.pct != null ? `<div class="d-badge" data-level="${esc(gm.level)}"${A.pctStyle(gm.pct)} role="img" aria-label="Dopasowanie (${esc(gWho)}): ${gm.pct} procent${fv.n > 1 ? ', najniższy wynik: ' + esc(gm.who) : ''}"><b${gm.pct >= 100 ? ' class="p3"' : ''}>${gm.pct}%</b><span>${esc(gWho)}</span></div>`
       : `<div class="d-badge" data-level="unknown"><b>?</b><span>${esc(gWho)}</span></div>`) : '';
-    const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b${pm.pct >= 100 && pm.personal ? ' class="p3"' : ''}>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(pm.label)}</div></div>` : '';
+    const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b${pm.pct >= 100 && pm.personal ? ' class="p3"' : ''}>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(gaps.length && pm.pct != null ? 'Wstępnie: ' + pm.label.replace(/^./, c => c.toLowerCase()) : pm.label)}</div></div>` : '';
+    const gapHtml = gaps.length && pm && (pm.pct != null || fv) ? `<div class="d-gaps" role="note"><b>Dane niepełne</b> W bazie brakuje ${gaps.join(' i ')}, więc wynik jest wstępny i może się zmienić.</div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
-      <div class="d-hside">${chip}${verdict}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
+      <div class="d-hside">${chip}${verdict}${gapHtml}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
@@ -345,6 +349,15 @@
   }
 
   /* ---------- Porównanie w kategorii i zamienniki ---------- */
+  /* „To samo zastosowanie”: zamiennik musi mieć z produktem wspólną kategorię węższą niż ogólne grupy typu „słodkie produkty
+     do smarowania” czy „śniadania” (krem czekoladowy → krem czekoladowy, nie powidła). Bez wąskich kategorii – bez ograniczenia. */
+  const GENERIC_CATS = new Set(['en:breakfasts', 'en:snacks', 'en:spreads', 'en:sweet-spreads', 'en:salted-spreads', 'en:plant-based-foods-and-beverages', 'en:plant-based-foods', 'en:plant-based-spreads',
+    'en:beverages', 'en:beverages-and-beverages-preparations', 'en:dairies', 'en:fermented-foods', 'en:fermented-milk-products', 'en:sweet-snacks', 'en:salty-snacks', 'en:desserts', 'en:meals', 'en:groceries',
+    'en:condiments', 'en:sauces', 'en:fruits-and-vegetables-based-foods', 'en:fruit-based-foods-and-beverages', 'en:fruit-based-foods', 'en:cereals-and-potatoes', 'en:cereals-and-their-products',
+    'en:meats-and-their-products', 'en:frozen-foods', 'en:canned-foods', 'en:confectioneries', 'en:biscuits-and-cakes', 'en:food', 'en:foods']);
+  const specific = pr => (pr.categories || []).filter(c => /^en:[a-z0-9-]+$/.test(c) && !GENERIC_CATS.has(c));
+  const sameUse = (prod, x) => { const mine = specific(prod); if (!mine.length) return true; const xs = new Set((x.categories || [])); return mine.some(c => xs.has(c)); };
+  A.sameUse = sameUse;
   let catLoading = null; // produkt, dla którego trwa porównanie (chroni przed wielokrotnym klikaniem)
   async function loadCategory() {
     const mine = cur, body = () => A.$('catBody');
@@ -381,13 +394,14 @@
       // Zamiennik musi należeć do tej samej, najwęższej kategorii co skanowany produkt (krem orzechowy → krem orzechowy, a nie dżem),
       // a dopasowanie musi być co najmniej dobre i wyższe niż obecnego produktu.
       const narrow = cats[0];
-      const altSrc = narrow ? compareInCategory(mine.prod, mine.an, list.filter(x => (x.categories || []).includes(narrow)), A.profile).alternatives : cmp.alternatives;
+      const useList = list.filter(x => sameUse(mine.prod, x));
+      const altSrc = narrow ? compareInCategory(mine.prod, mine.an, useList.filter(x => (x.categories || []).includes(narrow)), A.profile).alternatives : compareInCategory(mine.prod, mine.an, useList, A.profile).alternatives;
       const alts = altSrc.map(x => Object.assign(x, { pm: personalMatch(x.pr, x.an, A.profile), my: A.inMyStore(x.pr) })).filter(x => x.pm.pct != null && x.pm.pct >= 50 && (mine.pm.pct == null || x.pm.pct > mine.pm.pct))
         .sort((a, b) => !!b.my - !!a.my); // najpierw z Twoich sklepów (kolejność wśród nich bez zmian)
       mine.alts = alts;
       // Domownicy: gdy produkt komuś nie pasuje, pokazujemy jeden produkt z tej kategorii, który pasuje wszystkim.
       if (mine.fam && mine.fam.tone !== 'ok' && A.familyAltPick && cur === mine) {
-        const pick = A.familyAltPick(mine.prod, narrow ? list.filter(x => (x.categories || []).includes(narrow)) : list) || (narrow ? A.familyAltPick(mine.prod, list) : null);
+        const pick = A.familyAltPick(mine.prod, narrow ? useList.filter(x => (x.categories || []).includes(narrow)) : useList) || (narrow ? A.familyAltPick(mine.prod, useList) : null);
         mine.famAltHtml = A.familyAltHtml(mine.fam, pick);
         const slot = A.$('famAlt'); if (slot) slot.innerHTML = mine.famAltHtml;
       }
@@ -494,6 +508,7 @@
     const hit = GUESS.find(([k, words]) => SHOP_CATEGORIES.some(c => c.key === k) && words.some(w => f.includes(w.length <= 3 ? ' ' + w : w)));
     return hit ? hit[0] : '';
   };
+  const ingDet = quick => `<details class="card more${quick ? ' ing-quick' : ''}" id="ingDetails"><summary class="details-h">${quick ? 'Szybko: oceń skład z etykiety' : 'Oceń skład z etykiety'}</summary>${quick ? '<p class="small muted" style="margin:6px 0 0">Przepisz albo sfotografuj skład z opakowania – od razu zobaczysz ocenę dodatków i alergenów. Zostaje tylko w Twoim telefonie.</p>' : ''}<div id="ingSlot" style="margin-top:10px"></div></details>`;
   function renderMissing(code, reason) {
     cur = { prod: { code }, missing: true, reason, rendered: true };
     Object.keys(photos).forEach(k => { if (photos[k] && photos[k].url) URL.revokeObjectURL(photos[k].url); photos[k] = null; });
@@ -508,11 +523,9 @@
       // Na wygiętych puszkach i w słabym świetle aparat bywa pomyli cyfry: najpierw prosimy o sprawdzenie kodu.
       parts.push(`<form class="card stack fixcode" id="fixCodeForm" novalidate><span class="small"><b>Sprawdź kod.</b> Zeskanowaliśmy <b class="mono">${esc(code)}</b>. Jeśli cyfry pod kreskami są inne, popraw je i szukaj ponownie.</span>
         <div class="inline-form"><input class="field mono" id="fixCode" inputmode="numeric" autocomplete="off" maxlength="20" value="${esc(code)}" aria-label="Cyfry spod kodu kreskowego"><button class="btn btn-dark btn-sm" type="submit">Szukaj</button></div><p class="msg" id="fixMsg" role="status"></p></form>`);
-      parts.push(`<div class="panel stack" style="position:relative;margin-top:14px;padding-top:30px" id="addCta">
-        <div style="position:absolute;left:0;right:0;top:-24px">${ribbonSvg('Nagroda odkrywcy', 250, ['#FFE27A', '#F0B021', '#8A5A0A'])}</div>
-        <div class="reward-grid"><div class="card"><svg width="40" height="40"><use href="#i-star"/></svg><b style="font-family:var(--f-display)">+10 od razu</b><span class="small muted">+50, gdy 2 osoby potwierdzą</span></div>
-          <div class="card">${medalSvg('plus', 'baza', true, 48)}<b style="font-family:var(--f-display);font-size:.92rem;line-height:1.1">Odznaka Odkrywca</b></div>
-          <div class="card disc-gold-card"><span class="disc-gold" aria-hidden="true">★</span><b style="font-family:var(--f-display);font-size:.92rem;line-height:1.1">Złota karta Odkrycie</b><span class="small" style="color:#8A5A0A;font-weight:700">+1 pkt za każdą osobę, która go sprawdzi</span></div></div></div>`);
+      // Najpierw szybka odpowiedź przy półce (skład z etykiety), potem – jeśli ktoś chce – dodanie do bazy z nagrodą.
+      parts.push(ingDet(true));
+      parts.push(`<div class="panel stack add-cta" id="addCta"><div class="row" style="gap:12px;align-items:center"><span class="disc-gold" aria-hidden="true">★</span><span class="grow stack" style="gap:2px"><b style="font-family:var(--f-display);font-size:1.1rem">Dodaj produkt do bazy</b><span class="small">Nagroda odkrywcy: <b>+10 od razu</b>, +50 i <b>Złota karta</b>, gdy 2 osoby potwierdzą. Produkt zobaczą wszyscy.</span></span></div></div>`);
       if (proxy) {
         parts.push(`<form class="stack" id="addForm" novalidate>
           <label for="addName"><b style="font-family:var(--f-display)">Nazwa produktu</b></label>
@@ -535,7 +548,7 @@
       }
       parts.push(`<div class="row" style="justify-content:center;gap:18px"><a href="#/">Nie teraz</a><button class="linkbtn" type="button" data-act="scan">Zły kod? Zeskanuj ponownie</button></div>`);
     }
-    parts.push(`<details class="card more" id="ingDetails"><summary class="details-h">Oceń skład z etykiety</summary><div id="ingSlot" style="margin-top:10px"></div></details>`);
+    if (err) parts.push(ingDet(false));
     if (!err) parts.push(`<p class="small muted center">Nie możesz teraz dodać produktu? <button class="linkbtn small" type="button" data-act="report-missing" data-code="${esc(code)}">Zgłoś brak</button></p>`);
     screen(parts.join(''));
     const nm = A.$('addName'), cs = A.$('addCat');

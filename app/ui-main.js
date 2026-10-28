@@ -153,6 +153,7 @@
   window.addEventListener('hashchange', () => { depth++; if (A.stopDictation) A.stopDictation(); if (!A.$('scanner').hidden) A.closeScanner(true); A.render(); });
   async function boot() {
     document.body.classList.toggle('no-scores', !!A.profile.noScores);
+    document.body.classList.toggle('shop-mode', !!A.settings.shopMode);
     const hadCfg = !!(A.cfg.levels && A.cfg.levels.levels);
     // Ekran startowy, produkt, półki itd. nie potrzebują konfiguracji punktów – rysujemy je od razu, bez czekania na sieć.
     const h = location.hash.replace(/^#?\/?/, '');

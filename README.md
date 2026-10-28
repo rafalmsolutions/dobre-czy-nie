@@ -16,6 +16,15 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Poprawki po teście konsumenckim (28.10.2026, wersja 2.9.0)
+- Skaner: paski porównania i nagród chowają się (body.scanning), więc nie zasłaniają wpisywania kodu.
+- Pasek „Nowa karta / odznaka” po 4 s (albo przy przewijaniu) zwija się do małego przycisku „Odbierz” z prawej.
+- Niepełne dane (brak składu albo wartości odżywczych): przy wyniku „Wstępnie: …” i ramka „Dane niepełne”; w porównaniu „Pełniejsze dane” zamiast „Lepszy wybór”, z dopiskiem, czego brakuje drugiemu produktowi (A.dataGaps).
+- Ekran „nie znamy”: „Szybko: oceń skład z etykiety” zaraz pod sprawdzeniem kodu; nagroda odkrywcy w jednym krótkim panelu.
+- Tryb zakupowy (Profil → Ustawienia, settings.shopMode): bez punktów na ekranie, kart, gratulacji, karty postępów i „Zgadnij”; karty i odznaki zbierają się w tle.
+- Zamienniki i podpowiedź dla rodziny tylko o tym samym zastosowaniu: wspólna kategoria węższa niż ogólne grupy (A.sameUse), np. krem kakaowy nie dostaje powideł.
+- Test: `tests/e2e-d-raport.mjs`.
+
 ## Odświeżanie po uzupełnieniu i aktualna lista misji (28.10.2026, wersja 2.8.3)
 - „Uzupełnij dane”: lista z data/uzupelnij.json powstaje z indeksu wyszukiwarki OFF, który bywa nieaktualny. Przed pokazaniem sprawdzamy widoczne pozycje przez /details; produkty, które mają już skład i wartości, chowamy (d-fill-ok), a brakującą część poprawiamy.
 - Po zapisie składu lub wartości produkt jest pobierany z bazy jeszcze raz (po 2,5 s i 9 s), bo dopiero baza rozpoznaje ze składu alergeny, dodatki i dietę. Wynik i kółka domowników odświeżają się bez przeładowania strony.

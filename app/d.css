@@ -785,3 +785,15 @@ details.bought{background:rgba(255,255,255,.55);border-radius:18px;padding:12px 
 @keyframes micpulse{50%{box-shadow:0 0 0 6px rgba(229,83,61,.25)}}
 @media (prefers-reduced-motion:reduce){.mic-btn.on{animation:none}}
 .toast .toast-btn{background:none;border:0;color:#FFE27A;font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:4px 6px;margin-left:4px}
+
+/* 2.9.0: pasek nagrody zwinięty do przycisku; w skanerze żadnych pasków */
+.rwbar.mini{left:auto;right:12px;margin:0;max-width:none;padding:6px;gap:6px}
+.rwbar.mini .grow,.rwbar.mini .rw-x{display:none}
+body.scanning .rwbar{display:none !important}
+.d-gaps{margin-top:8px;padding:8px 10px;border-radius:12px;background:#FFF4D6;color:#5A4300;font-size:12.5px;line-height:1.35;font-weight:600}
+.d-gaps b{display:inline-block;margin-right:4px;font-weight:800}
+.cmp-gap{display:block;margin-top:4px;font-size:11.5px;font-weight:800;color:#8A6400}
+.ing-quick{border:2px solid var(--ink)}
+.add-cta{margin-top:6px}
+/* Tryb zakupowy: bez warstwy gry */
+body.shop-mode .rwbar:not(.cmpbar),body.shop-mode .plus-fly,body.shop-mode .reward-chip{display:none !important}

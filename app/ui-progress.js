@@ -120,6 +120,7 @@
       <fieldset class="card"><legend>Gdzie robisz zakupy</legend><p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam.</p><div class="pchips">${STORES.map(s => chip('mystore', s.key, s.label, A.myStores().includes(s.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
       <fieldset class="card"><legend>Ustawienia</legend>
+        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setShop" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.quiet() ? ' checked' : ''}><span><b>Tryb zakupowy</b><br><span class="small muted">Sam wynik i powody, bez punktów, kart, odznak i „Zgadnij”. Karty i odznaki dalej zbierają się w tle, zobaczysz je w Kolekcji.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setSound" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.sound !== false ? ' checked' : ''}><span><b>Dźwięki i wibracje</b><br><span class="small muted">Krótki dźwięk przy skanie, zgadywaniu i odkładaniu na półkę, melodia przy nowej odznace i poziomie.</span></span></label>
         <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label>
@@ -209,6 +210,7 @@
     A.profile = cleanProfile(next); A.saveProfile();
     A.setMyStores([...f.querySelectorAll('input[name="mystore"]:checked')].map(i => i.value));
     A.settings.guess = A.$('setGuess').checked;
+    A.settings.shopMode = A.$('setShop').checked; document.body.classList.toggle('shop-mode', A.settings.shopMode);
     const soundWas = A.settings.sound !== false;
     A.settings.sound = A.$('setSound').checked;
     if (!soundWas && A.settings.sound) A.sound('badge');
