@@ -165,20 +165,20 @@
     const famBadge = gm ? (gm.pct != null ? `<div class="d-badge" data-level="${esc(gm.level)}"${A.pctStyle(gm.pct)} role="img" aria-label="Dopasowanie (${esc(gWho)}): ${gm.pct} procent${fv.n > 1 ? ', najniższy wynik: ' + esc(gm.who) : ''}"><b${gm.pct >= 100 ? ' class="p3"' : ''}>${gm.pct}%</b><span>${esc(gWho)}</span></div>`
       : `<div class="d-badge" data-level="unknown"><b>?</b><span>${esc(gWho)}</span></div>`) : '';
     const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b${pm.pct >= 100 && pm.personal ? ' class="p3"' : ''}>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(gaps.length && pm.pct != null ? 'Wstępnie: ' + pm.label.replace(/^./, c => c.toLowerCase()) : pm.label)}</div></div>` : '';
-    const gapHtml = gaps.length && pm && (pm.pct != null || fv) ? `<div class="d-gaps" role="note"><b>Dane niepełne</b> W bazie brakuje ${gaps.join(' i ')}, więc wynik jest wstępny i może się zmienić.</div>` : '';
+    const gapHtml = gaps.length && pm && (pm.pct != null || fv) ? `<div class="d-gaps" role="note"><b>Wynik wstępny</b> Brakuje ${gaps.join(' i ')} produktu. Dopasowanie jest wstępne i może się zmienić po uzupełnieniu danych.</div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
       <div class="d-hside">${chip}${verdict}${gapHtml}${!fv && pm && A.offNoteHtml ? A.offNoteHtml() : ''}</div>${fv ? A.familyCirclesHtml(fv) : ''}
       <div class="d-title"><p class="d-meta">${esc([p.brand, p.quantity, p.kind === 'cosmetic' ? 'kosmetyk' : ''].filter(Boolean).join(' · ') || 'Produkt')}</p><h1 class="${nm.length > 26 ? 'd-long' : ''}">${A.splitName(nm)}</h1></div></div>`;
   }
   /* Wersja D: wyjaśnienie dopasowania jak rachunek: ocena składu, potem każda pozycja „Pilnuję” z punktami, na końcu wynik. */
-  function billHtml(pm, who) {
+  function billHtml(pm, who, noIngr) {
     const sign = d => d > 0 ? '+' + d : d < 0 ? '−' + Math.abs(d) : '0';
     const watch = pm.rows.filter(r => !r.exclude), excl = pm.rows.filter(r => r.exclude);
     const line = r => `<li class="bill-row ${r.kind}">${r.watch ? `<span class="bill-ic">${A.dIcon((WATCH.find(w => w.key === r.watch) || {}).icon, 18)}</span>` : `<span class="bill-ic">${A.dIcon(r.kind === 'good' ? 'healthy' : 'ban', 18)}</span>`}<span class="grow"><b>${esc(r.title)}</b>${r.word ? ` <span class="bill-word">${esc(r.word)}</span>` : ''}${r.value ? `<small>${esc(r.value)}${r.text ? ', ' + esc(r.text) : ''}</small>` : r.text ? `<small>${esc(r.text)}</small>` : ''}</span><span class="bill-pts">${r.delta == null ? (r.cap ? 'max ' + r.cap + '%' : '') : sign(r.delta)}</span></li>`;
     const fail = pm.status === 'fail';
     return `<ul class="bill" aria-label="Jak policzyliśmy dopasowanie">
-      ${pm.base != null ? `<li class="bill-row base"><span class="bill-ic">${A.dIcon('healthy', 18)}</span><span class="grow"><b>Ocena składu</b><small>taka sama dla wszystkich</small></span><span class="bill-pts">${pm.base}</span></li>` : ''}
+      ${pm.base != null ? `<li class="bill-row base"><span class="bill-ic">${A.dIcon('healthy', 18)}</span><span class="grow"><b>Ocena składu</b><small>${noIngr ? 'w bazie brakuje składu' : 'taka sama dla wszystkich'}</small></span><span class="bill-pts">${noIngr ? 'brak danych' : pm.base}</span></li>` : ''}
       ${watch.map(line).join('')}${excl.map(line).join('')}
       <li class="bill-sum"><span class="grow">${who ? 'Dla: ' + esc(who) : 'Dla Ciebie'}</span><b>${pm.pct == null ? '–' : pm.pct + '%'}</b></li></ul>
       ${fail ? '<p class="small bill-note">Zawiera coś, czego nie jesz, więc dopasowanie wynosi najwyżej 10%.</p>' : pm.capped && pm.capBy ? `<p class="small bill-note">Najwyżej ${pm.cap}% (${esc(pm.capBy)}).</p>` : pm.pct === 12 && pm.base != null && pm.base + pm.sum < 12 ? '<p class="small bill-note">Najmniej 12%: niżej są tylko produkty z czymś, czego nie jesz.</p>' : ''}
@@ -226,7 +226,7 @@
     parts.push(`<div class="panel stack${bpm.personal ? '' : ' general'}" id="matchBox">
       <span class="small muted" style="font-weight:800;letter-spacing:.06em">${other ? 'DLACZEGO DLA: ' + esc(fp.name.toUpperCase()) : bpm.personal ? 'DLACZEGO DLA CIEBIE' : 'OCENA OGÓLNA'}</span>
       ${other && !bpm.personal ? `<p class="small">${esc(fp.name)} nie ma jeszcze ustawień profilu, więc to ogólna ocena składu. <a href="#/profil">Ustaw</a></p>` : ''}
-      ${bpm.personal ? billHtml(bpm, other ? fp.name : '') : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
+      ${bpm.personal ? billHtml(bpm, other ? fp.name : '', A.dataGaps(prod, cur.snapshot).includes('składu')) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     parts.push('<div id="discBox"></div>');
     if (storeAskOk(prod)) parts.push(`<div class="panel stack store-ask" id="storeBox"><div class="row" style="justify-content:space-between;gap:8px"><b>Kupujesz to w:</b><span class="small muted">+2 pkt</span></div><div class="pchips">${A.myStores().map(k => `<button class="pchip" type="button" data-act="store-tag" data-k="${esc(k)}">${esc(A.storeLabel(k))}</button>`).join('')}<button class="linkbtn small" type="button" data-act="store-skip">Nie teraz</button></div><p class="small muted">Dopiszemy sklep do produktu w Open Food Facts. Pomaga innym znaleźć dobre produkty w ich sklepie.</p></div>`);
@@ -307,7 +307,9 @@
     const onlyAdditives = isFood && an.parts && an.parts.length === 1 && an.parts[0].key === 'additives';
     const note = scoreNote(prod, an);
     const s = [`<h2 style="font-size:1.3rem;margin-top:6px">Szczegóły oceny</h2>`];
-    if (!general) s.push(`<div class="card score"><div>${ring(an.score, g.color)}</div><div><span class="small muted" style="font-weight:800">OCENA SKŁADU</span><h2 style="color:${g.color}">${esc(onlyAdditives ? 'Dodatki: ' + g.label.toLowerCase() : g.label)}</h2><p>${esc(note)}</p></div></div>`);
+    const noIngr = A.dataGaps(prod, cur && cur.snapshot).includes('składu');
+    if (!general && noIngr) s.push(`<div class="card score"><div>${ring(null, '#9A9CA1')}</div><div><span class="small muted" style="font-weight:800">OCENA SKŁADU</span><h2 style="color:#5E6066">Brak danych</h2><p>W bazie brakuje składu, więc nie oceniamy dodatków ani przetworzenia. Wynik liczymy wstępnie z tego, co jest (np. wartości odżywczych).</p></div></div>`);
+    else if (!general) s.push(`<div class="card score"><div>${ring(an.score, g.color)}</div><div><span class="small muted" style="font-weight:800">OCENA SKŁADU</span><h2 style="color:${g.color}">${esc(onlyAdditives ? 'Dodatki: ' + g.label.toLowerCase() : g.label)}</h2><p>${esc(note)}</p></div></div>`);
     const why = explain(prod, an);
     if (why.length) {
       const icon = { '+': ['why-plus', '+'], '-': ['why-minus', '−'], 'i': ['why-info', 'i'] };

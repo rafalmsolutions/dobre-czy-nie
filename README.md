@@ -19,9 +19,10 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 ## Poprawki po teście konsumenckim (28.10.2026, wersja 2.9.0)
 - Skaner: paski porównania i nagród chowają się (body.scanning), więc nie zasłaniają wpisywania kodu.
 - Pasek „Nowa karta / odznaka” po 4 s (albo przy przewijaniu) zwija się do małego przycisku „Odbierz” z prawej.
-- Niepełne dane (brak składu albo wartości odżywczych): przy wyniku „Wstępnie: …” i ramka „Dane niepełne”; w porównaniu „Pełniejsze dane” zamiast „Lepszy wybór”, z dopiskiem, czego brakuje drugiemu produktowi (A.dataGaps).
+- Niepełne dane (brak składu albo wartości odżywczych, A.dataGaps): przy wyniku „Wstępnie: …” i ramka „Wynik wstępny”; „Ocena składu: brak danych” zamiast liczby (rachunek, szczegóły, porównanie); „wynik wstępny” w historii i na kartach porównania; w porównaniu „X ma pełniejsze dane” zamiast „Lepszy wybór”, bez procentu w nagłówku.
+- Gdy porównanie jest aktywne, przycisk nagrody chowa się (karta czeka w Kolekcji), a pod paskiem porównania jest zarezerwowane miejsce.
 - Ekran „nie znamy”: „Szybko: oceń skład z etykiety” zaraz pod sprawdzeniem kodu; nagroda odkrywcy w jednym krótkim panelu.
-- Tryb zakupowy (Profil → Ustawienia, settings.shopMode): bez punktów na ekranie, kart, gratulacji, karty postępów i „Zgadnij”; karty i odznaki zbierają się w tle.
+- „Ukryj punkty i nagrody” (Profil → Ustawienia, settings.shopMode): bez punktów na ekranie, kart, gratulacji, karty postępów i „Zgadnij”; karty i odznaki zbierają się w tle.
 - Zamienniki i podpowiedź dla rodziny tylko o tym samym zastosowaniu: wspólna kategoria węższa niż ogólne grupy (A.sameUse), np. krem kakaowy nie dostaje powideł.
 - Test: `tests/e2e-d-raport.mjs`.
 

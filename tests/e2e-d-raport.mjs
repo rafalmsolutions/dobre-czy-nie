@@ -17,21 +17,33 @@ const go = async h => { await page.goto('http://localhost:8790/app/index.html' +
 const shot = async n => { if (SH) await page.screenshot({ path: `${SH}/${n}.png` }); };
 
 // 3. Wynik przy brakach danych
-await go('#/p/' + C.missing2); await shot('po-03-produkt');
-ok(/Dane niepełne/.test(await page.innerText('.d-hside')) && /składu/.test(await page.innerText('.d-gaps')), 'brak składu: „Dane niepełne” przy wyniku');
+await go('#/p/' + C.missing2); await shot('po-03-produkt'); if (SH) await page.screenshot({ path: SH + '/po-03-pelny.png', fullPage: true });
+ok(/Wynik wstępny/.test(await page.innerText('.d-hside')) && /Brakuje składu produktu/.test(await page.innerText('.d-gaps')), 'brak składu: „Wynik wstępny” przy wyniku');
+const bill = await page.innerText('.bill').catch(() => ''), det = await page.innerText('.card.score').catch(() => '');
+ok(/Ocena składu[\s\S]*brak danych/.test(bill) && !/\b100\b/.test(bill) && /Brak danych/.test(det), 'brak składu: „Ocena składu: brak danych” zamiast 100 (' + bill.replace(/\s+/g, ' ').slice(0, 80) + ')');
 ok(/^Wstępnie:/.test(await page.innerText('#matchLabel').catch(() => '')), 'etykieta wyniku: „Wstępnie: …”');
 await go('#/p/' + C.milk);
 ok(await page.locator('.d-gaps').count() === 0, 'pełne dane: bez ostrzeżenia');
 // porównanie
 await page.evaluate(([a, b2]) => { App.cmpClear(); App.cmpAdd(a); App.cmpAdd(b2); }, await page.evaluate(([x, y]) => [JSON.parse(localStorage.getItem('dcn-cache'))[x].p, JSON.parse(localStorage.getItem('dcn-cache'))[y].p], [C.milk, C.missing2]));
-await go('#/porownaj'); await shot('po-03-porownanie');
+await go('#/porownaj'); await shot('po-03-porownanie'); if (SH) await page.screenshot({ path: SH + '/po-03-por-pelny.png', fullPage: true });
 const ctext = await page.innerText('#scr-compare');
-ok(/Pełniejsze dane/.test(ctext) && !/Lepszy wybór/.test(ctext) && /dane niepełne: brak składu/.test(ctext), 'porównanie: „Pełniejsze dane” zamiast „Lepszy wybór”');
+ok(/ma pełniejsze dane/.test(ctext) && !/Lepszy wybór/.test(ctext) && /wynik wstępny: brak składu/.test(ctext) && /nie możemy go w pełni ocenić/.test(ctext) && !/pełniejsze dane \(\d+%\)/.test(ctext), 'porównanie: „ma pełniejsze dane”, bez procentu w nagłówku');
+ok(/Ocena składu[\s\S]{0,80}brak danych/.test(ctext), 'porównanie: ocena składu „brak danych”');
+// Pasek porównania: ostatnie informacje da się przewinąć ponad niego, a przycisk nagrody się chowa
+await go('#/p/' + C.milk);
+await page.evaluate(() => { App.celebrate([{ type: 'level', name: 'Test', level: 2 }]); App.cmpBar(); }); await page.waitForTimeout(300);
+await page.evaluate(() => scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(400);
+const geo = await page.evaluate(() => { const bar = document.getElementById('cmpBar').getBoundingClientRect(), rw = document.getElementById('rwBar'); const els = [...document.querySelectorAll('#scr-product .wrap > *')].filter(e => e.offsetHeight); const last = els[els.length - 1].getBoundingClientRect(); return [last.bottom, bar.top, getComputedStyle(rw).display]; });
+ok(geo[0] <= geo[1] + 1 && geo[2] === 'none', `porównanie aktywne: treść kończy się nad paskiem, przycisk nagrody schowany (${geo.map(v => typeof v === 'number' ? v | 0 : v)})`);
+await page.evaluate(() => { App.dropCelebrations(); App.rewardBar(); });
+await go('#/');
+ok(/wynik wstępny/.test(await page.innerText('#scr-home')), 'historia: „wynik wstępny” przy produkcie bez składu');
 // 1. Skaner bez pasków (porównanie aktywne)
 await go('#/p/' + C.missing2);
 await page.evaluate(() => App.openScanner()); await page.waitForTimeout(500);
 ok(await page.evaluate(() => { const r = document.getElementById('cmpBar'); return r.hidden || getComputedStyle(r).display === 'none'; }), 'skaner: pasek porównania schowany');
-await page.evaluate(() => App.closeScanner(true)); await page.evaluate(() => App.cmpClear());
+await page.evaluate(() => App.closeScanner(true)); await page.evaluate(() => { App.cmpClear(); App.cmpBar(); });
 // 2. Pasek nagrody zwija się
 await page.evaluate(() => { App.pendingCard = null; App.celebrate([{ type: 'level', name: 'Test', level: 2 }]); });
 await page.waitForTimeout(300);

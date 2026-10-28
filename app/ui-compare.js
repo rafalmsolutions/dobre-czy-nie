@@ -101,7 +101,7 @@
     if (!keys.includes('protein')) rows.push({ t: 'Białko', who: '', dir: 1, cells: items.map(x => { const v = (x.p.nutriments || {}).proteins; return { v: v == null ? null : v, t: v == null ? '–' : fmt(v) + ' g' }; }) });
     rows.push({ t: 'Dodatki E', who: '', dir: -1, cells: items.map(x => { const k = x.an && x.an.additivesKnown, n = ((x.an && x.an.additives) || []).length; return { v: k ? n : null, t: k ? String(n) : '–' }; }) });
     rows.push({ t: 'Przetworzenie', who: 'NOVA 1–4', dir: -1, cells: items.map(x => { const n = Number(x.p.nova); return { v: n >= 1 && n <= 4 ? n : null, t: n >= 1 && n <= 4 ? 'NOVA ' + n : '–' }; }) });
-    rows.push({ t: 'Ocena składu', who: 'taka sama dla wszystkich', dir: 1, cells: items.map(x => ({ v: x.an.score == null ? null : x.an.score, t: x.an.score == null ? '–' : String(x.an.score) })) });
+    rows.push({ t: 'Ocena składu', who: 'taka sama dla wszystkich', dir: 1, cells: items.map(x => { const ni = A.dataGaps && A.dataGaps(x.p).includes('składu'); return { v: ni || x.an.score == null ? null : x.an.score, t: ni ? 'brak danych' : x.an.score == null ? '–' : String(x.an.score) }; }) });
     // Lepsza wartość: zielona kropka; wyraźnie gorsza (ponad 1,5 raza albo „zawiera”): czerwony tekst.
     rows.forEach(r => {
       const vals = r.cells.map(c => c.v).filter(v => v != null);
@@ -145,14 +145,15 @@
         ${img ? `<span class="cmp-plate${ns || pct == null ? '' : ' has-score'}"${ns || pct == null ? '' : ` style="--sc:${c};--pdeg:${Math.max(4, Math.round(pct * 3.6))}deg"`}><img src="${esc(img)}" alt=""></span>` : `<span class="cmp-plate noimg">${art('dept_' + departmentFor(x.p), 54)}</span>`}
         ${ns ? '' : `<span class="cmp-badge"${pct != null ? A.pctStyle(pct) : ''}><b>${x.bad ? '✕' : pct == null ? '?' : pct + '%'}</b><span>${esc(whoLbl)}</span></span>`}
         <span class="cmp-name">${A.splitName(x.p.name)}</span><span class="cmp-meta">${esc([x.p.brand, x.p.quantity].filter(Boolean).join(' · '))}</span>
-        <span class="cmp-lbl"${x.bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(lbl(x))}</span>${x.gaps.length && !x.bad ? `<span class="cmp-gap">dane niepełne: brak ${esc(x.gaps.join(' i '))}</span>` : ''}</a>`; };
+        <span class="cmp-lbl"${x.bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(lbl(x))}</span>${x.gaps.length && !x.bad ? `<span class="cmp-gap">wynik wstępny: brak ${esc(x.gaps.join(' i '))}</span>` : ''}</a>`; };
     const nm = x => x.p.name;
     let vh, vs, vtone;
     if (allBad) { vh = 'Żaden nie pasuje'; vs = items.map(x => nm(x) + ': ' + lbl(x)).join(' · '); vtone = 'bad'; }
     else if (B.m.pct == null) { vh = 'Za mało danych, żeby wybrać'; vs = items.map(x => nm(x) + ': ' + lbl(x)).join(' · ') + '. Sprawdź etykiety.'; vtone = 'tie'; }
     else if (tie) { vh = 'Podobnie: ' + (ns ? '' : `${B.m.pct}% i ${S2.m.pct}%`); vs = 'Różnica poniżej 5 punktów. Wybierz, co bardziej lubicie.'; vtone = 'tie'; }
-    else if (unsure) { vh = 'Pełniejsze dane: ' + nm(B) + (ns ? '' : ` (${B.m.pct}%)`);
-      vs = items.filter((x, i) => i !== bi && x.gaps.length && !x.bad).map(x => `${nm(x)}: w bazie brakuje ${x.gaps.join(' i ')}`).join(' · ') + '. Nie wiemy, czy jest gorszy – sprawdź etykietę.'; vtone = 'tie'; }
+    else if (unsure) { vh = nm(B) + ' ma pełniejsze dane';
+      const oth = items.filter((x, i) => i !== bi && x.gaps.length && !x.bad);
+      vs = (oth.length === 1 ? `${nm(oth[0])}: nie możemy go w pełni ocenić – w bazie brakuje ${oth[0].gaps.join(' i ')}.` : oth.map(x => `${nm(x)}: brakuje ${x.gaps.join(' i ')}`).join(' · ') + '.') + ' Sprawdź etykietę.'; vtone = 'tie'; }
     else { vh = 'Lepszy wybór' + (!fam ? ' dla Ciebie' : who === 'all' ? (fam.length === 2 ? ' dla Was obojga' : ' dla wszystkich') : who === 'me' ? ' dla Ciebie' : ' · ' + whoLbl) + ': ' + nm(B);
       vs = items.filter((x, i) => i !== bi).map(x => nm(x) + ': ' + (x.bad || ns || x.m.pct == null ? lbl(x).replace(/^./, c => c.toLowerCase()) : x.m.pct + '%')).join(' · '); vtone = 'ok'; }
     const vc = vtone === 'ok' && B.m.pct != null ? A.scoreColor(B.m.pct) : null;
