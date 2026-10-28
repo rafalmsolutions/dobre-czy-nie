@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Odświeżanie po uzupełnieniu i aktualna lista misji (28.10.2026, wersja 2.8.3)
+- „Uzupełnij dane”: lista z data/uzupelnij.json powstaje z indeksu wyszukiwarki OFF, który bywa nieaktualny. Przed pokazaniem sprawdzamy widoczne pozycje przez /details; produkty, które mają już skład i wartości, chowamy (d-fill-ok), a brakującą część poprawiamy.
+- Po zapisie składu lub wartości produkt jest pobierany z bazy jeszcze raz (po 2,5 s i 9 s), bo dopiero baza rozpoznaje ze składu alergeny, dodatki i dietę. Wynik i kółka domowników odświeżają się bez przeładowania strony.
+- Test: `tests/e2e-d-uzup2.mjs`.
+
 ## Dyktowanie z pauzami i bez przecinków (23.10.2026, wersja 2.8.2)
 - Po teście: słuchanie wyłączało się po pierwszej pauzie, a „pomidory ziemniaki banany” (rozpoznawanie mowy nie wstawia przecinków) było jedną pozycją.
 - Słuchanie ciągłe (continuous): każdy fragment po pauzie od razu trafia na półkę. Gdy przeglądarka sama zakończy rozpoznawanie, uruchamiamy je ponownie. Koniec: stuknięcie mikrofonu, 8 s ciszy (A.dictIdleMs) albo 2 minuty; przejście na inny ekran też kończy. Android potrafi powtarzać poprzednie słowa w kolejnym wyniku – takie powtórzenia pomijamy.

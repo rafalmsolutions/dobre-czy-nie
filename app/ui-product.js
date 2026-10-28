@@ -626,6 +626,12 @@
     if (msg) msg.textContent = '';
     A.toast('Zdjęcie wysłane. +10 pkt');
   };
+  function refreshAfterSave(code) {
+    [2500, 9000].forEach(ms => setTimeout(async () => {
+      if (!cur || !cur.prod || cur.prod.code !== code) return;
+      try { const p = await A.lookup(code); if (p && cur && cur.prod && cur.prod.code === code) { if (A.putDetail) A.putDetail(p); upgrade(p); } } catch (e) { }
+    }, ms));
+  }
   A.startComplete = () => {
     if (!cur || !cur.prod) return;
     const p = cur.prod, el = A.$('completeBox'); if (!el) return;
@@ -638,6 +644,9 @@
       if (local.nutriments && !nmKnown) p.nutriments = Object.assign({}, local.nutriments);
       cur.an = analyze(p); cur.pm = personalMatch(p, cur.an, A.profile); A.remember(p, cur.an, cur.pm);
       render();
+      // Baza po zapisie sama rozpoznaje alergeny, dodatki i przetworzenie ze składu. Pobieramy produkt jeszcze raz,
+      // żeby kółka domowników i wynik od razu uwzględniły te dane (bez odświeżania strony).
+      if (saved && saved.length) refreshAfterSave(p.code);
       A.albumAdd(p, { touch: true }).catch(() => null).then(res => {
         if (res && res.revived) { A.toast('Karta ożyła! Dziękujemy za uzupełnienie danych.'); A.sound('badge'); }
         else if (A.fillDone && A.fillFrom === p.code) { A.fillDone(p.code, saved); A.toast(saved.length ? 'Dziękujemy! Produkt uzupełniony.' : 'Pominięty. Wróci do listy później.', '<a href="#/uzupelnij">Następny produkt</a>'); }

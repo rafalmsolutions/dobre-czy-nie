@@ -353,7 +353,8 @@
   function drawFill(d) {
     const box = A.$('fillList'); if (!box) return;
     const f = fillState(), names = Array.isArray(d.names) ? d.names : [];
-    const todo = d.items.filter(x => !f.done.includes(x.c)).sort((a, b) => (f.skip.includes(a.c) - f.skip.includes(b.c)));
+    const okSet = new Set(A.store.get('d-fill-ok', []) || []);
+    const todo = d.items.filter(x => !f.done.includes(x.c) && !okSet.has(x.c)).sort((a, b) => (f.skip.includes(a.c) - f.skip.includes(b.c)));
     const ntodo = names.filter(x => !f.done.includes(x.c) && !f.skip.includes(x.c));
     const tabs = `<div class="chips fill-tabs" role="tablist"><button class="cat-tab" type="button" role="tab" data-fill="tab-data" aria-pressed="${fillTab === 'data'}">Skład i wartości <span class="muted">${todo.length}</span></button><button class="cat-tab" type="button" role="tab" data-fill="tab-names" aria-pressed="${fillTab === 'names'}">Polskie nazwy <span class="muted">${ntodo.length}</span></button></div>`;
     const done = f.done.length ? `<p class="small muted" style="font-weight:800">UZUPEŁNIŁEŚ: ${f.done.length}</p>` : '';
@@ -375,6 +376,33 @@
       ${ntodo.length ? '' : '<div class="empty">Na tej liście nie ma już produktów bez polskiej nazwy. Dziękujemy!</div>'}`;
     if (cur) { const inp = A.$('fillNameIn'); setTimeout(() => { try { inp.focus(); A.$('fillName').scrollIntoView({ block: 'nearest' }); } catch (e) { } }, 30); }
   }
+  /* Lista misji powstaje raz w tygodniu z wyszukiwarki Open Food Facts, której indeks bywa nieaktualny: produkt mógł już dostać
+     skład i wartości. Przed pokazaniem sprawdzamy widoczne pozycje w bazie (pośrednik /details) i chowamy te, którym nic nie brakuje
+     (d-fill-ok, osobno od „Uzupełniłeś”). Pozycji, której brakuje już tylko jednej części, zmieniamy opis. */
+  let verified = new Set();
+  async function verifyFill(d) {
+    if (!proxy()) return false;
+    const f = fillState(), okSet = new Set(A.store.get('d-fill-ok', []) || []);
+    const codes = d.items.filter(x => !f.done.includes(x.c) && !okSet.has(x.c) && !verified.has(x.c)).slice(0, 40).map(x => x.c);
+    if (!codes.length) return false;
+    let j = null;
+    try { const r = await fetch(`${proxy()}/details?codes=${codes.join(',')}`); j = r.ok ? await r.json() : null; } catch (e) { j = null; }
+    if (!j || !j.products) return false;
+    let changed = false;
+    codes.forEach(c => {
+      const p = j.products[c]; if (p === undefined) return; verified.add(c);
+      if (!p) return;
+      const x = d.items.find(i => i.c === c);
+      const hasS = !!String(p.ingredients_text_pl || p.ingredients_text || '').trim();
+      const hasW = Object.keys(p.nutriments || {}).some(k => k.endsWith('_100g') && p.nutriments[k] != null);
+      const k = x.k.split('').filter(ch => (ch === 's' && !hasS) || (ch === 'w' && !hasW)).join('');
+      if (k === x.k) return;
+      changed = true;
+      if (k) x.k = k; else okSet.add(c);
+    });
+    if (changed) A.store.set('d-fill-ok', [...okSet].slice(-1000));
+    return changed;
+  }
   A.route('fill', async () => {
     const el = A.$('scr-fill');
     el.innerHTML = `<div class="wrap"><div class="topbar"><a class="btn btn-white iconbtn" href="#/postepy" aria-label="Wróć"><svg><use href="#i-back"/></svg></a><h1 class="grow" style="font-size:1.25rem">Uzupełnij dane</h1>${A.hudPill()}</div>
@@ -383,6 +411,7 @@
     if (!A.$('fillList') || A.current.screen !== 'fill') return;
     if (!d || !Array.isArray(d.items)) { A.$('fillList').innerHTML = '<div class="empty">Nie udało się wczytać listy. Sprawdź internet i spróbuj ponownie.</div>'; return; }
     drawFill(d);
+    verifyFill(d).then(ch => { if (ch && A.$('fillList') && A.current.screen === 'fill') drawFill(d); });
     el.onclick = async e => {
       const b = e.target.closest('[data-fill]'); if (!b || b.disabled) return;
       const act = b.dataset.fill, code = b.dataset.code;
