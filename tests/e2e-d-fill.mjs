@@ -22,8 +22,8 @@ const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => err
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1');
   localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); });
 await page.goto('http://localhost:8790/app/index.html#/album'); await page.waitForTimeout(900);
-ok(await page.locator('#scr-album .fill-banner[href="#/uzupelnij"]').count() === 1, 'Kolekcja: wejście „Uzupełnij dane”');
-await page.click('#scr-album .fill-banner'); await page.waitForTimeout(800);
+ok(await page.locator('#scr-album a[href="#/uzupelnij"]').count() === 1, 'Kolekcja: wejście „Uzupełnij dane”');
+await page.click('#scr-album a[href="#/uzupelnij"]'); await page.waitForTimeout(800);
 const items = await page.$$eval('#scr-fill .fill-item', l => l.map(x => x.innerText.replace(/\s+/g, ' ')));
 ok(items.length === 2 && /Olej testowy/.test(items[0]) && /skład i wartości/.test(items[0]) && /\+20/.test(items[0]), 'lista: najpopularniejsze, co brakuje i ile punktów ' + items[0]);
 await page.click('#scr-fill .fill-item >> nth=0'); await page.waitForTimeout(2500);

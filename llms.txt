@@ -23,7 +23,7 @@
 - Skanowanie kodu kreskowego aparatem albo wpisanie cyfr.
 - Porównanie 2–3 produktów obok siebie, z wynikiem każdej osoby.
 - Wyszukiwanie produktów po nazwie i marce, najlepiej pasujące na górze.
-- Półki, czyli listy zakupów ułożone według działów sklepu, z wynikiem dla rodziny.
+- Zakupy: listy zakupów ułożone według działów sklepu, z wynikiem dla rodziny przy każdym produkcie.
 - Ulubione produkty (serce przy produkcie) i „Szybko dodaj”: ulubione i często kupowane rzeczy trafiają na listę jednym stuknięciem.
 - Dyktowanie listy zakupów („mleko, chleb i dwa jogurty” → trzy pozycje), podpowiedzi podczas pisania, a zeskanowany w sklepie produkt sam zastępuje ogólną pozycję z listy.
 - Album z kategoriami produktów i podpowiedziami, jak sprawdzić etykietę; punkty, poziomy, odznaki i wyzwania tygodnia.

@@ -16,10 +16,11 @@ await page.addInitScript(() => {
 const closeCel = async () => { for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) return; await page.click('#celebrate [data-act=cel-ok]'); await page.waitForTimeout(120); } };
 const sw = id => page.locator(`#scr-home [data-act=shop-on][data-id=${id}]`);
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(900); await closeCel();
-ok(await page.locator('#scr-home .who-p').count() === 3, 'ekran główny: przełącznik przy każdej osobie (3)');
-ok((await page.$$eval('#scr-home .who-p', l => l.map(x => x.getAttribute('aria-checked')))).every(x => x === 'true'), 'na start wszyscy włączeni');
+await page.click('#scr-home [data-act=who-sheet]'); await page.waitForTimeout(300);
+ok(await page.locator('#scr-home .who-ck').count() === 3, 'panel „Dla kogo kupujesz?”: każda osoba (3)');
+ok((await page.$$eval('#scr-home .who-ck', l => l.map(x => x.getAttribute('aria-checked')))).every(x => x === 'true'), 'na start wszyscy włączeni');
 await sw('f2').click(); await page.waitForTimeout(300);
-ok(await sw('f2').getAttribute('aria-checked') === 'false' && await page.locator('#scr-home .who-p:not(.on)').count() === 1, 'wyłączenie Oli: przełącznik i wyszarzone kółko');
+ok(await sw('f2').getAttribute('aria-checked') === 'false' && /Wybrane: 2/.test(await page.innerText('#scr-home .seg')), 'wyłączenie Oli: odznaczona, przełącznik „Wybrane: 2”');
 ok((await page.evaluate(() => JSON.parse(localStorage.getItem('dcn-d-shopoff')) || [])).join() === 'f2', 'wybór zapamiętany');
 ok(await page.evaluate(() => document.activeElement && document.activeElement.dataset.id) === 'f2', 'fokus zostaje na przełączniku');
 
@@ -38,7 +39,7 @@ await page.goto('http://localhost:8790/app/index.html#/p/' + C.nutella); await p
 const ans = await page.innerText('#scr-product .fam-ans').catch(() => '');
 circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id));
 ok(/Nie dla: Kuba/.test(ans) && circ.join() === 'f1', 'tylko Kuba: wynik dla Kuby, jedno kółko (' + ans.replace(/\n/g, ' | ') + ')');
-ok((await page.innerText('#matchBox')).includes('DLACZEGO DLA: KUBA'), 'tylko Kuba: rachunek dla Kuby');
+ok((await page.innerText('#matchBox')).includes('Dlaczego dla: Kuba'), 'tylko Kuba: rachunek dla Kuby');
 ok(/Ciebie/.test(await page.innerText('#famOff')) && /Ola/.test(await page.innerText('#famOff')), 'nie liczymy: Ciebie i Oli');
 const pd = await page.$eval('#scr-product .d-plate', e => getComputedStyle(e).getPropertyValue('--pdeg').trim()).catch(() => '');
 ok(/deg$/.test(pd), 'obręcz = wynik Kuby (' + pd + ')');
@@ -54,7 +55,7 @@ ok(await page.locator('#scr-product .fam-circles .fam-c').count() === 3 && await
 // „Ostatnio sprawdzone” liczy się dla włączonych osób, tak samo jak kwadrat i obręcz na ekranie produktu.
 const famPct = async () => page.$eval('#scr-product .fam-verdict .d-badge b', e => parseInt(e.textContent)).catch(() => null);
 const myPct = async () => page.$eval('#scr-product .d-verdict .d-badge b', e => parseInt(e.textContent)).catch(() => null);
-const hist = async () => { await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(500); return page.$$eval('#scr-home .list .item', it => { const x = it.find(e => /Krem orzechowy/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; }); };
+const hist = async () => { await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(500); return page.$$eval('#scr-home .recent .rc', it => { const x = it.find(e => /Krem orzechowy/.test(e.textContent)); return x ? parseInt(x.querySelector('.pct').textContent) : null; }); };
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.nutella); await page.waitForTimeout(1200); await closeCel();
 const fAll = await famPct(), hAll = await hist();
 ok(fAll != null && fAll <= 10 && hAll === fAll, `cała rodzina (Kuba: orzechy): kwadrat ${fAll}% = „Ostatnio sprawdzone” ${hAll}%`);

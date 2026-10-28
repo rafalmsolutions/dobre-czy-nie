@@ -57,15 +57,15 @@ await go('#/p/' + C.missing); await shot('po-04-nie-znamy');
 const order = await page.evaluate(() => { const a = document.getElementById('ingDetails'), c = document.getElementById('addCta'); return a && c ? !!(a.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING) : false; });
 ok(order && /Szybko/.test(await page.innerText('#ingDetails summary')), 'nie znamy: „Szybko: oceń skład” przed dodawaniem do bazy');
 // 5. Tryb zakupowy
-await go('#/profil');
-await page.check('#setShop'); await page.click('#profileForm [type=submit]'); await page.waitForTimeout(400);
+await go('#/profil/ustawienia');
+await page.check('#setShop'); await page.waitForTimeout(400);
 ok(await page.evaluate(() => App.quiet()), 'tryb zakupowy zapisany');
 await go('#/p/' + C.milk);
 ok(await page.locator('#scr-product .pill [data-hud=points]').count() === 0, 'tryb zakupowy: bez licznika punktów');
 await page.evaluate(() => App.celebrate([{ type: 'level', name: 'Test', level: 3 }])); await page.waitForTimeout(300);
 ok(await page.evaluate(() => document.getElementById('rwBar').hidden && document.getElementById('celebrate').hidden), 'tryb zakupowy: bez gratulacji i paska nagród');
 await go('#/'); await shot('po-05-start');
-ok(await page.locator('.d-prog').count() === 0, 'tryb zakupowy: bez karty postępów na starcie');
+ok(await page.locator('.d-prog').count() === 0, 'start: bez karty postępów (jest w Kartach)');
 // 6. Zamienniki o tym samym zastosowaniu
 const su = await page.evaluate(() => [
   App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:spreads', 'en:sweet-spreads', 'en:fruit-preserves', 'en:plum-butters'] }),

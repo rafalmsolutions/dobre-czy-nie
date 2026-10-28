@@ -94,7 +94,7 @@
     return `<${tip ? 'button type="button" data-act="slot-tip" data-k="' + esc(key) + '" data-slot="' + esc(s.id) + '"' : 'div'} class="ap-empty t-${esc(s.tier)}${s.secret ? ' secret' : ''}"${tip ? ' aria-label="' + esc(s.label) + ': jak to sprawdzić na etykiecie"' : ''}><span class="ap-top"><span class="ap-chip">${esc(A.RARITY[s.tier].label)}</span><span class="ap-num">#${String(i + 1).padStart(2, '0')}</span></span>
       <span class="ap-q">?</span><b>${s.secret ? 'Tajne miejsce' : esc(s.label)}</b><small>${s.secret ? (hintOn ? 'Podpowiedź: chodzi o ' + esc(s.h || 'skład') : `podpowiedź po ${5 - seen} ${plural(5 - seen, 'skanie', 'skanach', 'skanach')} z tej strony`) : esc(A.oddsText(s))}</small>${tip ? '<span class="ap-tipq" aria-hidden="true">jak sprawdzić?</span>' : ''}</${tip ? 'button' : 'div'}>`;
   };
-  A.missingText = (key, max = 3) => A.missingSlots(key).filter(s => !s.secret && !s.id.startsWith('any')).sort((a, b) => b.share - a.share).slice(0, max).map(s => `„${s.label}”`).join(', ');
+  A.missingText = (key, max = 3) => [...new Set(A.missingSlots(key).filter(s => !s.secret && !s.id.startsWith('any')).sort((a, b) => b.share - a.share).map(s => s.label))].slice(0, max).map(l => `„${l}”`).join(', ');
 
   /* ---------- Odsłonięcie karty po skanie ---------- */
   let rv = null; // { res, flipped, rewarded, step }
@@ -227,31 +227,41 @@
   };
 
   /* ---------- Kolekcja: karty (album) i odznaki w jednym miejscu, przełącznik na górze ---------- */
+  /* 3.0: wspólny nagłówek Kart: tytuł, punkty, jedna linia poziomu z paskiem i przełącznik Album / Odznaki. */
   A.collTabs = on => {
-    const achs = ((A.cfg.achievements && A.cfg.achievements.achievements) || []), got = achs.filter(a => A.game.unlocked && A.game.unlocked[a.id]).length;
-    const n = A.albumStats().cards;
-    // „Uzupełnij dane”: popularne produkty do przepisania ze zdjęć (bez produktu w ręku), punkty za każdą część.
-    const fill = A.CFG.offProxyUrl ? `<a class="fill-banner" href="#/uzupelnij"><span class="fill-ic" aria-hidden="true"><svg width="22" height="22"><use href="#i-photo"/></svg></span><span class="grow"><b>Uzupełnij dane, zbieraj punkty</b><span>Popularne produkty czekają na przepisanie składu, wartości albo polskiej nazwy ze zdjęcia. Nie trzeba ich mieć w domu.</span></span><span aria-hidden="true">›</span></a>` : '';
-    return `<nav class="coll-tabs" aria-label="Kolekcja"><a href="#/album"${on === 'cards' ? ' aria-current="page"' : ''}>Karty <span>${n}</span></a><a href="#/postepy"${on === 'badges' ? ' aria-current="page"' : ''}>Odznaki i poziom <span>${got}</span></a></nav>${fill}`;
+    const lv = Game.levelFor(A.cfg, A.game.points), nextPts = lv.next ? lv.next.minPoints : null;
+    const pct = nextPts ? Math.round((A.game.points - lv.minPoints) / (nextPts - lv.minPoints) * 100) : 100;
+    return `<div class="d-head"><h1 class="kt-h">Karty</h1>${A.hudPill()}</div>
+      <a class="kt-lv" href="#/postepy" aria-label="Poziom ${lv.level}, ${esc(lv.name)}. ${nextPts ? (nextPts - A.game.points) + ' punktów do następnego' : 'najwyższy poziom'}"><b>Poziom ${lv.level} · ${esc(lv.name)}</b><span class="xp"><i style="width:${pct}%"></i></span><span>${nextPts ? `${nextPts - A.game.points} pkt do ${lv.level + 1}` : 'najwyższy'}</span></a>
+      <nav class="seg two" aria-label="Karty"><a class="seg-b${on === 'cards' ? ' on' : ''}" href="#/album"${on === 'cards' ? ' aria-current="page"' : ''}>Album</a><a class="seg-b${on === 'badges' ? ' on' : ''}" href="#/postepy"${on === 'badges' ? ' aria-current="page"' : ''}>Odznaki</a></nav>`;
   };
   /* ---------- Album ---------- */
   A.route('album', () => {
-    const st = A.albumStats(), wk = A.weekCard();
+    const st = A.albumStats(), wk = A.weekCard(), ch = Game.challengeProgress(A.game, A.cfg, new Date());
     const pages = A.albumPages().map(p => ({ ...p, n: A.slotsOf(p.key) ? A.filledCount(p.key) : A.cardsOf(p.key).length, full: !!A.album.done[p.key] }));
     pages.sort((a, b) => (b.n > 0) - (a.n > 0) || b.full - a.full || b.n - a.n || !!A.gallery(b.key) - !!A.gallery(a.key));
-    const extra = ['other', 'cosmetics'].map(k => ({ ...A.pageInfo(k), n: A.cardsOf(k).length })).filter(p => p.n);
+    const extra = ['other', 'cosmetics'].map(k => ({ ...A.pageInfo(k), n: A.cardsOf(k).length, extra: true })).filter(p => p.n);
     const newest = Object.values(A.album.cards).sort((a, b) => b.t - a.t)[0];
-    const near = pages.filter(p => !p.full && p.n >= 7 && A.slotsOf(p.key)).slice(0, 2);
-    A.$('scr-album').innerHTML = `<div class="wrap"><span class="d-arc d-arc-album" aria-hidden="true"></span>
-      <div class="d-head"><h1 class="al-h"><span class="w-light">Twoja</span> <span class="w-bold">kolekcja</span></h1>${A.hudPill()}</div>
+    const started = pages.filter(p => p.n > 0).concat(extra), todo = pages.filter(p => !p.n);
+    const plate = (p, cls) => p.img ? `<span class="${cls}"><img src="${esc(p.img)}" alt="" loading="lazy"></span>` : `<span class="${cls}">${A.dIcon(p.key === 'cosmetics' ? 'healthy' : 'processing', 30)}</span>`;
+    const pageCard = p => { const hunt = A.isHuntPage(p.key), miss = hunt && !p.full ? A.missingText(p.key, 2) : '';
+      return `<a class="kt-page${p.full ? ' full' : ''}" href="#/album/${esc(p.key)}">${plate(p, 'kt-plate')}<b>${esc(p.label)}</b>${hunt ? `<span class="xp green"><i style="width:${Math.min(100, p.n * 10)}%"></i></span><span class="kt-n">${p.full ? 'pełna strona ★' : p.n + ' z ' + A.ALBUM_SLOTS + ' miejsc'}</span>${miss ? `<span class="kt-miss">brakuje: ${esc(miss.replace(/[„”]/g, ''))}</span>` : ''}` : `<span class="kt-n">${p.n} ${plural(p.n, 'karta', 'karty', 'kart')}</span>`}${newest && newest.k === p.key && Date.now() - newest.t < 864e5 ? '<span class="al-new">NOWA</span>' : ''}</a>`; };
+    const small = p => `<a class="kt-todo" href="#/album/${esc(p.key)}">${plate(p, 'kt-mini')}<span>${esc(p.label)}</span></a>`;
+    const statLink = (h, n, w) => `<a href="#/album/${h}"><b>${n}</b> ${w}</a>`;
+    const stats = [statLink('karty', st.cards, plural(st.cards, 'karta', 'karty', 'kart')), statLink('blyszczace', st.holo, plural(st.holo, 'błyszcząca', 'błyszczące', 'błyszczących')), st.legend ? statLink('legendarne', st.legend, plural(st.legend, 'legendarna', 'legendarne', 'legendarnych')) : '', statLink('pelne', st.pages, plural(st.pages, 'pełna strona', 'pełne strony', 'pełnych stron'))].filter(Boolean).join('<span aria-hidden="true">·</span>');
+    const more = [
+      ch ? `<a class="nav-row" href="#/postepy"><span class="grow"><b>Wyzwanie tygodnia: ${esc(ch.title)}</b><small>${ch.done ? 'ukończone ✓' : `${ch.have} z ${ch.target} · zostało ${ch.daysLeft} ${plural(ch.daysLeft, 'dzień', 'dni', 'dni')}`}</small></span>${ch.reward && ch.reward.points && !ch.done ? `<span class="kt-pts">+${ch.reward.points}</span>` : ''}</a>` : '',
+      A.CFG.offProxyUrl ? `<a class="nav-row" href="#/uzupelnij"><span class="grow"><b>Uzupełnij dane produktów</b><small>Przepisz skład ze zdjęcia, bez wychodzenia z domu</small></span><span class="kt-pts">+10</span></a>` : '',
+      A.discOn && A.discOn() ? (() => { const its = Object.values(A.disc.items); return `<a class="nav-row" href="#/odkrycia"><span class="grow"><b>Dodaj brakujący produkt</b><small>${its.length ? `Twoje odkrycia: ${its.length}` : 'Złota karta i odznaka Odkrywca'}</small></span><span class="kt-pts">+50</span></a>`; })() : ''
+    ].join('');
+    A.$('scr-album').innerHTML = `<div class="wrap kt"><span class="d-arc d-arc-album" aria-hidden="true"></span>
       ${A.collTabs('cards')}
-      <nav class="al-stats" aria-label="Twoje karty"><a href="#/album/karty"><b>${st.cards}</b><span>${plural(st.cards, 'karta', 'karty', 'kart')}</span></a><a href="#/album/pelne"><b>${st.pages}</b><span>pełne strony</span></a><a class="legend" href="#/album/legendarne"><b>${st.legend}</b><span>legendarne</span></a><a class="holo" href="#/album/blyszczace"><b>${st.holo} ✦</b><span>błyszczące</span></a></nav>
-      <a class="al-week${wk.done ? ' done' : ''}" href="#/album/${esc(wk.key)}">${wk.img ? `<img src="${esc(wk.img)}" alt="">` : ''}<span class="grow"><span class="al-week-k">POLOWANIE TYGODNIA</span><b>Wolne miejsce na stronie: ${esc(wk.label.toLowerCase())}</b><span>${wk.done ? 'Zdobyte w tym tygodniu ✓' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')} · złota ramka i +30 pkt`}</span></span><span aria-hidden="true">›</span></a>
-      ${A.discOn && A.discOn() ? (() => { const its = Object.values(A.disc.items), conf = its.filter(i => i.status === 'confirmed').length; return `<a class="al-disc" href="#/odkrycia"><span class="disc-gold" aria-hidden="true">★</span><span class="grow"><b>Twoje odkrycia</b><span>${its.length ? `${its.length} ${plural(its.length, 'dodany', 'dodane', 'dodanych')} · ${conf} ${plural(conf, 'potwierdzony', 'potwierdzone', 'potwierdzonych')}` : 'Dodaj produkt, którego nie ma w bazie: +50 pkt i złota karta'}</span></span><span aria-hidden="true">›</span></a>`; })() : ''}
-      ${near.length ? `<div class="sec-head"><h2>Prawie gotowe</h2></div><div class="stack" style="gap:10px">${near.map(p => `<a class="al-near" href="#/album/${esc(p.key)}">${p.img ? `<img src="${esc(p.img)}" alt="">` : ''}<span class="grow stack" style="gap:6px"><span class="row" style="justify-content:space-between"><b>${esc(p.label)}</b><b>${p.n} z ${A.ALBUM_SLOTS}</b></span><span class="xp"><i style="width:${p.n * 10}%"></i></span><span class="small muted">Brakuje: ${esc(A.missingText(p.key, 2) || 'tajnego miejsca')}</span></span></a>`).join('')}</div>` : ''}
-      ${st.cards ? '' : '<div class="empty stack" style="align-items:center"><b>Twój album jest jeszcze pusty</b><span>Każda strona ma 10 miejsc do zdobycia, np. „gorzka”, „bio”, „mało cukru”. Zeskanuj produkt, a zajmie pierwsze pasujące miejsce.</span><button class="btn btn-green" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj produkt</button></div>'}
-      <div class="sec-head"><h2>Strony albumu</h2><span class="small muted" style="font-weight:700">${st.started} z ${A.albumPages().length} rozpoczętych</span></div>
-      <div class="al-grid">${pages.concat(extra).map(p => `<a class="al-page${p.full ? ' full' : p.n ? '' : ' empty-page'}" href="#/album/${esc(p.key)}">${A.gallery(p.key) ? A.galleryHtml(p.key, A.slotsOf(p.key) ? openIdx(p.key) : [], { size: 'mini' }) : p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="al-noimg">${A.dIcon(p.key === 'cosmetics' ? 'healthy' : 'processing', 34)}</span>`}<b>${esc(p.label)}</b>${A.isHuntPage(p.key) ? `<span class="xp"><i style="width:${Math.min(100, p.n * 10)}%"></i></span><span class="al-n">${p.full ? 'pełna strona' : p.n ? p.n + ' z ' + A.ALBUM_SLOTS : A.gallery(p.key) ? 'plakat do odkrycia' : 'jeszcze pusta'}</span>` : `<span class="al-n">${p.n} ${plural(p.n, 'karta', 'karty', 'kart')}</span>`}${p.full ? '<span class="al-star">★</span>' : ''}${newest && newest.k === p.key && Date.now() - newest.t < 864e5 ? '<span class="al-new">NOWA</span>' : ''}</a>`).join('')}</div>
+      <a class="kt-hunt${wk.done ? ' done' : ''}" href="#/album/${esc(wk.key)}">${wk.img ? `<span class="kt-hplate"><img src="${esc(wk.img)}" alt=""></span>` : ''}<span class="grow"><span class="kt-hk">Polowanie tygodnia · ${wk.done ? 'zdobyte ✓' : `zostało ${wk.daysLeft} ${plural(wk.daysLeft, 'dzień', 'dni', 'dni')}`}</span><b>Wolne miejsce: ${esc(wk.label.toLowerCase())}</b><span>złota ramka i +30 pkt</span></span></a>
+      <p class="kt-stats">${stats}</p>
+      ${st.cards ? '' : '<div class="empty stack" style="align-items:center"><b>Twój album jest jeszcze pusty</b><span>Każda strona ma 10 miejsc do zdobycia, np. „gorzka”, „bio”, „mało cukru”. Zeskanuj produkt, a zajmie pierwsze pasujące miejsce.</span><button class="btn btn-dark" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj produkt</button></div>'}
+      ${started.length ? `<div class="sec-head"><h2>Twoje strony</h2><span class="small muted" style="font-weight:700">${st.started} z ${A.albumPages().length}</span></div><div class="kt-grid">${started.map(pageCard).join('')}</div>` : ''}
+      ${todo.length ? `<div class="sec-head"><h2>Do odkrycia</h2><span class="small muted" style="font-weight:700">${todo.length} ${plural(todo.length, 'strona', 'strony', 'stron')}</span></div><div class="kt-todos">${todo.slice(0, 8).map(small).join('')}</div>${todo.length > 8 ? `<details class="kt-all"><summary>Pokaż wszystkie ${todo.length}</summary><div class="kt-todos">${todo.slice(8).map(small).join('')}</div></details>` : ''}` : ''}
+      ${more ? `<h2 class="kt-more-h">Zdobądź więcej</h2><div class="rows">${more}</div>` : ''}
     </div>`;
   });
 
@@ -263,7 +273,7 @@
     pelne: { h: ['Pełne', 'strony'], empty: 'Jeszcze żadnej. Strona jest pełna, gdy zdobędziesz wszystkie 10 miejsc. Za pełną stronę: złota ramka i +100 pkt.' }
   };
   const setHtml = key => {
-    const S = SETS[key], back = `<div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Twoja kolekcja</span>${A.hudPill()}</div>`;
+    const S = SETS[key], back = `<div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Karty</span>${A.hudPill()}</div>`;
     const title = `<h1 class="al-h"><span class="w-light">${S.h[0]}</span> <span class="w-bold">${S.h[1]}</span></h1>`;
     if (key === 'pelne') {
       const full = Object.keys(A.album.done).map(k => ({ ...A.pageInfo(k), n: A.cardsOf(k).length })).filter(p => p.key);

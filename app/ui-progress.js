@@ -8,8 +8,8 @@
   const EARN = [
     ['magnifier', 'odkrywanie', 'Sprawdź produkt', 'do 20 pkt dziennie', 'product_checked'],
     ['target', 'odkrywanie', 'Zgadnij: dobre czy nie', 'pudło też uczy: +3 pkt', 'guess_right'],
-    ['swap', 'wybory', 'Zamień na lepsze', 'zamiennik trafia na półkę', 'swap_to_better'],
-    ['cart', 'wybory', 'Odhacz całą listę w sklepie', 'raz dziennie na półkę', 'list_completed'],
+    ['swap', 'wybory', 'Zamień na lepsze', 'zamiennik trafia na listę', 'swap_to_better'],
+    ['cart', 'wybory', 'Odhacz całą listę w sklepie', 'raz dziennie na listę', 'list_completed'],
     ['plus', 'baza', 'Dodaj brakujący produkt', 'nazwa i 3 zdjęcia', 'product_added'],
     ['shield', 'baza', 'Zgłoś błąd w danych', 'do 3 dziennie', 'report_sent'],
     ['trophy', 'wybory', 'Ukończ wyzwanie tygodnia', 'nowe co poniedziałek', null]
@@ -41,7 +41,6 @@
     const ch = Game.challengeProgress(g, cfg, now);
     const inv = Object.entries(g.inventory || {}).filter(([, n]) => n > 0);
     A.$('scr-progress').innerHTML = `<div class="wrap">
-      <div class="d-head"><h1 class="al-h"><span class="w-light">Twoja</span> <span class="w-bold">kolekcja</span></h1>${A.hudPill()}</div>
       ${A.collTabs('badges')}
       <div class="panel stack">
         <div class="row">${A.mascot('detective', 80)}<div class="grow stack" style="gap:5px"><span class="reward-chip green" style="align-self:flex-start">POZIOM ${lv.level}</span><b style="font-family:var(--f-display);font-size:1.35rem;line-height:1.05">${esc(lv.name)}</b>
@@ -78,62 +77,102 @@
   let draftCustom = [], confirmWipe = false, editing = 'me', confirmDel = false;
   const person = () => editing === 'me' ? null : A.family.find(f => f.id === editing) || null;
   A.editProfileOf = id => { editing = id === 'me' || A.family.some(f => f.id === id) ? id : 'me'; A.go('#/profil'); };
-  A.route('profile', () => { if (!person()) editing = 'me'; draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile(); });
-  function familyTabs() {
-    const tabs = [{ id: 'me', name: A.userName() || 'Ja' }].concat(A.family);
-    return `<div class="card stack fam-tabs-card"><b style="font-family:var(--f-display)">Kupujesz też dla innych?</b>
-      <div class="fam-tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" class="fam-tab${t.id === editing ? ' on' : ''}" aria-selected="${t.id === editing}" data-act="fam-pick" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}
-        ${A.family.length < A.FAMILY_MAX ? '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>' : ''}</div>
-      <span class="small muted">${A.family.length ? 'Przy każdym produkcie zobaczysz osobny werdykt dla każdej osoby. Album liczy się według Twojego profilu.' : 'Dodaj domowników (np. dziecko z alergią), a przy produkcie zobaczysz werdykt dla każdego.'}</span></div>`;
-  }
+  /* 3.0: Profil jako spis (Preferencje, Wykluczenia, Ulubione sklepy, Ustawienia, Informacje) z osobnymi ekranami.
+     Wszystkie pola są w jednym formularzu (ukryte poza aktywnym ekranem), więc zapis działa tak jak wcześniej. */
+  let sub = '';
+  const SUBS = { preferencje: 'Preferencje', wykluczenia: 'Wykluczenia', sklepy: 'Ulubione sklepy', ustawienia: 'Ustawienia', informacje: 'Informacje i pomoc', osoby: 'Domownicy' };
+  A.route('profile', arg => {
+    sub = SUBS[arg] ? arg : '';
+    if (sub === 'ustawienia' || sub === 'informacje' || sub === 'sklepy') editing = 'me';
+    if (!person()) editing = 'me';
+    draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile();
+  });
+  const nameOf = id => id === 'me' ? 'Ty' : (A.family.find(f => f.id === id) || {}).name || '';
+  const ckRow = (name, key, label, on, hint) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b>${hint ? `<small>${esc(hint)}</small>` : ''}</span><input class="ck-in" type="checkbox" name="${name}" value="${esc(key)}"${on ? ' checked' : ''}><span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>`;
+  const tgRow = (id, label, hint, on) => `<label class="tg-row" for="${id}"><span class="grow"><b>${esc(label)}</b><small>${esc(hint)}</small></span><input class="tg" type="checkbox" role="switch" id="${id}"${on ? ' checked' : ''}></label>`;
+  const navRow = (href, title, sum) => `<a class="nav-row" href="${href}"><span class="grow"><b>${esc(title)}</b><small>${esc(sum)}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>`;
+  const lab = (g, k) => (PROFILE_OPTIONS[g].find(o => o.key === k) || {}).label || k;
   function renderProfile() {
-    const fp = person(), p = fp ? fp.p : A.profile;
-    const chip = (name, key, label, on, icon) => `<label class="pchip${icon ? ' d-pchip' : ''}"><input type="checkbox" name="${name}" value="${key}"${on ? ' checked' : ''}>${icon ? A.dIcon(icon, 18) : ''}${esc(label)}</label>`;
-    A.$('scr-profile').innerHTML = `<div class="wrap"><form class="stack" id="profileForm" novalidate style="gap:16px">
-      <div class="topbar"><h1>${fp ? 'Profil: ' + esc(fp.name) : 'Twój profil'}</h1>${A.hudPill()}</div>
-      <p class="small muted">Sprawdzamy to przy każdym produkcie. Zmiany zapisują się od razu, a profil zostaje tylko w tym telefonie.</p>
+    const fp = person(), p = fp ? fp.p : A.profile, me = !fp, who = nameOf(editing);
+    const sec = k => sub === k ? '' : ' hidden';
+    const goalsSum = p.goals.map(k => GOAL_TILES[k] ? GOAL_TILES[k].label : k).concat(p.goals.length ? [] : p.watch.map(k => { const w = WATCH.find(x => x.key === k); return w ? w.label.replace(' (więcej)', '') : k; })).join(' · ') || 'Nie ustawiono';
+    const exclSum = [].concat(p.allergens.map(k => lab('allergens', k)), p.diet.map(k => lab('diet', k)), p.avoid.map(k => lab('avoid', k)), p.custom).join(' · ') || 'Nie ustawiono';
+    const storeSum = A.myStores().map(k => A.storeLabel(k)).join(', ') || 'Nie wybrano';
+    const watchSum = p.watch.map(k => { const w = WATCH.find(x => x.key === k); return w ? w.label.replace(' (więcej)', '').toLowerCase() : k; }).join(' · ');
+    const tabs = [{ id: 'me', name: 'Ty' }].concat(A.family);
+    const head = sub ? `<div class="sub-top"><a class="btn btn-white iconbtn" href="#/profil" aria-label="Wróć do profilu"><svg><use href="#i-back"/></svg></a><h1>${esc(SUBS[sub])}</h1><span class="iconbtn" aria-hidden="true"></span></div>`
+      : `<div class="pf-head"><div><h1>Profil</h1><p>Preferencje Twoje i domowników.</p></div><svg width="30" height="30" aria-hidden="true"><use href="#i-lupka"/></svg></div>`;
+    A.$('scr-profile').innerHTML = `<div class="wrap pf${sub ? ' pf-sub' : ''}"><form class="stack" id="profileForm" novalidate>
+      ${head}
       <p class="save-state small" id="saveState" role="status" aria-live="polite"></p>
-      ${familyTabs()}
-      <div class="card stack"><label for="profName"><b style="font-family:var(--f-display)">${fp ? 'Imię lub pseudonim' : 'Imię'}</b> <span class="small muted">${fp ? '' : '(nieobowiązkowe)'}</span></label><input class="field" id="profName" maxlength="30" autocomplete="${fp ? 'off' : 'given-name'}" value="${esc(fp ? fp.name : A.userName())}"></div>
-      <fieldset class="card"><legend>Cele <span class="small muted" style="font-family:var(--f-body)">(do ${GOALS_MAX})</span></legend>
-        <p class="small muted">Cel to skrót: zaznacza, czego pilnujemy na liście niżej.</p>
-        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, p.goals.includes(g.key), 'prof-goal')).join('')}</div>
-        <p class="msg" id="goalMsg" role="status"></p></fieldset>
-      <fieldset class="card" id="watchSet"><legend>Pilnuję <span class="small muted" style="font-family:var(--f-body)">(do ${WATCH_MAX})</span></legend>
-        <div class="pchips">${WATCH.map(w => chip('watch', w.key, w.label, p.watch.includes(w.key), w.icon)).join('')}</div>
-        <p class="msg" id="watchMsg" role="status"></p>
-        <div class="d-rules small"><b>Jak liczymy każdą pozycję</b>
-          <span>Cukier, sól, tłuszcze, kalorie, przetworzenie: mało <b>+5</b>, średnio <b>−10</b>, dużo <b>−25</b> i najwyżej 45%.</span>
-          <span>Olej palmowy, słodziki, kofeina: zawiera <b>−25</b> i najwyżej 45%.</span>
-          <span>Białko, błonnik: dużo <b>+10</b>, źródło <b>+5</b>.</span>
-          <span>Brak danych w bazie: najwyżej 70%.</span></div></fieldset>
-      <fieldset class="card"><legend>Nie jem</legend>
+      <div class="pf-index"${sec('')}>
+        <div class="pf-sec"><div class="sec-head"><h2>Domownicy</h2><a href="#/profil/osoby">Zarządzaj</a></div>
+          <div class="fam-tabs" role="tablist" aria-label="Czyje preferencje">${tabs.map(t => `<button type="button" role="tab" class="fam-tab${t.id === editing ? ' on' : ''}" aria-selected="${t.id === editing}" data-act="fam-pick" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}${A.family.length ? '' : '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>'}</div></div>
+        <div class="pf-sec"><h2>Dopasowanie produktów${fp ? ': ' + esc(fp.name) : ''}</h2><div class="rows">
+          ${navRow('#/profil/preferencje', 'Preferencje', goalsSum)}${navRow('#/profil/wykluczenia', 'Wykluczenia', exclSum)}${me ? navRow('#/profil/sklepy', 'Ulubione sklepy', storeSum) : ''}</div></div>
+        <div class="pf-sec"><h2>Aplikacja</h2><div class="rows">${navRow('#/profil/ustawienia', 'Ustawienia', 'Nagrody, dźwięki i sposób oceniania')}${navRow('#/profil/informacje', 'Informacje i pomoc', 'Jak oceniamy, źródła danych, kontakt')}</div></div>
+        <p class="pf-note">Dane zostają na tym urządzeniu.<br>Profil działa bez zakładania konta.</p>
+      </div>
+      <div class="pf-osoby"${sec('osoby')}>
+        <p class="small muted">Dodaj domowników (np. dziecko z alergią), a przy produkcie zobaczysz wynik dla każdego. Album liczy się według Twojego profilu.</p>
+        <div class="fam-tabs" role="tablist" aria-label="Osoba">${tabs.map(t => `<button type="button" role="tab" class="fam-tab${t.id === editing ? ' on' : ''}" aria-selected="${t.id === editing}" data-act="fam-pick" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}
+          ${A.family.length < A.FAMILY_MAX ? '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>' : ''}</div>
+        <div class="stack" style="gap:6px"><label for="profName"><b>${fp ? 'Imię lub pseudonim' : 'Twoje imię'}</b> <span class="small muted">${fp ? '' : '(nieobowiązkowe)'}</span></label><input class="field" id="profName" maxlength="30" autocomplete="${fp ? 'off' : 'given-name'}" value="${esc(fp ? fp.name : A.userName())}"></div>
+        ${fp ? (confirmDel ? `<div class="ls-note"><b>Usunąć profil „${esc(fp.name)}”?</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="fam-del-yes">Usuń</button><button class="btn btn-white btn-sm" type="button" data-act="fam-del-no">Zostaw</button></div></div>` : '<button class="linkbtn small red-link" type="button" data-act="fam-del" style="align-self:flex-start">Usuń tę osobę</button>') : ''}
+      </div>
+      <div class="pf-pref"${sec('preferencje')}>
+        <p class="pf-who">Edytujesz: <b>${esc(who)}</b></p>
+        <h2 class="pf-q">${fp ? `Co jest ważne dla: ${esc(fp.name)}?` : 'Co jest dla Ciebie ważne?'}</h2>
+        <p class="small muted">Wybierz do ${GOALS_MAX} celów. Na ich podstawie dobierzemy kryteria oceny.</p>
+        <div class="rows">${GOALS.map(g => { const t = GOAL_TILES[g.key], on = p.goals.includes(g.key); return `<button class="ck-row" type="button" data-act="prof-goal" data-k="${g.key}" aria-pressed="${on}"><span class="grow"><b>${esc(t.label)}${g.key === 'healthy' ? '' : ' · ' + esc(t.hint)}</b></span><span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`; }).join('')}</div>
+        <p class="msg" id="goalMsg" role="status"></p>
+        <details class="pf-more" id="watchSet"><summary><span class="grow"><b>Szczegółowe kryteria</b><small>${esc(watchSum || 'cele ustawiają je same')}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+          <p class="small muted">Możesz pilnować do ${WATCH_MAX} rzeczy.</p>
+          <div class="rows">${WATCH.map(w => ckRow('watch', w.key, w.label, p.watch.includes(w.key))).join('')}</div>
+          <p class="msg" id="watchMsg" role="status"></p>
+          <div class="d-rules small"><b>Jak liczymy każdą pozycję</b>
+            <span>Cukier, sól, tłuszcze, kalorie, przetworzenie: mało <b>+5</b>, średnio <b>−10</b>, dużo <b>−25</b> i najwyżej 45%.</span>
+            <span>Olej palmowy, słodziki, kofeina: zawiera <b>−25</b> i najwyżej 45%.</span>
+            <span>Białko, błonnik: dużo <b>+10</b>, źródło <b>+5</b>.</span>
+            <span>Brak danych w bazie: najwyżej 70%.</span></div></details>
+        <p class="small muted">Alergeny i dietę ustawisz w <a href="#/profil/wykluczenia">„Wykluczeniach”</a>.</p>
+        <button class="btn btn-dark btn-block" type="submit">Zapisz preferencje</button>
+      </div>
+      <div class="pf-excl"${sec('wykluczenia')}>
+        <p class="pf-who">Edytujesz: <b>${esc(who)}</b></p>
         <p class="small muted">Produkt, który to zawiera, oznaczamy „Nie pasuje” (0–10%). Śladowe ilości: najwyżej 35%.</p>
-        <b class="small">Alergeny</b><div class="pchips">${PROFILE_OPTIONS.allergens.map(o => chip('allergens', o.key, o.label, p.allergens.includes(o.key))).join('')}</div>
-        <b class="small" style="margin-top:8px">Dieta</b><div class="pchips">${PROFILE_OPTIONS.diet.map(o => chip('diet', o.key, o.label, p.diet.includes(o.key))).join('')}${PROFILE_OPTIONS.avoid.map(o => chip('avoid', o.key, o.label, p.avoid.includes(o.key))).join('')}</div>
-        <b class="small" style="margin-top:8px">Własne składniki</b>
-        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-green btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
+        <h3 class="pf-sh">Alergeny</h3><div class="rows">${PROFILE_OPTIONS.allergens.map(o => ckRow('allergens', o.key, o.label, p.allergens.includes(o.key))).join('')}</div>
+        <h3 class="pf-sh">Dieta</h3><div class="rows">${PROFILE_OPTIONS.diet.map(o => ckRow('diet', o.key, o.label, p.diet.includes(o.key))).join('')}${PROFILE_OPTIONS.avoid.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key))).join('')}</div>
+        <h3 class="pf-sh">Własne składniki</h3>
+        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-dark btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
         <p class="msg" id="customMsg" role="status"></p><div class="pchips" id="customChips"></div>
-        <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p></fieldset>
-      ${fp ? `<div class="card stack">${confirmDel ? `<b class="small">Usunąć profil „${esc(fp.name)}”?</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="fam-del-yes">Usuń</button><button class="btn btn-white btn-sm" type="button" data-act="fam-del-no">Zostaw</button></div>` : '<button class="linkbtn small" type="button" data-act="fam-del" style="align-self:flex-start">Usuń tę osobę</button>'}</div>
-      <button class="btn btn-green btn-block" type="submit">Gotowe</button></form></div>` : ''}${fp ? '' : `
-      <fieldset class="card"><legend>Gdzie robisz zakupy</legend><p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam.</p><div class="pchips">${STORES.map(s => chip('mystore', s.key, s.label, A.myStores().includes(s.key))).join('')}</div></fieldset>
-      <fieldset class="card"><legend>W kosmetykach unikam</legend><div class="pchips">${PROFILE_OPTIONS.cosmetic.map(o => chip('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div></fieldset>
-      <fieldset class="card"><legend>Ustawienia</legend>
-        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setShop" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.quiet() ? ' checked' : ''}><span><b>Ukryj punkty i nagrody</b><br><span class="small muted">Bez punktów, kart, gratulacji i „Zgadnij” na ekranie. Karty i odznaki nadal zbierają się w Kolekcji.</span></span></label>
-        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setGuess" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.guess !== false ? ' checked' : ''}><span><b>Pytaj „Zgadnij: dobre czy nie?”</b><br><span class="small muted">Gra przy każdym nowym produkcie. Wyłącz, jeśli wolisz od razu widzieć wynik.</span></span></label>
-        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setSound" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.sound !== false ? ' checked' : ''}><span><b>Dźwięki i wibracje</b><br><span class="small muted">Krótki dźwięk przy skanie, zgadywaniu i odkładaniu na półkę, melodia przy nowej odznace i poziomie.</span></span></label>
-        <label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="profNoScores" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${p.noScores ? ' checked' : ''}><span><b>Tryb bez ocen</b><br><span class="small muted">Ukrywa liczby i werdykty. Zostają fakty: skład, alergeny i dopasowanie do profilu.</span></span></label>
-        ${A.statsAvailable() ? `<label class="row" style="align-items:flex-start;min-height:44px"><input type="checkbox" id="setStats" style="width:22px;height:22px;accent-color:var(--green);flex:0 0 auto;margin-top:2px"${A.settings.stats !== false ? ' checked' : ''}><span><b>Anonimowe statystyki</b><br><span class="small muted">Liczymy tylko, które funkcje są używane i ile osób wraca. Bez ciasteczek, profilu i kodów produktów.</span></span></label>` : ''}</fieldset>
-      <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
-      <button class="btn btn-green btn-block" type="submit">Gotowe</button>
+        <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p>
+        ${me ? `<h3 class="pf-sh">W kosmetykach unikam</h3><div class="rows">${PROFILE_OPTIONS.cosmetic.map(o => ckRow('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div>` : ''}
+        <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
+        <button class="btn btn-dark btn-block" type="submit">Zapisz wykluczenia</button>
+      </div>
+      ${me ? `<div class="pf-shops"${sec('sklepy')}>
+        <p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam.</p>
+        <div class="rows">${STORES.map(st => ckRow('mystore', st.key, st.label, A.myStores().includes(st.key))).join('')}</div>
+        <button class="btn btn-dark btn-block" type="submit">Zapisz sklepy</button>
+      </div>
+      <div class="pf-set"${sec('ustawienia')}>
+        <p class="small muted">Zmiany zapisują się od razu.</p>
+        <h3 class="pf-sh">Podczas zakupów</h3><div class="rows">
+          ${tgRow('setShop', 'Ukryj punkty i nagrody', 'Karty i odznaki nadal zbierają się w Kartach.', A.quiet())}
+          ${tgRow('setGuess', 'Zgadywanie przed wynikiem', 'Pytaj „dobre czy nie?” przed pokazaniem oceny.', A.settings.guess !== false)}
+          ${tgRow('setSound', 'Dźwięki i wibracje', 'Sygnał po skanie i dodaniu do listy.', A.settings.sound !== false)}</div>
+        <h3 class="pf-sh">Sposób oceniania</h3><div class="rows">${tgRow('profNoScores', 'Tryb bez ocen', 'Pokazuj fakty bez punktów i werdyktów.', !!p.noScores)}</div>
+        ${A.statsAvailable() ? `<h3 class="pf-sh">Prywatność</h3><div class="rows">${tgRow('setStats', 'Anonimowe statystyki', 'Pomagają sprawdzić, które funkcje są używane. Bez ciasteczek i kodów produktów.', A.settings.stats !== false)}</div>` : ''}
+        ${confirmWipe ? `<div class="ls-note"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, domownicy, listy zakupów, karty, punkty, historię) i Twoje dane z serwera odkrywców (głosy, statystyki; dodane produkty zostaną bez pseudonimu)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small red-link" type="button" data-act="wipe" style="align-self:flex-start">Usuń dane z urządzenia</button>'}
+      </div>` : ''}
     </form>
-    <div class="card stack"><h2 style="font-size:1.1rem">Informacje</h2>
-      ${A.CFG.contactEmail ? `<a class="btn btn-green btn-sm" id="feedbackBtn" href="${A.feedbackHref()}" style="align-self:flex-start">Wyślij uwagi o aplikacji</a>` : ''}
-      <div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="how">Jak oceniamy</button><a class="btn btn-white btn-sm" href="../privacy.html?z=app">Polityka prywatności</a>${A.CFG.contactEmail ? `<a class="btn btn-white btn-sm" href="mailto:${esc(A.CFG.contactEmail)}">Kontakt</a>` : ''}</div>
+    ${me ? `<div class="pf-info stack"${sec('informacje')}>
+      <div class="rows"><button class="nav-row" type="button" data-act="how"><span class="grow"><b>Jak oceniamy</b><small>Skąd bierze się wynik i procent dopasowania</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+        <a class="nav-row" href="../privacy.html?z=app"><span class="grow"><b>Polityka prywatności</b><small>Co zostaje w telefonie, a co trafia do bazy</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        ${A.CFG.contactEmail ? `<a class="nav-row" id="feedbackBtn" href="${A.feedbackHref()}"><span class="grow"><b>Wyślij uwagi o aplikacji</b><small>Przeczytamy każdą</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a><a class="nav-row" href="mailto:${esc(A.CFG.contactEmail)}"><span class="grow"><b>Kontakt</b><small>${esc(A.CFG.contactEmail)}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>` : ''}</div>
       <p class="small muted">Dane produktów: Open Food Facts i Open Beauty Facts (licencja ODbL). Wersja aplikacji ${esc(A.CFG.appVersion || '1.0')}.</p><p class="small muted" id="dataDate"></p>
-      ${confirmWipe ? `<div class="stack"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, domownicy, półki, album, punkty, historię) i Twoje dane z serwera odkrywców (głosy, statystyki; dodane produkty zostaną bez pseudonimu)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small" type="button" data-act="wipe" style="align-self:flex-start">Usuń wszystkie moje dane</button>'}
-    </div></div>`}`;
+    </div>` : ''}</div>`;
     renderCustomChips();
     A.$('watchSet').addEventListener('change', e => {
       if (e.target.name !== 'watch') return;
@@ -141,7 +180,7 @@
       if (n > WATCH_MAX) { e.target.checked = false; A.$('watchMsg').textContent = `Możesz pilnować najwyżej ${WATCH_MAX} rzeczy. Odznacz którąś, żeby dodać nową.`; }
       else A.$('watchMsg').textContent = '';
     }, true);
-    A.snapshotMeta().then(m => { const el = A.$('dataDate'); if (m && el) el.textContent = `Kopia bazy produktów: ${m.products.toLocaleString('pl-PL')} produktów, aktualizacja ${new Date(m.built).toLocaleDateString('pl-PL')}.`; });
+    if (me && sub === 'informacje') A.snapshotMeta().then(m => { const el = A.$('dataDate'); if (m && el) el.textContent = `Kopia bazy produktów: ${m.products.toLocaleString('pl-PL')} produktów, aktualizacja ${new Date(m.built).toLocaleDateString('pl-PL')}.`; });
   }
   function renderCustomChips() {
     const el = A.$('customChips'); if (!el) return;
@@ -173,8 +212,10 @@
     else if (act === 'fam-pick' || act === 'fam-add') {
       if (A.$('profileForm')) collect(false);
       if (act === 'fam-add') { const f = A.familyAdd(); if (!f) return; editing = f.id; } else editing = el.dataset.id;
-      draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmDel = false; renderProfile();
-      const t = A.$('scr-profile').querySelector(act === 'fam-add' ? '#profName' : '.fam-tab.on'); if (t) { t.focus(); if (act === 'fam-add') t.select(); }
+      draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmDel = false;
+      if (act === 'fam-add' && sub !== 'osoby') { location.hash = '#/profil/osoby'; setTimeout(() => { const t = A.$('profName'); if (t) { t.focus(); t.select(); } }, 60); return; }
+      renderProfile();
+      const t = A.$('scr-profile').querySelector(act === 'fam-add' ? '#profName' : `.${sub === 'osoby' ? 'pf-osoby' : 'pf-index'} .fam-tab.on`); if (t) { t.focus(); if (act === 'fam-add') t.select(); }
     }
     else if (act === 'fam-del') { confirmDel = true; renderProfile(); }
     else if (act === 'fam-del-no') { confirmDel = false; renderProfile(); }
@@ -198,7 +239,7 @@
     ['allergens', 'diet', 'avoid', 'cosmetic', 'watch'].forEach(g => { next[g] = [...f.querySelectorAll(`input[name="${g}"]:checked`)].map(i => i.value); });
     next.goals = [...f.querySelectorAll('[data-act=prof-goal][aria-pressed=true]')].map(b => b.dataset.k);
     next.custom = draftCustom.slice();
-    const pending = A.$('customInput').value.trim();
+    const pending = A.$('customInput') ? A.$('customInput').value.trim() : '';
     if (includePending && pending && !customProblem(pending, next.custom)) { next.custom.push(cleanCustom(pending)); draftCustom = next.custom.slice(); }
     const fp = person();
     if (fp) {
@@ -209,6 +250,7 @@
     }
     A.profile = cleanProfile(next); A.saveProfile();
     A.setMyStores([...f.querySelectorAll('input[name="mystore"]:checked')].map(i => i.value));
+    if (!A.$('setGuess')) return;
     A.settings.guess = A.$('setGuess').checked;
     A.settings.shopMode = A.$('setShop').checked; document.body.classList.toggle('shop-mode', A.settings.shopMode);
     const soundWas = A.settings.sound !== false;
@@ -231,7 +273,7 @@
   A.saveProfileForm = e => {
     e.preventDefault();
     collect(true);
-    A.toast(person() ? `Zapisano profil: ${person().name}.` : 'Profil zapisany. Sprawdzamy go przy każdym produkcie.');
-    A.go('#/');
+    A.toast(person() ? `Zapisano profil: ${person().name}.` : 'Zapisano. Sprawdzamy to przy każdym produkcie.');
+    A.go('#/profil');
   };
 })();

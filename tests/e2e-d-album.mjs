@@ -96,7 +96,7 @@ await page.evaluate(() => { App.profile = cleanProfile({}); });
 // 6. Album: polowanie tygodnia i lista stron
 await page.goto('http://localhost:8790/app/index.html#/album'); await page.waitForTimeout(800); await closeCel();
 await page.screenshot({ path: shots + 'hunt-album.png', fullPage: true });
-ok((await page.innerText('#scr-album')).includes('POLOWANIE TYGODNIA'), 'album: polowanie tygodnia');
+ok((await page.innerText('#scr-album')).includes('Polowanie tygodnia'), 'album: polowanie tygodnia');
 
 // 7. Stare karty (bez miejsc) trafiają na miejsca przy pierwszym otwarciu strony
 const ctx2 = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx2, {});

@@ -16,6 +16,16 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Nowy wygląd ekranów (28.10.2026, wersja 3.0.0)
+Projekt z makiet zatwierdzonych przez właściciela (zasady design-taste-frontend: kolor tylko dla znaczenia, nagłówki zdaniem, liczby krojem tekstu, cienkie linie zamiast kart w kartach). Talerze, łuki w tle i logo zostają.
+- Dolne menu: ikony obrysowe, „Start / Zakupy / Skanuj / Karty / Profil”; wysunięty okrągły przycisk skanu z podpisem.
+- Produkt: obręcz talerza = wynik całej rodziny (łuk proporcjonalny, szara reszta), obok kwadrat z procentem i zdanie „Nie dla: Kuba” bez tła; pod talerzem plakietki osób z pełnym imieniem i kolorowym wynikiem (✕/?), stuknięcie = wyjaśnienie dla osoby; „Na listę” i „Porównaj” zaraz pod nazwą; kategoria jako link w linii marki; bez napisu „Zeskanowany produkt”; nagłówki zdaniem.
+- Zakupy: zawsze jedna linia nagłówka (nazwa listy ▾, Udostępnij, ⋯); panel „Twoje listy” (przełączanie, nowa, zmiana nazwy, usuń kupione, usuń listę z potwierdzeniem, limit 3 za darmo); pasek „w koszyku X z Y”; szybkie dodawanie w jednym przewijanym rzędzie; wiersze w białych grupach z kolorowym statusem („pasuje wszystkim”, „nie dla: Kuba”). W tekstach „lista” zamiast „półka” (w kodzie dalej shelf).
+- Start: logo + punkty; wyszukiwarka „Czego szukasz, Ola?” z podpowiedzią, co wpisać; „Kupujesz dla” jako przełącznik Cała rodzina / Tylko ja / Wybierz… (panel z osobami) i jedna linia „Wynik liczymy dla…”; karta bieżącej listy; „Ostatnio sprawdzone” jako rząd talerzy z powodem i wynikiem na równej wysokości. Karta postępów przeniesiona do Kart.
+- Profil: spis (Domownicy, Preferencje, Wykluczenia, Ulubione sklepy, Ustawienia, Informacje i pomoc) z osobnymi ekranami `#/profil/<nazwa>`; wszystkie pola w jednym formularzu (ukryte poza aktywnym ekranem), autozapis jak wcześniej; przełączniki w Ustawieniach.
+- Karty: nagłówek z poziomem i paskiem, przełącznik Album/Odznaki, ciemne „Polowanie tygodnia”, statystyki w jednej linii, „Twoje strony” (postęp i czego brakuje), „Do odkrycia” (szare talerze, 8 + „Pokaż wszystkie”), „Zdobądź więcej” (wyzwanie tygodnia, uzupełnianie, dodanie produktu).
+- Testy e2e-d-* dostosowane do nowych ekranów.
+
 ## Poprawki po teście konsumenckim (28.10.2026, wersja 2.9.0)
 - Skaner: paski porównania i nagród chowają się (body.scanning), więc nie zasłaniają wpisywania kodu.
 - Pasek „Nowa karta / odznaka” po 4 s (albo przy przewijaniu) zwija się do małego przycisku „Odbierz” z prawej.

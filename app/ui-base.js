@@ -341,7 +341,7 @@ const App = {};
       setTimeout(() => A.sound('level'), 250);
     } else {
       setTimeout(() => A.sound('challenge'), 250);
-      ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Ukończone wyzwanie widać na ekranie głównym i w Kolekcji → Odznaki. Nowe pojawi się w poniedziałek.';
+      ribbon = 'Wyzwanie ukończone!'; head = e.name; sub = 'Ukończone wyzwanie widać na ekranie głównym i w Kartach → Odznaki. Nowe pojawi się w poniedziałek.';
       emblem = medalSvg('trophy', 'wybory', true, 170, 3, 'm-pop'); // wersja D: medal zamiast paczki nasion truskawki z dawnej gry w ogródek
     }
     const colors = ['#9FCDB0', '#F5D36B', '#F2A15E', '#EFA2B4', '#C9DAEC', '#E4DAF0', '#2B2C30']; // wersja D: pastelowe konfetti
@@ -503,7 +503,7 @@ const App = {};
     if ((m = h.match(/^#\/?p\/?(\d{6,14})$/)) || (m = h.match(/^#p(\d{8,14})$/))) { screen = 'product'; arg = m[1]; }
     else if (h === '#/polki') screen = 'shelves';
     else if (h === '#/postepy') screen = 'progress';
-    else if (h === '#/profil') screen = 'profile';
+    else if ((m = h.match(/^#\/profil(?:\/([a-z]{3,14}))?$/))) { screen = 'profile'; arg = m[1] || null; }
     else if (h === '#/start') screen = 'start';
     else if (h === '#/najlepsze') screen = 'cats';
     else if (h === '#/album') screen = 'album';

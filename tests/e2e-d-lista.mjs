@@ -71,7 +71,7 @@ await page.waitForTimeout(1100);
 ok(await page.getAttribute('#micBtn', 'aria-pressed') === 'false' && /Dodano 3 rzeczy: pomidory, ziemniaki, banany\./.test(await msg()), 'po ciszy koniec słuchania i podsumowanie (' + await msg() + ')');
 ok(await page.inputValue('#addItemInput') === '', 'pole wyczyszczone po dodaniu');
 // b) Pauzy między produktami: każdy fragment od razu na półce; koniec stuknięciem
-await page.evaluate(() => { const st = App.shelves; st.shelves[0].items = []; App.saveShelves(); }); await page.click('[data-act=shelf-pick]'); await page.waitForTimeout(150);
+await page.evaluate(() => { const st = App.shelves; st.shelves[0].items = []; App.saveShelves(); App.render(); }); await page.waitForTimeout(150);
 await speak([[{ at: 50, results: [['mleko', true]] }, { at: 400, results: [['mleko', true], [' chleb żytni', true]], index: 1 }, { at: 500, end: true }], [{ at: 100, results: [['dwa jogurty naturalne', true]] }]]);
 await page.click('#micBtn'); await page.waitForTimeout(200);
 ok((await items(page)).map(i => i.name).join('|') === 'mleko', 'pierwszy produkt na półce od razu, w trakcie mówienia');
