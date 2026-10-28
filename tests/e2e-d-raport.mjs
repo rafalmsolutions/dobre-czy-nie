@@ -11,6 +11,11 @@ await ctx.route(/proxy\.test\/(category|search|details)/, r => r.fulfill({ json:
 // Skyr bez składu (jak Pilos): są wartości odżywcze i Nutri-Score, brak składu i NOVA
 await ctx.route(new RegExp('openfoodfacts\\.org/api/v2/product/' + C.missing2), r => r.fulfill({ json: { status: 1, product: { code: C.missing2, product_name_pl: 'Skyr 0% tłuszczu', brands: 'Pilos', nutriscore_grade: 'a',
   nutriments: { 'energy-kcal_100g': 63, sugars_100g: 3.5, salt_100g: 0.1, 'saturated-fat_100g': 0.1, fat_100g: 0.2, proteins_100g: 12 }, categories_hierarchy: ['en:dairies', 'en:yogurts', 'en:skyrs'] } } }));
+// 3.0.2: wyszukiwarka i porównanie w kategorii z tym samym skyrem bez składu
+const SKYR = { code: C.missing2, product_name_pl: 'Skyr 0% tłuszczu', brands: 'Pilos', nutriscore_grade: 'a', nutriments: { 'energy-kcal_100g': 63, sugars_100g: 3.5, salt_100g: 0.1, 'saturated-fat_100g': 0.1, fat_100g: 0.2, proteins_100g: 12 }, categories_hierarchy: ['en:dairies', 'en:yogurts', 'en:skyrs'] };
+const SIM = Array.from({ length: 12 }, (_, i) => ({ code: String(5900000300000 + i), product_name_pl: 'Skyr ' + i, brands: 'X', nutriscore_grade: 'c', nova_group: 3, ingredients_text_pl: 'mleko, cukier', additives_tags: [], nutriments: { sugars_100g: 9, salt_100g: 0.1, 'saturated-fat_100g': 2, fat_100g: 3, proteins_100g: 8, 'energy-kcal_100g': 90 }, categories_hierarchy: ['en:dairies', 'en:yogurts', 'en:skyrs'] }));
+await ctx.route(/proxy\.test\/search/, r => r.fulfill({ json: { ok: true, products: [SKYR] } }));
+await ctx.route(/proxy\.test\/category/, r => r.fulfill({ json: { ok: true, products: SIM.concat([SKYR]) } }));
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['processing'] })); });
 const go = async h => { await page.goto('http://localhost:8790/app/index.html' + h); await page.waitForTimeout(1600); };
@@ -22,6 +27,11 @@ ok(/Wynik wstępny/.test(await page.innerText('.d-hside')) && /Brakuje składu p
 const bill = await page.innerText('.bill').catch(() => ''), det = await page.innerText('.card.score').catch(() => '');
 ok(/Ocena składu[\s\S]*brak danych/.test(bill) && !/\b100\b/.test(bill) && /Brak danych/.test(det), 'brak składu: „Ocena składu: brak danych” zamiast 100 (' + bill.replace(/\s+/g, ' ').slice(0, 80) + ')');
 ok(/^Wstępnie:/.test(await page.innerText('#matchLabel').catch(() => '')), 'etykieta wyniku: „Wstępnie: …”');
+await page.waitForTimeout(1500);
+const catTxt = await page.innerText('#catBody').catch(() => '');
+ok(/Bez porównania w kategorii/.test(catTxt) && !/lepszą ocenę niż|lepszych wyborów/.test(catTxt), 'brak składu: bez „lepszy niż X%” na tle podobnych (' + catTxt.replace(/\s+/g, ' ').slice(0, 90) + ')');
+await go('#/szukaj/skyr'); await page.waitForTimeout(1200);
+ok(/Wstępnie:/.test(await page.innerText('#srchRes').catch(() => '')), 'wyszukiwarka: „Wstępnie: …” przy produkcie bez składu');
 await go('#/p/' + C.milk);
 ok(await page.locator('.d-gaps').count() === 0, 'pełne dane: bez ostrzeżenia');
 // porównanie
@@ -64,13 +74,26 @@ await go('#/p/' + C.milk);
 ok(await page.locator('#scr-product .pill [data-hud=points]').count() === 0, 'tryb zakupowy: bez licznika punktów');
 await page.evaluate(() => App.celebrate([{ type: 'level', name: 'Test', level: 3 }])); await page.waitForTimeout(300);
 ok(await page.evaluate(() => document.getElementById('rwBar').hidden && document.getElementById('celebrate').hidden), 'tryb zakupowy: bez gratulacji i paska nagród');
+await go('#/p/' + C.missing2);
+ok(!/\+\d+ pkt/.test(await page.innerText('#scr-product')), 'tryb zakupowy: produkt bez „+N pkt” (sklep, uzupełnianie, zdjęcie)');
 await go('#/'); await shot('po-05-start');
 ok(await page.locator('.d-prog').count() === 0, 'start: bez karty postępów (jest w Kartach)');
 // 6. Zamienniki o tym samym zastosowaniu
 const su = await page.evaluate(() => [
   App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:spreads', 'en:sweet-spreads', 'en:fruit-preserves', 'en:plum-butters'] }),
-  App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }),
-  App.sameUse({ categories: ['en:spreads'] }, { categories: ['en:jams'] })]);
-ok(su[0] === false && su[1] === true && su[2] === true, 'zamiennik: krem kakaowy ≠ powidła, krem ↔ krem (' + su + ')');
+  App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:spreads', 'en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads'] }),
+  App.sameUse({ categories: ['en:spreads'] }, { categories: ['en:spreads', 'en:jams'] }),
+  App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-its-products', 'en:hazelnut-spreads', 'en:chocolate-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:cocoa-and-its-products', 'en:cocoa-powders'] }),
+  App.sameUse({ categories: ['en:beverages', 'en:juices'] }, { categories: ['en:juices'] })]);
+ok(su[0] === false && su[1] === true && su[2] === true && su[3] === false && su[4] === false, 'zamiennik: krem kakaowy ≠ powidła ani kakao w proszku, krem ↔ krem, napój tylko za napój (' + su + ')');
+// 3.0.2: Preferencje – autozapis i „Gotowe”
+await go('#/profil/preferencje');
+ok(await page.locator('.pf-pref [type=submit]').innerText() === 'Gotowe' && /zapisują się od razu/.test(await page.innerText('.pf-pref')), 'preferencje: „Gotowe” i informacja o autozapisie');
+// 3.0.2: lista liczy wynik rodziny na nowo (stary zielony wpis nie zostaje)
+await page.evaluate(code => { App.family = [{ id: 'f1', name: 'Wega', p: cleanProfile({ diet: ['vegan'] }) }]; App.saveFamily(); App.shopAll();
+  App.shelves.shelves[0].items = [{ id: 'x1', name: 'Mleko', code, dept: 'dairy', checked: false, qty: 1, unit: 'szt', pct: 100, fam: { t: 'ok', h: 'Pasuje wszystkim' }, added: Date.now() }]; App.saveShelves(); }, C.milk);
+await go('#/polki');
+const row = await page.innerText('#shelfItems').catch(() => '');
+ok(/nie dla: Wega/i.test(row) && !/pasuje wszystkim/.test(row), 'lista: wynik dla rodziny przeliczony od razu (' + row.replace(/\s+/g, ' ').slice(0, 60) + ')');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

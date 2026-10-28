@@ -97,7 +97,15 @@
       name: !prod.name, front: !prod.image, cat: !(prod.categories || []).length };
   }
   // Czego brakuje do pewnej oceny (skład, wartości). Wynik przy brakach jest wstępny: pokazujemy to przy wyniku i w porównaniu.
-  A.dataGaps = (p, snapshot) => { if (!p || p.kind === 'cosmetic') return []; const m = missingParts(p, snapshot); return [m.ingr && 'składu', m.nut && 'wartości odżywczych'].filter(Boolean); };
+  /* Braki danych, przez które wynik jest wstępny. 3.0.2: także ocena bez części odżywczej (brak Nutri-Score i danych do jego wyliczenia) –
+     wtedy wynik stoi tylko na dodatkach i przetworzeniu, więc nie może brzmieć pewnie. */
+  A.dataGaps = (p, snapshot) => {
+    if (!p || p.kind === 'cosmetic') return [];
+    const m = missingParts(p, snapshot), out = [m.ingr && 'składu', m.nut && 'wartości odżywczych'].filter(Boolean);
+    if (!m.nut) { try { const an = analyze(p); if (an.score != null && an.partial && !(an.parts || []).some(x => x.key === 'nutrition')) out.push('oceny wartości odżywczej'); } catch (e) { } }
+    return out;
+  };
+  A.preLabel = label => 'Wstępnie: ' + String(label || '').replace(/^./, c => c.toLowerCase());
   // Pełne dane z bazy na żywo zastępują dane z kopii; stan gry („Zgadnij”) zostaje.
   function upgrade(prod) {
     mergeLocal(prod);
@@ -236,7 +244,7 @@
       ${bpm.personal ? billHtml(bpm, other ? fp.name : '', A.dataGaps(prod, cur.snapshot).includes('składu')) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);
     parts.push('<div id="discBox"></div>');
-    if (storeAskOk(prod)) parts.push(`<div class="panel stack store-ask" id="storeBox"><div class="row" style="justify-content:space-between;gap:8px"><b>Kupujesz to w:</b><span class="small muted">+2 pkt</span></div><div class="pchips">${A.myStores().map(k => `<button class="pchip" type="button" data-act="store-tag" data-k="${esc(k)}">${esc(A.storeLabel(k))}</button>`).join('')}<button class="linkbtn small" type="button" data-act="store-skip">Nie teraz</button></div><p class="small muted">Dopiszemy sklep do produktu w Open Food Facts. Pomaga innym znaleźć dobre produkty w ich sklepie.</p></div>`);
+    if (storeAskOk(prod)) parts.push(`<div class="panel stack store-ask" id="storeBox"><div class="row" style="justify-content:space-between;gap:8px"><b>Kupujesz to w:</b>${A.pt('<span class="small muted">+2 pkt</span>')}</div><div class="pchips">${A.myStores().map(k => `<button class="pchip" type="button" data-act="store-tag" data-k="${esc(k)}">${esc(A.storeLabel(k))}</button>`).join('')}<button class="linkbtn small" type="button" data-act="store-skip">Nie teraz</button></div><p class="small muted">Dopiszemy sklep do produktu w Open Food Facts. Pomaga innym znaleźć dobre produkty w ich sklepie.</p></div>`);
     const qc = prod.qchg && prod.qchg.length > 1 ? prod.qchg : null;
     if (qc) {
       const a = qc[qc.length - 2], z = qc[qc.length - 1], num = x => parseFloat(x[2]), mon = d => new Date(d + 'T12:00:00').toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' });
@@ -249,10 +257,10 @@
     const canFix = A.CFG.offProxyUrl && prod.kind === 'food' && (prod.source === 'off' || added);
     // Brakuje tylko zdjęcia przodu (nazwa jest): jedno stuknięcie otwiera aparat, bez osobnego kroku.
     const needPhoto = canFix && miss.front && !miss.name && !A.frontSent(prod.code);
-    const photoBtn = gold => `<span class="btn ${gold ? 'btn-gold' : 'btn-white'} filebtn" id="frontBtn"><svg><use href="#i-photo"/></svg>Zrób zdjęcie opakowania (+10 pkt)<input type="file" accept="image/*" capture="environment" data-front-photo="${esc(prod.code)}" aria-label="Zdjęcie przodu opakowania"></span><p class="msg" id="frontMsg" role="status"></p>`;
+    const photoBtn = gold => `<span class="btn ${gold ? 'btn-gold' : 'btn-white'} filebtn" id="frontBtn"><svg><use href="#i-photo"/></svg>Zrób zdjęcie opakowania${A.pt(' (+10 pkt)')}<input type="file" accept="image/*" capture="environment" data-front-photo="${esc(prod.code)}" aria-label="Zdjęcie przodu opakowania"></span><p class="msg" id="frontMsg" role="status"></p>`;
     if (canFix && (miss.ingr || miss.nut || miss.name)) {
       const what = [miss.name && 'nazwy', miss.name && miss.front && 'zdjęcia', miss.ingr && 'składu', miss.nut && 'wartości odżywczych', needPhoto && 'zdjęcia opakowania'].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' i $1');
-      parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij (+10 pkt za każdą część)</button>${needPhoto ? photoBtn(false) : ''}</div></div>`);
+      parts.push(`<div id="completeBox"><div class="panel stack"><b style="font-family:var(--f-display);font-size:1.1rem">Pomóż uzupełnić ten produkt</b><p class="small">W bazie brakuje ${what}, dlatego ocena jest niepełna. Uzupełnisz to w minutę, a każdy kolejny kupujący zobaczy pełną ocenę.</p><button class="btn btn-gold" type="button" data-act="complete">Uzupełnij${A.pt(' (+10 pkt za każdą część)')}</button>${needPhoto ? photoBtn(false) : ''}</div></div>`);
     } else if (needPhoto) {
       parts.push(`<div id="completeBox"><div class="panel stack" id="frontBox"><b style="font-family:var(--f-display);font-size:1.1rem">Brakuje zdjęcia opakowania</b><p class="small">Bez zdjęcia trudniej rozpoznać ten produkt na liście i w wyszukiwarce. Zrób zdjęcie przodu, a trafi do Open Food Facts dla wszystkich.</p>${photoBtn(true)}</div></div>`);
     }
@@ -358,8 +366,17 @@
     'en:beverages', 'en:beverages-and-beverages-preparations', 'en:dairies', 'en:fermented-foods', 'en:fermented-milk-products', 'en:sweet-snacks', 'en:salty-snacks', 'en:desserts', 'en:meals', 'en:groceries',
     'en:condiments', 'en:sauces', 'en:fruits-and-vegetables-based-foods', 'en:fruit-based-foods-and-beverages', 'en:fruit-based-foods', 'en:cereals-and-potatoes', 'en:cereals-and-their-products',
     'en:meats-and-their-products', 'en:frozen-foods', 'en:canned-foods', 'en:confectioneries', 'en:biscuits-and-cakes', 'en:food', 'en:foods']);
-  const specific = pr => (pr.categories || []).filter(c => /^en:[a-z0-9-]+$/.test(c) && !GENERIC_CATS.has(c));
-  const sameUse = (prod, x) => { const mine = specific(prod); if (!mine.length) return true; const xs = new Set((x.categories || [])); return mine.some(c => xs.has(c)); };
+  // 3.0.2: „surowcowe” grupy w rodzaju „kakao i jego przetwory” też są za szerokie (krem czekoladowy ≠ kakao w proszku).
+  const BROAD_RE = /-and-(its|their)-products$|-based-foods|-and-derivatives$|-preparations$/;
+  const specific = pr => (pr.categories || []).filter(c => /^en:[a-z0-9-]+$/.test(c) && !GENERIC_CATS.has(c) && !BROAD_RE.test(c));
+  // Postać produktu musi się zgadzać: krem do smarowania zastępuje krem do smarowania, napój napój, przekąska przekąskę.
+  const FORM_CATS = ['en:spreads', 'en:beverages', 'en:snacks', 'en:desserts', 'en:sauces', 'en:condiments', 'en:breakfast-cereals', 'en:meals'];
+  const sameUse = (prod, x) => {
+    const xs = new Set((x.categories || []));
+    if (FORM_CATS.some(f => (prod.categories || []).includes(f) && !xs.has(f))) return false;
+    const mine = specific(prod); if (!mine.length) return true;
+    return mine.some(c => xs.has(c));
+  };
   A.sameUse = sameUse;
   let catLoading = null; // produkt, dla którego trwa porównanie (chroni przed wielokrotnym klikaniem)
   async function loadCategory() {
@@ -387,6 +404,7 @@
       const out = [];
       if (A.profile.noScores) out.push(`<p class="small muted">${cmp.sampleSize ? `Sprawdziliśmy ${cmp.sampleSize} podobnych produktów.` : 'Nie mamy jeszcze podobnych produktów do porównania.'}</p>`);
       else if (!cmp.enough) out.push(`<p class="small muted">Za mało podobnych produktów w bazie, żeby rzetelnie porównać (${cmp.sampleSize} z ${MIN_SAMPLE} potrzebnych).</p>`);
+      else if (mine.an.score != null && A.dataGaps(mine.prod, mine.snapshot).length) out.push(`<p class="small muted" id="catPre"><b>Bez porównania w kategorii.</b> W bazie brakuje ${esc(A.dataGaps(mine.prod, mine.snapshot).join(' i '))} tego produktu, więc jego ocena jest wstępna i nie da się rzetelnie ustawić go na tle ${cmp.sampleSize} podobnych. Porównamy po uzupełnieniu danych.</p>`);
       else if (mine.an.score != null) {
         const p = cmp.betterThan, kind = shop ? ` (${esc(shop.label.toLowerCase())})` : '';
         const n = `${cmp.sampleSize} ${plural(cmp.sampleSize, 'podobnego produktu', 'podobnych produktów', 'podobnych produktów')}${kind}`;
@@ -411,8 +429,8 @@
       if (alts.length) {
         const best = alts[0];
         A.setHistoryAlt(mine.prod.code, { code: best.pr.code, name: best.pr.name, image: A.safeImg(best.pr.image), pct: best.pm.pct, level: best.pm.level, label: best.pm.label });
-        out.push(`<h3 class="sec-h alt-h">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik do listy zakupów (+15 pkt). Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
-      } else if (cmp.enough && mine.an.score != null) out.push(`<p class="small muted">${cmp.betterThan >= 70 ? 'To jeden z lepszych wyborów w tej kategorii.' : 'Nie znaleźliśmy wyraźnie lepszego zamiennika.'}</p>`);
+        out.push(`<h3 class="sec-h alt-h">Zamień na lepsze</h3><div class="list">${alts.map(x => { const img = A.safeImg(x.pr.image); return `<div class="item alt" style="cursor:default"><a class="row grow" href="#/p/${esc(x.pr.code)}" style="text-decoration:none;color:inherit">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.my ? 'jest w: ' + A.storeLabel(x.my) : '', x.pm.label].filter(Boolean).join(' · '))}</span></span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><button class="btn btn-green btn-sm" type="button" data-act="swap-alt" data-code="${esc(x.pr.code)}">Zamień</button></div>`; }).join('')}</div><p class="small muted">Zamiana dodaje zamiennik do listy zakupów${A.pt(' (+15 pkt)')}. Ceny i dostępność w Twoim sklepie mogą się różnić.</p>`);
+      } else if (cmp.enough && mine.an.score != null && !A.dataGaps(mine.prod, mine.snapshot).length) out.push(`<p class="small muted">${cmp.betterThan >= 70 ? 'To jeden z lepszych wyborów w tej kategorii.' : 'Nie znaleźliśmy wyraźnie lepszego zamiennika.'}</p>`);
       body().innerHTML = out.join('') || '<p class="small muted">Nie mamy jeszcze podobnych produktów do porównania.</p>';
     } catch (e) {
       if (cur !== mine || !body()) return;
@@ -461,7 +479,7 @@
     const b = A.store.get('d-bought', {}); if (u.prevBought) b[u.bk] = u.prevBought; else delete b[u.bk]; A.store.set('d-bought', b);
     A.toast(`Przywrócono „${u.old.name}” na listę.`);
     A.renderShelvesIfOpen();
-    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę (+5 pkt)'; }
+    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę' + A.pt(' (+5 pkt)'); }
   };
   A.swapTo = (fromCode, alt) => {
     // Usuwamy słabszy produkt z półki (jeśli tam był) i dodajemy zamiennik.
@@ -618,7 +636,7 @@
     const box = A.$('addForm'); if (!box) return;
     A.rememberAdded(code, name);
     const shots = { ingredients: photos.ingredients && photos.ingredients.blob, nutrition: photos.nutrition && photos.nutrition.blob };
-    box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small">Produkt jest już w bazie Open Food Facts. Gdy potwierdzą go 2 kolejne osoby, dostaniesz złotą kartę i +50 pkt. Jeszcze 2 krótkie kroki, a od razu zobaczysz jego ocenę.</p><a class="small" href="#/odkrycia">Twoje odkrycia</a></div><div id="completeBox"></div>`;
+    box.outerHTML = `<div class="panel stack center" style="align-items:center" id="addDone">${A.mascot('cheer', 90)}<h2>Dziękujemy, odkrywco!</h2><p class="small">Produkt jest już w bazie Open Food Facts. Gdy potwierdzą go 2 kolejne osoby, ${A.quiet() ? 'zostanie potwierdzony dla wszystkich' : 'dostaniesz złotą kartę i +50 pkt'}. Jeszcze 2 krótkie kroki, a od razu zobaczysz jego ocenę.</p><a class="small" href="#/odkrycia">Twoje odkrycia</a></div><div id="completeBox"></div>`;
     A.openComplete(A.$('completeBox'), { code, name, needIngr: true, needNut: true, fresh: true, photos: shots, storeDone: A.storeTagged(code), onDone: () => {
       const el = A.$('completeBox'); if (!el) return;
       el.innerHTML = `<div class="panel stack center" style="align-items:center">${A.mascot('wow', 70)}<b style="font-family:var(--f-display);font-size:1.15rem">Gotowe!</b><p class="small">Wszyscy zobaczą produkt w bazie zwykle w ciągu kilku minut. Ty możesz od razu sprawdzić jego ocenę.</p><button class="btn btn-gold btn-block" type="button" data-act="retry" data-code="${esc(code)}">Zobacz ocenę produktu</button><a class="small" href="#/postepy">Zobacz swoje odznaki</a></div>`;
@@ -640,7 +658,7 @@
     const done = `<img src="${esc(r.url)}" alt="Twoje zdjęcie opakowania" class="complete-photo"><p class="small"><b>Dziękujemy!</b> Zdjęcie jest w Open Food Facts. W aplikacji pojawi się po najbliższym odświeżeniu bazy.</p>`;
     const fb = A.$('frontBox'); if (fb) fb.innerHTML = done; else if (btn) btn.outerHTML = done;
     if (msg) msg.textContent = '';
-    A.toast('Zdjęcie wysłane. +10 pkt');
+    A.toast('Zdjęcie wysłane.' + A.pt(' +10 pkt'));
   };
   function refreshAfterSave(code) {
     [2500, 9000].forEach(ms => setTimeout(async () => {

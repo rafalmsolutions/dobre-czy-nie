@@ -8,6 +8,7 @@
   /* Ocena przy rzeczy: z domownikami odpowiedź dla całej rodziny (zapamiętana przy ostatnim sprawdzeniu produktu), bez nich mój procent. */
   /* Ocena przy rzeczy (3.0): krótkie słowa w kolorze wyniku pod nazwą – „pasuje wszystkim”, „uwaga: Ola”, „nie dla: Kuba”. */
   function scoreHtml(i) {
+    if (i.code && !fresh.has(i.code)) return '';
     if (A.famOn() && i.fam) {
       const w = i.fam.t === 'ok' ? 'pasuje wszystkim' : i.fam.h.replace(/^./, c => c.toLowerCase());
       return `<span class="famchip" data-t="${esc(i.fam.t)}">${esc(w)}</span>`;
@@ -217,8 +218,31 @@
       <div class="ls-list">${lists}</div>${add}${ren}<button class="ls-act" type="button" data-act="shelf-clear" ${sh.items.some(i => i.checked) ? '' : 'disabled'}>Usuń kupione z listy</button>${del}
       <p class="msg" role="status">${esc(ui.shelfMsg)}</p><p class="small muted">Za darmo ${Shelf.FREE_LIMIT} listy · więcej w Lupka Plus</p></div>`;
   }
+  /* 3.0.2: wynik przy produktach liczymy przy każdym otwarciu listy dla osób wybranych teraz, z danych produktu w telefonie.
+     Gdy danych jeszcze nie ma, wiersz nie pokazuje starego wyniku (mógł być liczony dla innych osób), tylko dociągamy dane i odświeżamy. */
+  let fresh = new Set(), fetching = false;
+  function refreshInfo(sh) {
+    fresh = new Set();
+    const cache = A.store.get('cache', {}), need = [];
+    sh.items.forEach(i => {
+      if (!i.code) return;
+      const p = (cache[i.code] && cache[i.code].p) || (A.detailCached && A.detailCached(i.code));
+      if (!p || p.kind === 'cosmetic') { if (!p) need.push(i.code); return; }
+      try {
+        const an = analyze(p), pm = personalMatch(p, an, A.profile);
+        const up = Shelf.updateInfo(A.shelves, i.code, { pct: pm.pct, fam: A.familyShort ? A.familyShort(p, an) : null });
+        if (up.changed) { A.shelves = up.state; A.saveShelves(); }
+        fresh.add(i.code);
+      } catch (e) { }
+    });
+    if (need.length && A.loadDetails && !fetching && navigator.onLine !== false) {
+      fetching = true;
+      A.loadDetails(need.slice(0, 40)).catch(() => false).then(() => { fetching = false; if (A.current.screen === 'shelves' && need.some(c => A.detailCached(c))) render(); });
+    }
+  }
   function render(focusSel) {
     sug = []; sugIdx = -1;
+    refreshInfo(active());
     const sh = active(), pr = Shelf.progress(sh), groups = Shelf.grouped({ items: sh.items.filter(i => !i.checked) }), bought = sh.items.filter(i => i.checked);
     const pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
     A.$('scr-shelves').innerHTML = `<div class="wrap shop">

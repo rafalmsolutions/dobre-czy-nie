@@ -227,7 +227,7 @@
     const img = A.safeImg(x.pr.image), ns = A.profile.noScores, bad = x.m.status === 'fail', pct = x.m.pct;
     return `<div class="item srch-item${bad ? ' dim' : ''}"><a href="#/p/${esc(x.pr.code)}" class="row grow" style="text-decoration:none;color:inherit;min-width:0">
       ${img ? `<img class="thumb${ns || pct == null ? '' : A.ringStyle(pct)}" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}
-      <span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.pr.quantity].filter(Boolean).join(' · '))}</span><span class="t2 srch-lbl"${bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(x.m.label)}</span></span>
+      <span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.pr.quantity].filter(Boolean).join(' · '))}</span><span class="t2 srch-lbl"${bad ? ' style="color:#7A1A13"' : pct != null ? ` style="${A.pctText(pct)}"` : ''}>${esc(!bad && pct != null && A.dataGaps(x.pr).length ? A.preLabel(x.m.label) : x.m.label)}</span></span>
       ${ns ? '' : `<span class="pct"${bad ? ' style="background:#FDE6E1"' : A.pctStyle(pct)}>${bad ? '✕' : pct == null ? '–' : pct + '%'}</span>`}</a>${A.cmpBtnHtml(x.pr.code, x.pr.name)}</div>`;
   }
   function drawResults(q, list, state) {
@@ -239,7 +239,7 @@
     if (list.length) body = `<p class="small muted srch-count">${state === 'local' ? 'Z Twoich ostatnich produktów · szukam w bazie…' : list.length > 20 ? `Pokazujemy 20 najlepszych z ${list.length}. Najpierw najlepsze dla ${people() ? 'osób, dla których kupujesz' : 'Ciebie'}.` : `Najpierw najlepsze dla ${people() ? 'osób, dla których kupujesz' : 'Ciebie'}.`}</p><div class="list">${list.slice(0, 20).map(rowHtml).join('')}</div>`;
     else if (state === 'loading') body = '<p class="small muted">Szukam…</p>';
     else if (state === 'error') body = '<div class="empty">Nie udało się połączyć z bazą produktów. Sprawdź internet i spróbuj ponownie.</div>';
-    else if (state === 'done') body = `<div class="empty stack" style="align-items:center;text-align:center"><b style="font-family:var(--f-display)">Nie znaleźliśmy „${esc(q)}”</b><span>Może inaczej się nazywa albo jeszcze go nie ma w bazie Open Food Facts. Masz go pod ręką? Zeskanuj kod i dodaj produkt (+10 pkt).</span><button class="btn btn-dark" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj i dodaj</button></div>`;
+    else if (state === 'done') body = `<div class="empty stack" style="align-items:center;text-align:center"><b style="font-family:var(--f-display)">Nie znaleźliśmy „${esc(q)}”</b><span>Może inaczej się nazywa albo jeszcze go nie ma w bazie Open Food Facts. Masz go pod ręką? Zeskanuj kod i dodaj produkt${A.pt(' (+10 pkt)')}.</span><button class="btn btn-dark" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj i dodaj</button></div>`;
     box.innerHTML = catHtml + body;
   }
   /* Same cyfry (kod spod kreski, także ze spacjami): od razu do produktu zamiast szukania po nazwie. */

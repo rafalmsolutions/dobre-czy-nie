@@ -123,7 +123,7 @@
       <div class="pf-pref"${sec('preferencje')}>
         <p class="pf-who">Edytujesz: <b>${esc(who)}</b></p>
         <h2 class="pf-q">${fp ? `Co jest ważne dla: ${esc(fp.name)}?` : 'Co jest dla Ciebie ważne?'}</h2>
-        <p class="small muted">Wybierz do ${GOALS_MAX} celów. Na ich podstawie dobierzemy kryteria oceny.</p>
+        <p class="small muted">Wybierz do ${GOALS_MAX} celów. Na ich podstawie dobierzemy kryteria oceny. Zmiany zapisują się od razu.</p>
         <div class="rows">${GOALS.map(g => { const t = GOAL_TILES[g.key], on = p.goals.includes(g.key); return `<button class="ck-row" type="button" data-act="prof-goal" data-k="${g.key}" aria-pressed="${on}"><span class="grow"><b>${esc(t.label)}${g.key === 'healthy' ? '' : ' · ' + esc(t.hint)}</b></span><span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`; }).join('')}</div>
         <p class="msg" id="goalMsg" role="status"></p>
         <details class="pf-more" id="watchSet"><summary><span class="grow"><b>Szczegółowe kryteria</b><small>${esc(watchSum || 'cele ustawiają je same')}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
@@ -136,11 +136,11 @@
             <span>Białko, błonnik: dużo <b>+10</b>, źródło <b>+5</b>.</span>
             <span>Brak danych w bazie: najwyżej 70%.</span></div></details>
         <p class="small muted">Alergeny i dietę ustawisz w <a href="#/profil/wykluczenia">„Wykluczeniach”</a>.</p>
-        <button class="btn btn-dark btn-block" type="submit">Zapisz preferencje</button>
+        <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       <div class="pf-excl"${sec('wykluczenia')}>
         <p class="pf-who">Edytujesz: <b>${esc(who)}</b></p>
-        <p class="small muted">Produkt, który to zawiera, oznaczamy „Nie pasuje” (0–10%). Śladowe ilości: najwyżej 35%.</p>
+        <p class="small muted">Produkt, który to zawiera, oznaczamy „Nie pasuje” (0–10%). Śladowe ilości: najwyżej 35%. Zmiany zapisują się od razu.</p>
         <h3 class="pf-sh">Alergeny</h3><div class="rows">${PROFILE_OPTIONS.allergens.map(o => ckRow('allergens', o.key, o.label, p.allergens.includes(o.key))).join('')}</div>
         <h3 class="pf-sh">Dieta</h3><div class="rows">${PROFILE_OPTIONS.diet.map(o => ckRow('diet', o.key, o.label, p.diet.includes(o.key))).join('')}${PROFILE_OPTIONS.avoid.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key))).join('')}</div>
         <h3 class="pf-sh">Własne składniki</h3>
@@ -149,12 +149,12 @@
         <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p>
         ${me ? `<h3 class="pf-sh">W kosmetykach unikam</h3><div class="rows">${PROFILE_OPTIONS.cosmetic.map(o => ckRow('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div>` : ''}
         <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
-        <button class="btn btn-dark btn-block" type="submit">Zapisz wykluczenia</button>
+        <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       ${me ? `<div class="pf-shops"${sec('sklepy')}>
-        <p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam.</p>
+        <p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam. Zmiany zapisują się od razu.</p>
         <div class="rows">${STORES.map(st => ckRow('mystore', st.key, st.label, A.myStores().includes(st.key))).join('')}</div>
-        <button class="btn btn-dark btn-block" type="submit">Zapisz sklepy</button>
+        <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       <div class="pf-set"${sec('ustawienia')}>
         <p class="small muted">Zmiany zapisują się od razu.</p>
@@ -273,7 +273,6 @@
   A.saveProfileForm = e => {
     e.preventDefault();
     collect(true);
-    A.toast(person() ? `Zapisano profil: ${person().name}.` : 'Zapisano. Sprawdzamy to przy każdym produkcie.');
-    A.go('#/profil');
+    A.go('#/profil'); // zmiany zapisały się już przy zaznaczaniu; „Gotowe” tylko wraca do spisu
   };
 })();

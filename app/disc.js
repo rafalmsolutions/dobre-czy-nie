@@ -107,7 +107,7 @@
       <div class="disc-prod">${img ? `<img src="${esc(img)}" alt="Zdjęcie przodu z bazy">` : ''}<b>${esc(r.name || prod.name || '')}</b></div>
       <button class="btn btn-green btn-block" type="button" data-act="disc-vote" data-v="yes">Tak, to ten sam</button>
       <div class="disc-row"><button class="btn btn-white" type="button" data-act="disc-vote" data-v="no">Nie, to inny</button><button class="btn btn-white" type="button" data-act="disc-vote" data-v="unsure">Nie mam pewności</button></div>
-      <p class="small muted center">+5 pkt za „tak” lub „nie”, +2 za „nie mam pewności”. Nagroda jest za Twój czas, nie za wynik.${A.disc.level === 'guardian' ? ' Jako strażnik bazy liczysz się podwójnie.' : ''}</p></div>` };
+      <p class="small muted center">${A.quiet() ? 'Twoja odpowiedź pomaga potwierdzić produkt dla innych.' : '+5 pkt za „tak” lub „nie”, +2 za „nie mam pewności”. Nagroda jest za Twój czas, nie za wynik.'}${A.disc.level === 'guardian' ? ' Jako strażnik bazy liczysz się podwójnie.' : ''}</p></div>` };
     A.discFill(prod.code);
   };
   A.discVote = async btn => {

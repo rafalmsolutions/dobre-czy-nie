@@ -160,7 +160,7 @@
     const head = title => `<div class="sec-head"><b style="font-family:var(--f-display);font-size:1.15rem">${title}</b>${total > 1 ? `<span class="small muted">Krok ${stepNo()} z ${total}</span>` : ''}</div>${st.storeAsk ? A.storePickHtml('cmpStore', st.store) : ''}`;
     const photo = k => urls[k] ? `<img src="${esc(urls[k])}" alt="Zdjęcie: ${k === 'ingredients' ? 'skład' : 'wartości odżywcze'}" class="complete-photo">` : '';
     const photoBtn = (k, label) => `<span class="btn btn-blue btn-sm filebtn" style="align-self:flex-start"><svg><use href="#i-photo"/></svg>${label}<input type="file" accept="image/*" capture="environment" data-complete-photo="${k}" aria-label="${label}"></span>`;
-    const pts = n => `(+${n} pkt)`;
+    const pts = n => A.pt(`(+${n} pkt)`);
 
     function next() {
       if (st.step === 'basic' && dataStep()) { st.step = dataStep(); rerender(false); return; }
@@ -371,7 +371,7 @@
           <p class="small">W bazie: <b>${esc(x.n)}</b>${x.b ? ` · ${esc(x.b)}` : ''}. Przepisz polską nazwę z opakowania, np. „Mus jabłkowy”. Markę pomiń, jeśli jest napisana osobno.</p>
           <input class="field" id="fillNameIn" maxlength="80" autocomplete="off" placeholder="Nazwa po polsku" aria-label="Nazwa po polsku">
           <p class="msg" id="fillNameMsg" role="status"></p>
-          <div class="actions"><button class="btn btn-gold" type="button" data-fill="name-save" data-code="${esc(x.c)}">Zapisz (+5 pkt)</button><button class="btn btn-white" type="button" data-fill="name-skip" data-code="${esc(x.c)}">Nie ma polskiej nazwy</button></div></div>`
+          <div class="actions"><button class="btn btn-gold" type="button" data-fill="name-save" data-code="${esc(x.c)}">Zapisz${A.pt(' (+5 pkt)')}</button><button class="btn btn-white" type="button" data-fill="name-skip" data-code="${esc(x.c)}">Nie ma polskiej nazwy</button></div></div>`
         : `<button type="button" class="item fill-item" data-fill="name-open" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: polskiej nazwy</span></span><span class="pct" style="background:#FFF2C2;color:#6B4A00">+5</span></button>`).join('')}
       ${ntodo.length ? '' : '<div class="empty">Na tej liście nie ma już produktów bez polskiej nazwy. Dziękujemy!</div>'}`;
     if (cur) { const inp = A.$('fillNameIn'); setTimeout(() => { try { inp.focus(); A.$('fillName').scrollIntoView({ block: 'nearest' }); } catch (e) { } }, 30); }
@@ -430,7 +430,7 @@
           if (r.ok && (r.saved || []).includes('name')) { A.award('name_added', { code }); A.fillDone(code, ['name']); A.toast('Dziękujemy! Produkt będzie widać w wyszukiwarce po najbliższej aktualizacji bazy.'); }
           else { A.fillDone(code, []); A.toast('Ktoś już dodał polską nazwę tego produktu. Dziękujemy!'); }
           nameOpen = nextName(d, code); drawFill(d);
-        } else { b.disabled = false; b.textContent = 'Zapisz (+5 pkt)'; msg.textContent = r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.'; }
+        } else { b.disabled = false; b.textContent = 'Zapisz' + A.pt(' (+5 pkt)'); msg.textContent = r.error === 'offline' ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.'; }
       }
     };
     el.onkeydown = e => { if (e.key === 'Enter' && e.target.id === 'fillNameIn') { e.preventDefault(); const s = el.querySelector('[data-fill=name-save]'); if (s) s.click(); } };

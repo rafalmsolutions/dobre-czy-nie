@@ -294,6 +294,8 @@ const App = {};
   };
   // Tryb zakupowy: bez punktów na ekranie, gratulacji i „Zgadnij” (postępy liczą się dalej w tle).
   A.quiet = () => !!(A.settings && A.settings.shopMode);
+  // Tekst o punktach (np. „ (+10 pkt)”) – pusty, gdy włączone „Ukryj punkty i nagrody”.
+  A.pt = s => A.quiet() ? '' : s;
   A.plusFly = n => {
     if (A.quiet()) return;
     const el = document.createElement('div');
