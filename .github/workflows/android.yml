@@ -1,0 +1,60 @@
+# Buduje aplikację na Androida (Trusted Web Activity: lupka.app w Chrome, pakiet app.lupka) do Google Play.
+# Uruchamia się ręcznie (Actions → Zbuduj aplikację na Androida → Run workflow) i po zmianie plików w android/.
+# Wymaga sekretów repozytorium (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64 – klucz przesyłania (plik lupka-upload.keystore zakodowany base64)
+#   ANDROID_KEYSTORE_PASSWORD – hasło do klucza (alias „upload”)
+# Wynik: plik .aab w artefaktach przebiegu (do wgrania w Play Console). Klucz nigdy nie trafia do repozytorium.
+name: Zbuduj aplikację na Androida
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Bubblewrap
+        run: cd android && npm install --no-audit --no-fund @bubblewrap/core@1
+      - name: Projekt Androida
+        run: node android/build.mjs twa
+      - name: Licencje Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Paczka (AAB)
+        run: |
+          cd twa
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease
+      - name: Podpis kluczem przesyłania
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$PW" ]; then echo "::error::Brak sekretów ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD"; exit 1; fi
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          AAB=$(ls twa/app/build/outputs/bundle/release/*.aab | head -1)
+          jarsigner -keystore "$RUNNER_TEMP/upload.keystore" -storepass "$PW" -keypass "$PW" -sigalg SHA256withRSA -digestalg SHA-256 "$AAB" upload
+          jarsigner -verify "$AAB" | tail -1
+          VER=$(node -e "console.log(require('./twa/twa-manifest.json').appVersionName + '-' + require('./twa/twa-manifest.json').appVersionCode)")
+          mkdir -p out && cp "$AAB" "out/lupka-$VER.aab"
+          keytool -list -v -keystore "$RUNNER_TEMP/upload.keystore" -storepass "$PW" | grep "SHA256:" || true
+          rm -f "$RUNNER_TEMP/upload.keystore"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lupka-android
+          path: out/*.aab
+          retention-days: 30

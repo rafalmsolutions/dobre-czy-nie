@@ -72,7 +72,7 @@ jobs:
       - name: Złóż stronę
         run: |
           mkdir site
-          rsync -a --exclude '.git*' --exclude tests --exclude scripts --exclude worker --exclude datacache --exclude site --exclude README.md ./ site/
+          rsync -a --exclude '.git*' --exclude tests --exclude scripts --exclude worker --exclude android --exclude datacache --exclude site --exclude README.md ./ site/
           cp -r datacache site/data
           node scripts/build_pages.cjs --data site/data --out site
           du -sh site site/data

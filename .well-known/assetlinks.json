@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.lupka",
+      "sha256_cert_fingerprints": [
+        "68:7C:4A:A1:29:19:D0:1F:35:CD:E0:F7:1F:2E:C4:6C:BD:7D:76:38:66:1E:D5:08:13:D0:75:F8:86:AD:F8:16"
+      ]
+    }
+  }
+]

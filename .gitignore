@@ -13,3 +13,5 @@ __pycache__/
 /kategorie/
 /sitemap.xml
 /aplikacje-do-sprawdzania-skladu/
+twa/
+android/node_modules/
