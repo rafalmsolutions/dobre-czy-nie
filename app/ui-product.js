@@ -231,7 +231,7 @@
     const fp = cur.fam ? cur.fam.focus : null, other = fp && fp.id !== 'me';
     const bpm = other ? fp.pm : pm;
     parts.push(`<div class="panel stack${bpm.personal ? '' : ' general'}" id="matchBox">
-      <h2 class="sec-h">${other ? 'Dlaczego dla: ' + esc(fp.name) : bpm.personal ? 'Dlaczego dla Ciebie' : 'Ocena ogólna'}</h2>
+      <h2 class="sec-h">${other ? (A.nameGen(fp.name) ? 'Dlaczego dla ' + esc(A.nameGen(fp.name)) : 'Dlaczego: ' + esc(fp.name)) : bpm.personal ? 'Dlaczego dla Ciebie' : 'Ocena ogólna'}</h2>
       ${other && !bpm.personal ? `<p class="small">${esc(fp.name)} nie ma jeszcze ustawień profilu, więc to ogólna ocena składu. <a href="#/profil">Ustaw</a></p>` : ''}
       ${bpm.personal ? billHtml(bpm, other ? fp.name : '', A.dataGaps(prod, cur.snapshot).includes('składu')) : `<p class="small">${esc(scoreNote(prod, an))}</p><p class="small muted" id="generalNote">${pm.general ? 'Twój cel to „po prostu zdrowiej”, więc liczy się ogólna ocena składu, taka sama dla wszystkich.' : 'Nie masz jeszcze celów ani ograniczeń, więc to ogólna ocena składu, taka sama dla wszystkich.'} <a href="#/profil">Ustaw cele</a>, a pokażemy, czy produkt pasuje właśnie do Ciebie.</p>`}
     </div>`);

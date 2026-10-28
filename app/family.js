@@ -123,6 +123,25 @@
     return v ? { t: v.tone, h: v.head } : null;
   };
   /* Odpowiedź dla rodziny (obok zdjęcia). */
+  /* Dopełniacz imienia do „Dlaczego dla Kuby”: najczęstsze polskie końcówki. Imię z kilku słów, cyfr albo nietypowe zostaje bez zmian (null). */
+  A.nameGen = name => {
+    const n = String(name || '').trim();
+    if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+$/.test(n) || n.length < 3) return null;
+    const lo = n.toLowerCase(), cut = k => n.slice(0, n.length - k);
+    if (/(si|zi|ci|ni|dzi)a$/.test(lo)) return cut(1);            // Kasia → Kasi, Ania → Ani
+    if (/ia$/.test(lo)) return cut(1) + 'i';                       // Maria → Marii
+    if (/ja$/.test(lo)) return cut(2) + 'i';                       // Maja → Mai
+    if (/[kgl]a$/.test(lo)) return cut(1) + 'i';                   // Olga → Olgi, Ola → Oli
+    if (/a$/.test(lo)) return cut(1) + 'y';                        // Kuba → Kuby, Ewa → Ewy
+    if (/i$/.test(lo)) return n + 'ego';                           // Antoni → Antoniego
+    if (/y$/.test(lo)) return cut(1) + 'ego';                      // Jerzy → Jerzego
+    if (/[^aeiouyąęó]ek$/.test(lo)) return cut(2) + 'ka';          // Tomek → Tomka
+    if (/eł$/.test(lo)) return cut(2) + 'ła';                      // Paweł → Pawła
+    const soft = { 'ś': 'sia', 'ć': 'cia', 'ń': 'nia', 'ź': 'zia' }[lo.slice(-1)];
+    if (soft) return cut(1) + soft;                                // Staś → Stasia
+    if (/[bcdfhjklłmnprstwz]$/.test(lo)) return n + 'a';           // Adam → Adama
+    return null;
+  };
   A.familyAnswerHtml = fv => fv ? `<div class="fam-ans" data-tone="${fv.tone}" role="status"><b>${esc(fv.head)}</b><span>${esc(fv.sub)}</span></div>` : '';
   /* 3.0: osoby pod talerzem jako plakietki z pełnym imieniem i kolorowym wynikiem (✕ = nie pasuje, ? = nie wiemy). Stuknięcie = wyjaśnienie dla tej osoby. */
   A.familyCirclesHtml = fv => {

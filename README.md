@@ -16,6 +16,10 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Drobne poprawki (28.10.2026, wersja 3.0.1)
+- „Dlaczego dla Kuby”: imię w dopełniaczu (A.nameGen, najczęstsze polskie końcówki; imię z kilku słów albo nietypowe → „Dlaczego: Imię”).
+- Domyślna lista nazywa się „Tygodniowe” (mieści się w nagłówku); istniejące „Zakupy tygodniowe” zmieniamy przy starcie.
+
 ## Nowy wygląd ekranów (28.10.2026, wersja 3.0.0)
 Projekt z makiet zatwierdzonych przez właściciela (zasady design-taste-frontend: kolor tylko dla znaczenia, nagłówki zdaniem, liczby krojem tekstu, cienkie linie zamiast kart w kartach). Talerze, łuki w tle i logo zostają.
 - Dolne menu: ikony obrysowe, „Start / Zakupy / Skanuj / Karty / Profil”; wysunięty okrągły przycisk skanu z podpisem.

@@ -35,6 +35,8 @@ const App = {};
   if (A.store.get('settings-v', 1) < 2) { A.settings.guess = false; A.store.set('settings', A.settings); A.store.set('settings-v', 2); }
   A.game = Game.load(A.store.get('game', null));
   A.shelves = Shelf.load(A.store.get('shelves', null));
+  // 3.0: domyślna lista ma krótszą nazwę, żeby mieściła się w nagłówku Zakupów.
+  A.shelves.shelves.forEach(sh => { if (sh.name === 'Zakupy tygodniowe') sh.name = 'Tygodniowe'; });
   A.saveProfile = () => A.store.set('d-profile', A.profile);
   A.saveSettings = () => A.store.set('settings', A.settings);
   A.saveShelves = () => A.store.set('shelves', A.shelves);

@@ -33,7 +33,8 @@ ok(/Nie dla: Kuba/.test(ans) && /orzech/i.test(ans), 'obok zdjęcia odpowiedź d
 const circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id + ':' + x.dataset.st + ':' + x.innerText.replace(/\n/g, ' ')));
 ok(circ.length === 2 && circ[0].startsWith('f') && circ[0].includes(':bad:'), 'kółka pod zdjęciem, najpierw osoba z problemem: ' + circ.join(' | '));
 ok((await page.innerText('#scr-product .fam-c[data-st=bad] .fam-pill')).trim() === '✕', '„nie pasuje”: ✕ zamiast procentu');
-ok((await page.innerText('#matchBox')).includes('Dlaczego dla: Kuba'), 'na start wyjaśnienie dla osoby z problemem');
+ok((await page.innerText('#matchBox')).includes('Dlaczego dla Kuby'), 'na start wyjaśnienie dla osoby z problemem');
+ok(await page.evaluate(() => ['Kuba','Ola','Kasia','Maria','Tomek','Paweł','Jerzy','Adam','Jan Paweł'].map(App.nameGen).join()) === 'Kuby,Oli,Kasi,Marii,Tomka,Pawła,Jerzego,Adama,', 'dopełniacz imion w „Dlaczego dla …”');
 ok(await page.locator('#scr-product .d-hero[data-level=bad]').count() === 1, 'kolor wstęgi = odpowiedź dla rodziny');
 await page.waitForTimeout(1500);
 const alt = await page.innerText('#famAlt').catch(() => '');
@@ -44,7 +45,7 @@ await page.click('[data-act=fam-focus][data-id=me]'); await page.waitForTimeout(
 ok((await page.innerText('#matchBox')).includes('Dlaczego dla Ciebie'), 'stuknięcie „Ja”: moje wyjaśnienie');
 ok(await page.evaluate(() => App.store.get('d-focus', '') === 'me'), 'wybór najważniejszej osoby zapamiętany');
 await page.click('[data-act=fam-focus][data-id]:not([data-id=me])'); await page.waitForTimeout(300);
-ok((await page.innerText('#matchBox')).includes('Dlaczego dla: Kuba'), 'stuknięcie osoby: wyjaśnienie dla niej');
+ok((await page.innerText('#matchBox')).includes('Dlaczego dla Kuby'), 'stuknięcie osoby: wyjaśnienie dla niej');
 // Produkt, który pasuje obojgu: na start wyjaśnienie dla najważniejszej osoby, zielona odpowiedź.
 await page.evaluate(() => App.setFocus('me'));
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.milk); await page.waitForTimeout(1500); await closeCel();

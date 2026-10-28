@@ -123,7 +123,7 @@ const Shelf = (() => {
   const fmtQty = it => { const q = String(it.qty).replace('.', ','); return it.unit === 'szt' ? `${q} szt.` : `${q} ${it.unit}`; };
 
   function newShelf(name) { return { id: uid(), name: clean(name, MAX_SHELF_NAME) || 'Zakupy', items: [], created: Date.now() }; }
-  function newState() { const s = newShelf('Zakupy tygodniowe'); return { v: 1, active: s.id, shelves: [s] }; }
+  function newState() { const s = newShelf('Tygodniowe'); return { v: 1, active: s.id, shelves: [s] }; }
 
   function load(raw) {
     if (!isObj(raw) || raw.v !== 1 || !Array.isArray(raw.shelves)) return newState();
