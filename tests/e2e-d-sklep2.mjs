@@ -95,7 +95,7 @@ ok(await page.locator('[data-front-photo]').count() === 0, 'po wysłaniu nie pro
 
 // 7. Kafelki „Twoja kolekcja” prowadzą do zestawień kart
 await go('#/album');
-await page.click('.al-stats a.holo'); await page.waitForTimeout(400);
+await page.click('.kt-stats a[href="#/album/blyszczace"]'); await page.waitForTimeout(400);
 ok(await page.evaluate(() => location.hash) === '#/album/blyszczace' && /błyszczące/i.test(await page.innerText('#scr-albumpage h1')), 'kafelek „błyszczące” otwiera zestawienie');
 await go('#/album/karty');
 ok(await page.locator('#scr-albumpage .ap-slot').count() === await page.evaluate(() => Object.values(App.album.cards).filter(c => !c.legacy).length), 'wszystkie karty: tyle samo co na kafelku');
