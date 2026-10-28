@@ -15,7 +15,7 @@
 
   /* ---------- Kliknięcia ---------- */
   const SHELF_ACTS = ['shelf-pick', 'shelf-sheet', 'shelf-sheet-close', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate'];
-  const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'wipe', 'wipe-yes', 'wipe-no'];
+  const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'store-add', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');
     if (kindBtn) { A.ingKind(kindBtn); return; }
@@ -112,6 +112,7 @@
   document.addEventListener('keydown', e => {
     if (e.target.id === 'addItemInput' && A.shelfKey && A.shelfKey(e)) return;
     if (e.key === 'Enter' && e.target.id === 'customInput') { e.preventDefault(); A.profAction('add-custom', e.target); return; }
+    if (e.key === 'Enter' && e.target.id === 'storeAddInput') { e.preventDefault(); A.profAction('store-add', e.target); return; }
     if (e.key === 'Escape') {
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
       if (!A.$('scanner').hidden) { e.preventDefault(); A.closeScanner(); return; }
@@ -135,7 +136,7 @@
     if (t.id === 'ingPhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.runOcr(f); return; }
     if (t.id === 'codePhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.decodeImageFile(f); return; }
     if (t.dataset.act === 'item-toggle') { A.shelfAction('item-toggle', t); return; }
-    if (t.closest('#profileForm') && t.id !== 'customInput') { A.profAutoSave(); return; }
+    if (t.closest('#profileForm') && t.id !== 'customInput' && t.id !== 'storeAddInput') { A.profAutoSave(); return; }
     if (t.dataset.act === 'no-guess') {
       A.settings.guess = !t.checked; A.saveSettings();
       A.toast(t.checked ? 'Nie będziemy pytać. Zmienisz to w profilu.' : 'Wróciło pytanie „Zgadnij”.');

@@ -90,5 +90,25 @@ r = await call('/disc/forget', { device: dev(2) }); ok(sqlite.prepare("SELECT CO
 ok(sqlite.prepare("SELECT COUNT(*) n FROM subs WHERE status != 'pending' AND iph IS NOT NULL").get().n === 0, 'po rozstrzygnięciu bez skrótu IP');
 const leaked = sqlite.prepare('SELECT iph FROM subs').all().every(x => !/^\d+\.\d+/.test(x.iph));
 ok(leaked, 'adres IP tylko jako skrót');
+// Sklep spoza listy: do OFF dopiero po 3 różnych osobach (urządzenia i adresy IP)
+{
+  const S = ean('590000000601'); const sent = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (u, o) => { if (String(u).includes('product_jqm2')) { sent.push(o.body.get('add_stores')); return new Response(JSON.stringify({ status: 1 }), { status: 200 }); } return realFetch(u, o); };
+  const envS = Object.assign({}, env, { OFF_USER: 'u', OFF_PASS: 'p', OFF_BASE: 'https://off.test' });
+  let s1 = await call('/disc/store', { device: dev(31), code: S, name: 'Społem PSS' }, { ip: '7.0.0.1', env: envS });
+  ok(s1.j.ok && !s1.j.added && s1.j.need === 2, 'sklep: pierwszy głos, brakuje 2');
+  s1 = await call('/disc/store', { device: dev(32), code: S, name: 'spolem pss' }, { ip: '7.0.0.1', env: envS });
+  ok(!s1.j.added && s1.j.n === 1, 'sklep: drugie urządzenie z tego samego IP się nie liczy');
+  s1 = await call('/disc/store', { device: dev(36), code: S, name: 'Społem PSS' }, { ip: '7.0.0.2', env: envS });
+  ok(!s1.j.added && s1.j.n === 2, 'sklep: drugi głos');
+  s1 = await call('/disc/store', { device: dev(33), code: S, name: 'Społem PSS' }, { ip: '7.0.0.3', env: envS });
+  ok(s1.j.added && sent.length === 1 && sent[0] === 'Społem PSS', 'sklep: po 3 osobach dopisany do OFF (najczęstsza pisownia)');
+  s1 = await call('/disc/store', { device: dev(34), code: S, name: 'Społem PSS' }, { ip: '7.0.0.4', env: envS });
+  ok(s1.j.added && sent.length === 1, 'sklep: kolejny głos już nie wysyła');
+  s1 = await call('/disc/store', { device: dev(35), code: S, name: 'http://spam' }, { ip: '7.0.0.5', env: envS });
+  ok(s1.status === 400, 'sklep: adres zamiast nazwy odrzucony');
+  globalThis.fetch = realFetch;
+}
 console.log(`worker-disc: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

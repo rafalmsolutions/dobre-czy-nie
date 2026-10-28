@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS devices (device TEXT PRIMARY KEY, confirmed INTEGER N
 CREATE TABLE IF NOT EXISTS misses (code TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0, last INTEGER);
 CREATE TABLE IF NOT EXISTS miss_dev (code TEXT NOT NULL, device TEXT NOT NULL, PRIMARY KEY (code, device));
 CREATE TABLE IF NOT EXISTS daily (device TEXT NOT NULL, day TEXT NOT NULL, kind TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (device, day, kind));
+-- 28.10.2026: sklepy spoza listy znanych sieci – głosy; do Open Food Facts po 3 różnych osobach.
+CREATE TABLE IF NOT EXISTS store_votes (code TEXT NOT NULL, skey TEXT NOT NULL, device TEXT NOT NULL, name TEXT, iph TEXT, at INTEGER, PRIMARY KEY (code, skey, device));
+CREATE TABLE IF NOT EXISTS store_added (code TEXT NOT NULL, skey TEXT NOT NULL, at INTEGER, PRIMARY KEY (code, skey));

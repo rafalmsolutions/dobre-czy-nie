@@ -16,6 +16,15 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Sklepy spoza listy i kraj zakupów (28.10.2026, wersja 3.0.4)
+- Kopia bazy zapisuje `data/stores.json`: sklepy wpisywane przy produktach w Open Food Facts w Polsce (najczęstsza pisownia, liczba produktów, min. 2, do 200; `store_catalog` w scripts/build_data.py).
+- Aplikacja: dowolny sklep ma klucz `x:<nazwa bez znaków>` (A.storeKeyOf, A.storeSlug), nazwy własnych sklepów w `d-storenames`, katalog z kopii w `d-storecat` (A.loadStoreCatalog). Do 8 ulubionych sklepów.
+- Profil → Ulubione sklepy: znane sieci, Twoje sklepy, najczęstsze sklepy z bazy; pole „Nie ma Twojego sklepu?” z podpowiedziami.
+- Lista kategorii: w panelu „W którym sklepie?” wszystkie sklepy obecne przy produktach (Twoje na górze).
+- „Kupujesz to w:” z własnym sklepem: głos `POST /disc/store` (pośrednik, D1: store_votes, store_added). Do Open Food Facts (add_stores) dopiero po 3 różnych osobach (urządzenia i skróty IP), w najczęstszej pisowni. Znane sieci jak dotąd od razu. Twój wybór działa od razu w telefonie (d-storetag).
+- Ustawienia: „Kraj zakupów: Polska” (A.country; inne kraje razem z wersjami językowymi).
+- Testy: `tests/e2e-d-stores.mjs`, `tests/worker-disc-test.mjs`, `scripts/test_build_data.py`.
+
 ## Poprawki po teście 3.0.2 (28.10.2026, wersja 3.0.3)
 - Własny skład/wartości z telefonu (mergeLocal oznacza prod.localIngr/localNut): przy każdym otwarciu panel „Skład wpisany przez Ciebie – tylko w tym telefonie” i „Usuń mój wpis i wróć do danych z bazy” (A.clearLocal). Formularz ręcznego składu od razu mówi, że wpis zostaje w telefonie.
 - „Ukryj punkty i nagrody”: bez „+10/+20” na liście „Uzupełnij dane” i bez „Nagroda odkrywcy”/„do nagrody” przy nieznanym kodzie.

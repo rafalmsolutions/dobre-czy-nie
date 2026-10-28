@@ -670,10 +670,32 @@ const App = {};
     }).finally(() => { delete inflight[cat]; });
     return inflight[cat];
   };
-  /* Moje sklepy (Profil → Gdzie robisz zakupy): podnoszą wyżej produkty z tych sklepów i podpowiadają sklep przy dodawaniu. Bez nich nic się nie zmienia. */
-  A.myStores = () => { const v = A.store.get('d-stores', []); return (Array.isArray(v) ? v : []).filter(k => STORES.some(s => s.key === k)).slice(0, 6); };
-  A.setMyStores = keys => A.store.set('d-stores', keys.filter(k => STORES.some(s => s.key === k)).slice(0, 6));
-  A.storeLabel = key => (STORES.find(s => s.key === key) || {}).label || key;
+  /* Moje sklepy (Profil → Ulubione sklepy): podnoszą wyżej produkty z tych sklepów i podpowiadają sklep przy dodawaniu.
+     3.0.4: oprócz znanych sieci (STORES) także dowolny sklep – klucz „x:<nazwa bez znaków>”, nazwa zapamiętana w d-storenames.
+     Lista podpowiedzi: sklepy wpisywane przy produktach w Open Food Facts w Twoim kraju (data/stores.json z cotygodniowej kopii). */
+  A.country = () => 'pl'; // kraj zakupów; na razie tylko Polska (ustawienie przygotowane pod kolejne kraje)
+  A.storeSlug = v => fold(v).replace(/[^a-z0-9]/g, '').slice(0, 40);
+  A.storeKeyOf = raw => { const f = A.storeSlug(raw); if (f.length < 2) return null; const k = STORES.find(x => f.includes(x.key)); return k ? k.key : 'x:' + f; };
+  const isStoreKey = k => typeof k === 'string' && (STORES.some(s => s.key === k) || /^x:[a-z0-9]{2,40}$/.test(k));
+  A.storeNames = () => A.store.get('d-storenames', {}) || {};
+  A.myStores = () => { const v = A.store.get('d-stores', []); return (Array.isArray(v) ? v : []).filter(isStoreKey).slice(0, 8); };
+  A.setMyStores = keys => A.store.set('d-stores', [...new Set(keys.filter(isStoreKey))].slice(0, 8));
+  A.addCustomStore = name => {
+    const nm = String(name || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40), key = A.storeKeyOf(nm);
+    if (!key || /^x:\d+$/.test(key) || /https?:|www\./i.test(nm)) return null;
+    if (key.startsWith('x:')) { const m = A.storeNames(); m[key] = (A.storeCatalog().find(x => x.key === key) || {}).name || nm; A.store.set('d-storenames', m); }
+    return key;
+  };
+  let storeCat = A.store.get('d-storecat', null);
+  A.storeCatalog = () => (storeCat && Array.isArray(storeCat.stores) ? storeCat.stores : []).map(x => ({ key: A.storeKeyOf(x.name), name: x.name, n: x.n })).filter(x => x.key);
+  A.loadStoreCatalog = () => {
+    if (storeCat && Date.now() - (storeCat.at || 0) < 7 * 864e5) return Promise.resolve(A.storeCatalog());
+    return fetch('../data/stores.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => {
+      if (j && Array.isArray(j.stores)) { storeCat = { at: Date.now(), stores: j.stores.slice(0, 200).map(x => ({ name: String(x.name || '').slice(0, 40), n: Number(x.n) || 0 })) }; A.store.set('d-storecat', storeCat); }
+      return A.storeCatalog();
+    }).catch(() => A.storeCatalog());
+  };
+  A.storeLabel = key => (STORES.find(s => s.key === key) || {}).label || A.storeNames()[key] || (A.storeCatalog().find(x => x.key === key) || {}).name || String(key || '').replace(/^x:/, '');
   // Produkty, przy których już dopisaliśmy sklep albo ktoś odpowiedział „Nie teraz” – nie pytamy drugi raz.
   A.storeTagged = code => { const m = A.store.get('d-storetag', {}); return !!(m && Object.prototype.hasOwnProperty.call(m, code)); };
   A.markStoreTagged = (code, key) => { const m = A.store.get('d-storetag', {}) || {}; m[code] = key || ''; const ks = Object.keys(m); if (ks.length > 500) delete m[ks[0]]; A.store.set('d-storetag', m); };
@@ -684,7 +706,11 @@ const App = {};
     return `<div class="store-pick" role="radiogroup" aria-label="Gdzie to kupujesz?"><span class="small" style="font-weight:800">Gdzie to kupujesz?</span>${my.map(k => `<label class="pchip"><input type="radio" name="${name}" value="${k}"${s === k ? ' checked' : ''}>${A.esc(A.storeLabel(k))}</label>`).join('')}<label class="pchip"><input type="radio" name="${name}" value=""${!s ? ' checked' : ''}>inny</label></div>`;
   };
   A.inMyStore = prod => A.myStores().find(k => A.storeOf(prod, k)) || null;
-  A.storeOf = (prod, key) => (prod.stores || []).some(s => fold(s).replace(/\s+/g, '').includes(key));
+  A.storeOf = (prod, key) => {
+    if (!prod || !key) return false;
+    const tag = (A.store.get('d-storetag', {}) || {})[prod.code]; if (tag && tag === key) return true; // wskazany przez Ciebie
+    return key.startsWith('x:') ? (prod.stores || []).some(s => 'x:' + A.storeSlug(s) === key) : (prod.stores || []).some(s => fold(s).replace(/\s+/g, '').includes(key));
+  };
 
   /* ---------- Historia ---------- */
   A.remember = (prod, an, pm) => {

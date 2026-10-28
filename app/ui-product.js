@@ -627,7 +627,7 @@
     const stIn = document.querySelector('#addForm input[name=addStore]:checked');
     const rec = { id: code + '-' + Date.now(), code, name, category: cat === 'other' ? '' : cat, brand, quantity: qty, store: stIn && stIn.value ? stIn.value : '', lang: 'pl', uuid: A.appUuid(), at: Date.now(), checks: { barcode: bc.s }, photos: { front: photos.front.blob, ingredients: photos.ingredients.blob, nutrition: photos.nutrition.blob } };
     const res = await A.sendAdd(rec);
-    if (res === 'ok') addedSuccess(code, name);
+    if (res === 'ok') { addedSuccess(code, name); if (rec.store && rec.store.startsWith('x:')) A.storeVote(code, A.storeLabel(rec.store)).then(() => A.markStoreTagged(code, rec.store)); }
     else if (res === 'queued') { msg.className = 'msg ok'; msg.textContent = 'Nie ma teraz połączenia. Zapisaliśmy produkt w telefonie i wyślemy go, gdy internet wróci. Nagrodę dostaniesz po wysłaniu.'; btn.textContent = 'Zapisane do wysłania'; }
     else if (res === 'exists') { msg.className = 'msg ok'; msg.textContent = 'Ktoś właśnie dodał ten produkt do bazy. Dziękujemy! Sprawdź go za chwilę ponownie.'; btn.textContent = 'Produkt już jest w bazie'; }
     else { msg.textContent = res === 'rejected' ? 'Baza nie przyjęła tego produktu. Sprawdź nazwę i zdjęcia albo spróbuj później.' : 'Nie udało się wysłać. Spróbuj ponownie za chwilę.'; btn.disabled = false; updateSend(); }
@@ -812,12 +812,28 @@
   function storeAskOk(p) {
     return A.myStores().length && A.CFG.offProxyUrl && p.code && p.source === 'off' && !cur.local && !A.inMyStore(p) && !A.storeTagged(p.code);
   }
+  A.storeVote = async (code, name) => {
+    const fd = new FormData(); Object.entries({ device: A.appUuid(), code, name }).forEach(([a, v]) => fd.append(a, v));
+    try { const r = await fetch(A.CFG.offProxyUrl.replace(/\/$/, '') + '/disc/store', { method: 'POST', body: fd }); return await r.json().catch(() => null); } catch (e) { return null; }
+  };
   A.storeAction = async (act, el) => {
     if (!cur || !cur.prod) return;
     const p = cur.prod, box = A.$('storeBox');
     if (act === 'store-skip') { A.markStoreTagged(p.code, ''); if (box) box.remove(); return; }
     const k = el.dataset.k; if (!k || !box) return;
     box.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    if (k.startsWith('x:')) {
+      // Sklep spoza listy znanych sieci: głos; do Open Food Facts trafi, gdy wskażą go co najmniej 3 osoby.
+      const r = await A.storeVote(p.code, A.storeLabel(k));
+      if (r && r.ok) {
+        A.markStoreTagged(p.code, k); A.award('store_added', { code: p.code });
+        box.innerHTML = `<b>Dziękujemy!</b><p class="small">${r.added ? `„${esc(A.storeLabel(k))}” jest już przy produkcie w Open Food Facts.` : `Zapamiętaliśmy, że kupujesz to w „${esc(A.storeLabel(k))}”. Do bazy Open Food Facts dopiszemy ten sklep, gdy wskażą go jeszcze ${r.need} ${plural(r.need, 'osoba', 'osoby', 'osób')}.`}</p>`;
+      } else {
+        box.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        const m = box.querySelector('.small.muted'); if (m) m.textContent = navigator.onLine === false ? 'Nie ma połączenia z internetem. Spróbuj, gdy wróci.' : 'Nie udało się zapisać. Spróbuj ponownie za chwilę.';
+      }
+      return;
+    }
     const fd = new FormData();
     Object.entries({ code: p.code, store: k, lang: 'pl', app_uuid: A.appUuid(), app_version: A.CFG.appVersion || '1.0' }).forEach(([a, v]) => fd.append(a, v));
     let j = {};

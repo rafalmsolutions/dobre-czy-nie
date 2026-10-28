@@ -84,6 +84,7 @@
   A.route('profile', arg => {
     sub = SUBS[arg] ? arg : '';
     if (sub === 'ustawienia' || sub === 'informacje' || sub === 'sklepy') editing = 'me';
+    if (sub === 'sklepy' && A.loadStoreCatalog && !A.storeCatalog().length) A.loadStoreCatalog().then(c => { if (c.length && A.current.screen === 'profile' && sub === 'sklepy') renderProfile(); });
     if (!person()) editing = 'me';
     draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile();
   });
@@ -153,11 +154,20 @@
       </div>
       ${me ? `<div class="pf-shops"${sec('sklepy')}>
         <p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam. Zmiany zapisują się od razu.</p>
-        <div class="rows">${STORES.map(st => ckRow('mystore', st.key, st.label, A.myStores().includes(st.key))).join('')}</div>
+        ${(() => { const my = A.myStores(), cat = A.storeCatalog();
+          // Znane sieci, Twoje dopisane sklepy, potem najczęstsze sklepy z bazy w Twoim kraju (kolejność = kolejność zapisu).
+          const keys = [...new Set(STORES.map(x => x.key).concat(my, cat.filter(c => c.n >= 5).slice(0, 20).map(c => c.key)))];
+          return `<div class="rows" id="storeRows">${keys.map(k => ckRow('mystore', k, A.storeLabel(k), my.includes(k))).join('')}</div>
+          <h3 class="pf-sh">Nie ma Twojego sklepu?</h3>
+          <div class="inline-form"><input class="field" id="storeAddInput" maxlength="40" list="storeSuggest" autocomplete="off" placeholder="np. Społem, Topaz, sklep osiedlowy" aria-label="Nazwa sklepu"><button class="btn btn-dark btn-sm" type="button" data-act="store-add">Dodaj</button></div>
+          <datalist id="storeSuggest">${cat.filter(c => !my.includes(c.key)).slice(0, 150).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
+          <p class="msg" id="storeAddMsg" role="status"></p>
+          <p class="small muted">Możesz wybrać do 8 sklepów. Własny sklep działa od razu w Twoim telefonie. Do bazy Open Food Facts trafi przy produkcie dopiero wtedy, gdy wskażą go co najmniej 3 osoby.</p>`; })()}
         <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       <div class="pf-set"${sec('ustawienia')}>
         <p class="small muted">Zmiany zapisują się od razu.</p>
+        <h3 class="pf-sh">Kraj zakupów</h3><div class="rows"><div class="tg-row" id="countryRow"><span class="grow"><b>Polska</b><small>Od kraju zależą produkty w bazie i lista sklepów. Na razie Lupka działa tylko w Polsce, kolejne kraje dodamy razem z wersjami językowymi.</small></span></div></div>
         <h3 class="pf-sh">Podczas zakupów</h3><div class="rows">
           ${tgRow('setShop', 'Ukryj punkty i nagrody', 'Karty i odznaki nadal zbierają się w Kartach.', A.quiet())}
           ${tgRow('setGuess', 'Zgadywanie przed wynikiem', 'Pytaj „dobre czy nie?” przed pokazaniem oceny.', A.settings.guess !== false)}
@@ -206,6 +216,16 @@
       if (problem) { A.$('customMsg').textContent = problem; inp.focus(); return; }
       draftCustom.push(cleanCustom(inp.value)); inp.value = ''; A.$('customMsg').textContent = ''; renderCustomChips(); inp.focus();
       A.profAutoSave();
+    } else if (act === 'store-add') {
+      const inp = A.$('storeAddInput'), msg = A.$('storeAddMsg'), v = inp.value.trim();
+      if (v.length < 2) { msg.textContent = 'Wpisz nazwę sklepu.'; inp.focus(); return; }
+      const my = [...A.$('profileForm').querySelectorAll('input[name="mystore"]:checked')].map(i => i.value);
+      const key = A.addCustomStore(v);
+      if (!key) { msg.textContent = 'Ta nazwa nie wygląda na sklep. Wpisz samą nazwę, bez adresu strony.'; inp.focus(); return; }
+      if (!my.includes(key) && my.length >= 8) { msg.textContent = 'Masz już 8 sklepów. Odznacz któryś, żeby dodać nowy.'; return; }
+      A.setMyStores(my.includes(key) ? my : my.concat(key));
+      renderProfile(); const f = A.$('storeAddInput'); if (f) f.focus();
+      A.$('storeAddMsg').textContent = `Dodano: ${A.storeLabel(key)}.`;
     } else if (act === 'rm-custom') { draftCustom.splice(Number(el.dataset.i), 1); renderCustomChips(); A.$('customInput').focus(); A.profAutoSave(); }
     else if (act === 'wipe') { confirmWipe = true; saveDraftToDom(); renderProfile(); const b = A.$('scr-profile').querySelector('[data-act=wipe-no]'); if (b) b.focus(); }
     else if (act === 'wipe-no') { confirmWipe = false; renderProfile(); }

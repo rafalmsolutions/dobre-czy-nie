@@ -6,6 +6,8 @@
    GET  /disc/mine?device                                 → moje odkrycia: status, ile osób je sprawdziło, czy jestem zaufany
    POST /disc/miss    device, code                        → ktoś zeskanował kod, którego nie ma w bazie
    GET  /disc/wanted                                      → „Poszukiwane”: kody, których szukało najwięcej osób
+   POST /disc/store   device, code, name                  → „Kupujesz to w:” ze sklepem spoza listy znanych sieci: głos; sklep trafia
+                                                            do Open Food Facts, gdy wskażą go co najmniej 3 różne osoby (3 urządzenia i 3 adresy IP)
    POST /disc/forget  device                              → usunięcie danych urządzenia (głosy, odwiedziny, statystyki);
                                                             dodane produkty zostają bez powiązania z urządzeniem i bez pseudonimu
    Prywatność: skrót adresu IP trzymamy tylko do rozstrzygnięcia (potwierdzony/odrzucony), dzienne liczniki – 30 dni.
@@ -18,7 +20,10 @@
    Urządzenie = losowy identyfikator aplikacji (bez konta). Adres IP przechowujemy tylko jako skrót. */
 
 const UUID_RE = /^[a-z0-9-]{16,64}$/;
-const LIMITS = { submit: 10, vote: 10, miss: 40 };
+const LIMITS = { submit: 10, vote: 10, miss: 40, store: 30 };
+const STORE_NEED = 3;
+// Klucz sklepu: małe litery bez polskich znaków i odstępów („Społem PSS” → „spolempss”).
+const storeSlug = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]/g, '').slice(0, 40);
 const NEED = 2;
 const TRUSTED = 5, GUARDIAN = 15, SPOT = 0.1;
 
@@ -56,7 +61,7 @@ async function tidy(db) {
   await db.prepare('DELETE FROM daily WHERE day < ?').bind(old).run();
 }
 
-export async function disc(request, env, url, reply) {
+export async function disc(request, env, url, reply, helpers = {}) {
   const db = env.DISC;
   if (!db) return reply(503, { ok: false, error: 'not_configured' });
   const path = url.pathname.slice(5); // bez „/disc”
@@ -76,7 +81,7 @@ export async function disc(request, env, url, reply) {
   if (Math.random() < 0.02) await tidy(db).catch(() => { });
 
   if (path === '/forget' && request.method === 'POST') {
-    for (const t of ['votes', 'views', 'miss_dev', 'daily', 'devices']) await db.prepare(`DELETE FROM ${t} WHERE device = ?`).bind(device).run();
+    for (const t of ['votes', 'views', 'miss_dev', 'daily', 'devices', 'store_votes']) await db.prepare(`DELETE FROM ${t} WHERE device = ?`).bind(device).run();
     await db.prepare("UPDATE subs SET device = 'usuniete', nick = '', iph = NULL WHERE device = ?").bind(device).run();
     return reply(200, { ok: true });
   }
@@ -103,6 +108,25 @@ export async function disc(request, env, url, reply) {
     const ins = await db.prepare('INSERT OR IGNORE INTO miss_dev (code, device) VALUES (?, ?)').bind(code, device).run();
     if (ins.meta && ins.meta.changes) await db.prepare('INSERT INTO misses (code, n, last) VALUES (?, 1, ?) ON CONFLICT(code) DO UPDATE SET n = n + 1, last = excluded.last').bind(code, Date.now()).run();
     return reply(200, { ok: true });
+  }
+  if (path === '/store' && request.method === 'POST') {
+    const name = clean(get('name'), 40), key = storeSlug(name);
+    if (name.length < 2 || key.length < 2 || /^\d+$/.test(key) || /https?:|www\./i.test(name)) return reply(400, { ok: false, error: 'name' });
+    if (await bump(db, device, 'store') > LIMITS.store) return reply(429, { ok: false, error: 'limit' });
+    const done = await db.prepare('SELECT at FROM store_added WHERE code = ? AND skey = ?').bind(code, key).first();
+    if (done) return reply(200, { ok: true, added: true, n: STORE_NEED, need: 0 });
+    await db.prepare('INSERT OR IGNORE INTO store_votes (code, skey, device, name, iph, at) VALUES (?, ?, ?, ?, ?, ?)').bind(code, key, device, name, await ipHash(ip, env.DISC_SALT), Date.now()).run();
+    const c = await db.prepare('SELECT COUNT(DISTINCT device) AS d, COUNT(DISTINCT iph) AS i FROM store_votes WHERE code = ? AND skey = ?').bind(code, key).first();
+    const n = Math.min((c && c.d) || 0, (c && c.i) || 0);
+    if (n < STORE_NEED || !helpers.addStore) return reply(200, { ok: true, added: false, n, need: Math.max(0, STORE_NEED - n) });
+    // Najczęstsza pisownia nazwy wśród głosów.
+    const top = await db.prepare('SELECT name, COUNT(*) AS k FROM store_votes WHERE code = ? AND skey = ? GROUP BY name ORDER BY k DESC LIMIT 1').bind(code, key).first();
+    const ok = await helpers.addStore(code, (top && top.name) || name).catch(() => false);
+    if (ok) {
+      await db.prepare('INSERT OR IGNORE INTO store_added (code, skey, at) VALUES (?, ?, ?)').bind(code, key, Date.now()).run();
+      await db.prepare('DELETE FROM store_votes WHERE code = ? AND skey = ?').bind(code, key).run();
+    }
+    return reply(200, { ok: true, added: !!ok, n, need: 0 });
   }
   if (path === '/submit' && request.method === 'POST') {
     const name = clean(get('name'), 80);

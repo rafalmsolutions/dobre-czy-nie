@@ -15,7 +15,9 @@ await ctx.route(/proxy\.test\/category/, r => r.fulfill({ json: { products: [] }
 await ctx.route(/proxy\.test\/product/, r => { S.product.push(form(r)); r.fulfill({ json: { ok: true } }); });
 await ctx.route(/proxy\.test\/ocr/, r => r.fulfill({ json: { ok: true, text: 'mleko pasteryzowane, żywe kultury bakterii jogurtowych, białka mleka' } }));
 await ctx.route(/proxy\.test\/edit/, r => { const f = form(r); S.edit.push(f); const saved = []; if (field(f, 'ingredients_text')) saved.push('ingredients'); if (field(f, 'nutriments')) saved.push('nutrition'); if (field(f, 'store')) saved.push('store'); r.fulfill({ json: { ok: true, saved } }); });
-await ctx.route(/proxy\.test\/disc\//, r => r.fulfill({ json: { ok: true, found: false, items: [] } }));
+S.vote = [];
+await ctx.route(/proxy\.test\/disc\//, r => { if (/disc\/store/.test(r.request().url())) { S.vote.push(form(r)); return r.fulfill({ json: { ok: true, added: false, n: 1, need: 2 } }); } return r.fulfill({ json: { ok: true, found: false, items: [] } }); });
+await ctx.route(/data\/stores\.json/, r => r.fulfill({ json: { country: 'en:poland', stores: [{ key: 'lidl', name: 'Lidl', n: 900 }, { key: 'spolem', name: 'Społem', n: 40 }, { key: 'topaz', name: 'Topaz', n: 12 }] } }));
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: false })); localStorage.setItem('dcn-d-stores', JSON.stringify(['lidl', 'biedronka'])); });
 const pts = () => page.evaluate(() => App.game.points);
@@ -68,10 +70,27 @@ if (await page.locator('[data-act=complete]').count()) {
   ok(await page.evaluate(c => App.storeTagged(c), C.oil), 'sklep zapamiętany przy produkcie');
 } else ok(false, 'produkt bez składu: przycisk „Uzupełnij”');
 
+// 6. (3.0.4) Własny sklep: dopisany w profilu, przy produkcie głos zamiast zapisu w bazie
+await page.goto('http://localhost:8790/app/index.html#/profil/sklepy'); await page.waitForTimeout(900);
+ok(await page.locator('#storeSuggest option[value="Społem"]').count() === 1, 'profil: podpowiedzi sklepów z bazy dla kraju');
+ok(await page.locator('input[name=mystore][value="x:topaz"]').count() === 1, 'profil: częsty sklep z bazy na liście');
+await page.fill('#storeAddInput', 'Społem'); await page.press('#storeAddInput', 'Enter'); await page.waitForTimeout(300);
+ok(await page.evaluate(() => App.myStores().includes('x:spolem')) && /Dodano: Społem/.test(await txt('#storeAddMsg')), 'profil: własny sklep dodany i zaznaczony');
+await page.evaluate(() => App.setMyStores(['x:spolem']));
+await go(C.nutella);
+ok(await page.locator('#storeBox [data-k="x:spolem"]').count() === 1, 'pytanie „Kupujesz to w:” z własnym sklepem');
+const e0 = S.edit.length;
+await page.$eval('#storeBox [data-k="x:spolem"]', e => e.click()); await page.waitForTimeout(500);
+ok(S.vote.length === 1 && field(S.vote[0], 'name') === 'Społem' && S.edit.length === e0, 'własny sklep: głos, bez zapisu w bazie');
+ok(/wskażą go jeszcze 2 osoby/.test(await txt('#storeBox')), 'własny sklep: informacja, ile osób jeszcze potrzeba');
+ok(await page.evaluate(code => App.storeOf({ code, stores: [] }, 'x:spolem'), C.nutella), 'własny sklep: produkt liczony jako z Twojego sklepu');
+await page.goto('http://localhost:8790/app/index.html#/profil/ustawienia'); await page.waitForTimeout(400);
+ok(/Polska/.test(await txt('#countryRow')), 'ustawienia: kraj zakupów Polska');
+
 // 5. Bez moich sklepów nic się nie pojawia
 await page.evaluate(() => App.setMyStores([]));
 await go(C.vegan);
-ok(await page.locator('#storeBox').count() === 0, 'bez moich sklepów: bez pytania o sklep');
+ok(await page.locator('#storeBox').count() === 0, 'bez moich sklepów: bez pytania o sklep (' + await page.evaluate(() => App.myStores().join()) + ')');
 
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

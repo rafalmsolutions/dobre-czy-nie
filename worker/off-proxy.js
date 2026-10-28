@@ -220,7 +220,16 @@ export default {
     if (url.pathname.startsWith('/disc/')) {
       if (!okOrigin) return reply(403, { ok: false, error: 'origin' });
       if (!rateOk('d:' + (request.headers.get('CF-Connecting-IP') || 'unknown'), 400)) return reply(429, { ok: false, error: 'rate' });
-      try { return await disc(request, env, url, reply); } catch (e) { return reply(500, { ok: false, error: 'db' }); }
+      // Dopisanie sklepu wskazanego przez kilka osób (decyzja w disc.js). Tylko dopisanie – inne sklepy zostają.
+      const addStore = async (code, name) => {
+        if (!env.OFF_USER || !env.OFF_PASS) return false;
+        const o = offCtx(env, 'store-vote'), fd = new FormData();
+        Object.entries({ code, lc: 'pl', cc: 'pl', add_stores: name, comment: 'Sklep wskazany przez kilka osób w aplikacji Lupka', user_id: env.OFF_USER, password: env.OFF_PASS, app_name: APP_NAME, app_version: 'store-vote' }).forEach(([k, v]) => fd.append(k, v));
+        const r = await fetch(`${o.base}/cgi/product_jqm2.pl`, { method: 'POST', body: fd, headers: o.headers });
+        const j = r.ok ? await r.json().catch(() => null) : null;
+        return !!(j && j.status === 1);
+      };
+      try { return await disc(request, env, url, reply, { addStore }); } catch (e) { return reply(500, { ok: false, error: 'db' }); }
     }
     if (url.pathname !== '/product') return reply(404, { ok: false, error: 'not_found' });
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' });

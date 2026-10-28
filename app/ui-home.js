@@ -199,7 +199,7 @@
     if (!SHOP_CATEGORIES.some(c => c.key === cat)) { A.go('#/'); return; }
     A.track('kategoria-' + cat.replace(/^en:/, ''));
     const sel = A.store.get('shopStore', null);
-    renderList(cat, sel === 'all' || STORES.some(s => s.key === sel) ? sel : null); // null: wybierz sam (Twój sklep albo wszystkie)
+    renderList(cat, sel === 'all' || STORES.some(s => s.key === sel) || /^x:[a-z0-9]{2,40}$/.test(sel || '') ? sel : null); // null: wybierz sam (Twój sklep albo wszystkie)
   });
   const itemHtml = x => { const img = A.safeImg(x.pr.image); const st = x.pr.stores.slice(0, 2).map(A.storeName).join(', '); return `<div class="item cat-item" style="cursor:default"><a href="#/p/${esc(x.pr.code)}" class="row grow" style="text-decoration:none;color:inherit;min-width:0">${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy">` : `<span class="thumb">${art('dept_' + departmentFor(x.pr), 34)}</span>`}<span class="grow"><span class="t1">${esc(x.pr.name)}</span><span class="t2">${esc([x.pr.brand, x.pm.pct != null && A.dataGaps(x.pr).length ? A.preLabel(x.pm.label) : x.pm.label].filter(Boolean).join(' · '))}</span>${st ? `<span class="t2">Sklep: ${esc(st)}</span>` : ''}</span><span class="pct ${A.pctClass(x.pm.level)} alt-score"${A.pctStyle(x.pm.pct)}>${x.pm.pct == null ? '–' : x.pm.pct + '%'}</span></a><span class="ci-acts">${A.cmpBtnHtml ? A.cmpBtnHtml(x.pr.code, x.pr.name) : ''}<button class="btn btn-white iconbtn" type="button" data-act="shelf-add-code" data-code="${esc(x.pr.code)}" aria-label="Dodaj ${esc(x.pr.name)} do listy zakupów"${Shelf.hasCode(A.shelves, x.pr.code) ? ' disabled' : ''}><svg><use href="#i-${Shelf.hasCode(A.shelves, x.pr.code) ? 'check' : 'plus'}"/></svg></button></span></div>`; };
   A.storeName = raw => { const f = fold(raw).replace(/\s+/g, ''); const k = STORES.find(x => f.includes(x.key)); return k ? k.label : String(raw).charAt(0).toUpperCase() + String(raw).slice(1); };
@@ -318,14 +318,18 @@
     const all = scored.slice().sort((a, b) => (b.pm.pct ?? -1) - (a.pm.pct ?? -1) || (a.pr.code < b.pr.code ? -1 : 1));
     const ok = x => x.pm.pct >= 50 && x.pm.status !== 'fail' && x.pm.status !== 'unknown';
     const good = all.filter(ok);
-    const counts = {}; STORES.forEach(s => { counts[s.key] = good.filter(x => A.storeOf(x.pr, s.key)).length; });
+    // 3.0.4: sklepy z danych produktów (także spoza listy znanych sieci), każdy produkt liczony raz na sklep.
+    const counts = {}, firstName = {};
+    good.forEach(x => { const seen = new Set(); (x.pr.stores || []).forEach(raw => { const k = A.storeKeyOf(raw); if (!k || seen.has(k)) return; seen.add(k); counts[k] = (counts[k] || 0) + 1; if (!firstName[k]) firstName[k] = raw; }); });
+    const tagMap = A.store.get('d-storetag', {}) || {}; good.forEach(x => { const k = tagMap[x.pr.code]; if (k && !(x.pr.stores || []).some(raw => A.storeKeyOf(raw) === k)) counts[k] = (counts[k] || 0) + 1; });
+    const stLabel = k => STORES.some(s => s.key === k) ? A.storeLabel(k) : A.storeNames()[k] || (A.storeCatalog().find(c => c.key === k) || {}).name || A.storeName(firstName[k] || k);
     if (storeKey == null) storeKey = A.myStores().find(k => counts[k] >= 3) || 'all';
     if (storeKey !== 'all' && !counts[storeKey]) storeKey = 'all';
     const shown = storeKey === 'all' ? good : good.filter(x => A.storeOf(x.pr, storeKey));
     const withStore = list.filter(pr => pr.stores.length).length;
     const whoChips = fam ? `<div class="chips list-who" role="group" aria-label="Dla kogo">${[['all', A.offRows().length ? 'Wszyscy wybrani' : 'Cała rodzina']].concat(fam.map(r => [r.id, whoName(r)])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="list-who" data-cat="${esc(cat)}" data-store="${esc(storeKey)}" data-who="${esc(k)}" aria-pressed="${k === who}">${esc(l)}</button>`).join('')}</div>` : '';
     /* 3.0.3: sklep jako jeden przycisk („Sklep: Biedronka · 3 ▾”), a lista sklepów w panelu od dołu – jak „Dla kogo kupujesz?”. */
-    const stores = [['all', 'Wszystkie sklepy', good.length]].concat(STORES.filter(s => counts[s.key]).map(s => [s.key, s.label, counts[s.key]]));
+    const my = A.myStores(), stores = [['all', 'Wszystkie sklepy', good.length]].concat(Object.keys(counts).sort((a, b) => (my.includes(b) - my.includes(a)) || counts[b] - counts[a] || stLabel(a).localeCompare(stLabel(b), 'pl')).map(k => [k, stLabel(k), counts[k]]));
     const curSt = stores.find(x => x[0] === storeKey) || stores[0];
     const chips = good.length ? `<button class="store-sw" type="button" data-act="list-store-sheet" data-cat="${esc(cat)}" data-store="${esc(storeKey)}" aria-haspopup="dialog"><span class="grow"><small>Sklep</small><b>${esc(curSt[1])}</b></span><span class="muted">${curSt[2]} ${plural(curSt[2], 'produkt', 'produkty', 'produktów')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>` : '';
     const storeSheet = good.length && A.storeSheet ? `<div class="ls-dim" data-act="list-sheet-close"></div><div class="ls-sheet" role="dialog" aria-modal="true" aria-labelledby="stTitle"><span class="ls-grab" aria-hidden="true"></span><h2 id="stTitle">W którym sklepie?</h2><div class="ls-list">${stores.map(([k, l, n]) => `<button type="button" class="who-ck" role="radio" aria-checked="${k === storeKey}" data-act="list-store" data-cat="${esc(cat)}" data-store="${esc(k)}"><span class="ck rd" aria-hidden="true">${k === storeKey ? '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ''}</span><span class="grow"><b>${esc(l)}</b><span>${n} ${plural(n, 'dobry produkt', 'dobre produkty', 'dobrych produktów')}</span></span></button>`).join('')}</div>
@@ -346,7 +350,7 @@
   }
   A.store.del('d-pdet'); // dawna kopia w localStorage (2.3.2), zastąpiona przez Cache API
   const redraw = (cat, storeKey) => { const d = LISTS[cat]; if (d && d.sig === JSON.stringify([A.profile, A.family]) && A.current.screen === 'list') { drawList(cat, storeKey, d); return true; } return false; };
-  A.listWhoSet = (cat, storeKey, who) => { A.store.set('d-listwho', who); const sk = storeKey === 'all' || STORES.some(s => s.key === storeKey) ? storeKey : null; if (!redraw(cat, sk)) renderList(cat, sk); };
+  A.listWhoSet = (cat, storeKey, who) => { A.store.set('d-listwho', who); const sk = storeKey === 'all' || STORES.some(s => s.key === storeKey) || /^x:[a-z0-9]{2,40}$/.test(storeKey || '') ? storeKey : null; if (!redraw(cat, sk)) renderList(cat, sk); };
   A.listStore = (cat, storeKey) => { A.storeSheet = false; A.store.set('shopStore', storeKey); if (!redraw(cat, storeKey)) renderList(cat, storeKey); const b = document.querySelector('.store-sw'); if (b) b.focus(); };
   A.listStoreSheet = (cat, storeKey, on) => { A.storeSheet = on; if (!redraw(cat, storeKey)) renderList(cat, storeKey); const b = document.querySelector(on ? '.ls-sheet [aria-checked=true]' : '.store-sw'); if (b) b.focus(); };
 })();

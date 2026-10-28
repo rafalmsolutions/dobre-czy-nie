@@ -322,6 +322,37 @@ def load_prev_hist(path=None, url=HIST_URL, log=print):
     return {}
 
 
+def store_slug(v):
+    import unicodedata
+    t = unicodedata.normalize('NFD', str(v or '').lower().replace('ł', 'l'))
+    return re.sub(r'[^a-z0-9]', '', ''.join(c for c in t if not unicodedata.combining(c)))[:40]
+
+
+def store_catalog(products, top=200, min_n=2):
+    """Sklepy wpisywane przy produktach w Open Food Facts (pole stores, tekst od kupujących): nazwa w najczęstszej pisowni
+    i liczba produktów. Z tego aplikacja podpowiada sklepy, także spoza listy znanych sieci."""
+    count, names = defaultdict(int), defaultdict(lambda: defaultdict(int))
+    for p in products.values():
+        seen = set()
+        for raw in p.get('stores', []):
+            name = re.sub(r'\s+', ' ', str(raw)).strip()[:40]
+            key = store_slug(name)
+            if len(key) < 2 or key.isdigit() or re.search(r'https?:|www\.', name, re.I) or key in seen:
+                continue
+            seen.add(key)
+            count[key] += 1
+            names[key][name] += 1
+    out = []
+    for key, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])):
+        if n < min_n:
+            break
+        best = sorted(names[key].items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+        out.append({'key': key, 'name': best[:1].upper() + best[1:], 'n': n})
+        if len(out) >= top:
+            break
+    return out
+
+
 def build(products, pop, out, built=None, log=print, prev_hist=None):
     # Liczba skanów w Open Food Facts: z niej wersja D liczy rzadkość karty w albumie.
     for code, p in products.items():
@@ -348,6 +379,9 @@ def build(products, pop, out, built=None, log=print, prev_hist=None):
         write_json(os.path.join(out, 'c', t.replace(':', '_') + '.json'),
                    {'tag': t, 'count': len(codes), 'products': [products[c] for c in codes[:CAT_MAX]]})
         written += 1
+    stores = store_catalog(products)
+    write_json(os.path.join(out, 'stores.json'), {'country': COUNTRY, 'built': built, 'stores': stores})
+    log(f'Sklepy: {len(stores)} nazw z produktów.')
     meta = {'built': built, 'country': COUNTRY,
             'products': len(products), 'categories': written, 'source': 'Open Food Facts (ODbL)',
             'scanTiers': scan_tiers(pop)}

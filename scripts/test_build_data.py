@@ -111,6 +111,9 @@ t('polskie nazwy: kandydaci tylko z polskim kodem, obcym opisem i zdjęciem przo
 t('encje HTML w nazwach zamienione na litery', B.text('Baton z czekolad&#261; &amp; orzechami') == 'Baton z czekoladą & orzechami')
 t('skład do przepisania tylko po polsku', B.needs({'en:ingredients-to-be-completed', 'en:ingredients-photo-selected', 'en:nutrition-facts-to-be-completed', 'en:nutrition-photo-selected'}, False) == 'w')
 t('polski kod bez „Polska”: tylko po polsku', B.polish_described({'lang': 'pl'}) and B.polish_described({'lang': 'fr', 'product_name_pl': 'Jabłka'}) and not B.polish_described({'lang': 'fr', 'product_name': 'Mousseline'}))
+cat_st = B.store_catalog({'1': {'stores': ['Lidl', 'Społem PSS']}, '2': {'stores': ['lidl ', 'spolem pss', 'http://x.pl']}, '3': {'stores': ['Żabka']}})
+t('sklepy: łączenie pisowni, liczba produktów, bez adresów i pojedynczych', [(x['key'], x['n']) for x in cat_st] == [('lidl', 2), ('spolempss', 2)] and cat_st[0]['name'] == 'Lidl', cat_st)
+t('sklepy: plik stores.json w kopii', os.path.exists(os.path.join(out, 'stores.json')))
 # Pusta wyszukiwarka nie może opublikować pustej kopii.
 saved = DB[:]; DB.clear()
 rc2 = B.main(['--out', tempfile.mkdtemp(), '--base', f'http://127.0.0.1:{srv.server_port}/search', '--pause', '0', '--prev-hist', '', '--hist-url', ''])
