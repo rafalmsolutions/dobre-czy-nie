@@ -39,7 +39,7 @@ await page.click('.ls-sheet [data-act=who-close]'); await page.waitForTimeout(20
 ok(await page.locator('.ls-sheet').count() === 0, 'Gotowe zamyka panel');
 const h = await page.evaluate(() => { const y = el => el.getBoundingClientRect().top; return { who: y(document.querySelector('.who-seg')), hist: y(document.getElementById('hHist')), best: y(document.getElementById('hBest')) }; });
 ok(h.who < h.hist && h.hist < h.best && h.hist < 700, 'kolejność: dla kogo → ostatnio sprawdzone (na pierwszym ekranie) → najlepsze');
-ok(await page.locator('#scr-home .d-scanbtn').count() === 0 && /Czego szukasz/.test(await page.innerText('#homeSearch')), 'z historią: bez dużego przycisku (skan na dolnym pasku), imię w wyszukiwarce');
+ok(await page.locator('#scr-home .d-scanbtn').count() === 0 && /kod kreskowy/.test(await page.innerText('#homeSearch')), 'z historią: bez dużego przycisku (skan na dolnym pasku)');
 
 // Ekran ładowania z animacją dla zwykłej przeglądarki (bez znacznika testów automatycznych).
 const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));
