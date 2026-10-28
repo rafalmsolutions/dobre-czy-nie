@@ -1000,3 +1000,20 @@ a.seg-b{display:flex;align-items:center;justify-content:center;text-decoration:n
 .kt-all[open] summary{display:none}
 .kt-more-h{font:800 20px var(--f-display);color:var(--ink);margin:10px 0 0}
 .kt-pts{flex:none;padding:4px 10px;border-radius:999px;background:#FCEFC4;color:#5A4300;font-weight:800;font-size:13px}
+.local-note{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;border-radius:16px;background:#EEF1F6}
+.local-note b{font-weight:800}.local-note span{font-size:13.5px;font-weight:600;color:var(--muted)}
+/* 3.0.3: lista kategorii – nazwa na pełną szerokość, przyciski w drugim rzędzie (bez łamania słów w wąskiej kolumnie) */
+.cat-item{flex-wrap:wrap;row-gap:4px}
+.cat-item > a{flex:1 1 100%}
+.cat-item .t1{overflow-wrap:normal;word-break:normal;hyphens:manual}
+.ci-acts{display:flex;gap:8px;margin-left:auto}
+@media (min-width:600px){.cat-item{flex-wrap:nowrap}.cat-item > a{flex:1 1 auto}}
+/* 3.0.3: wybór sklepu jako jeden przycisk z panelem */
+.store-sw{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 14px;border:0;border-radius:16px;background:#fff;font:inherit;color:var(--ink);text-align:left;cursor:pointer;margin:4px 0}
+.store-sw .grow{display:flex;flex-direction:column;min-width:0}
+.store-sw small{font-size:12px;font-weight:700;color:var(--muted)}
+.store-sw b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.store-sw .muted{font-size:13px;font-weight:600;white-space:nowrap}
+.store-sw svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.who-ck .ck.rd{border-radius:50%}
+.who-ck[aria-checked="true"] .ck.rd{background:var(--ink);border-color:var(--ink)}

@@ -525,7 +525,7 @@ const App = {};
     const changed = A.current.screen !== screen || A.current.arg !== arg;
     A.current = { screen, arg };
     const boot = A.$('boot'); if (boot && !boot.dataset.hold) A.bootDone(boot);
-    if (changed) A.trackView(screen);
+    if (changed) { A.trackView(screen); A.whoSheet = false; A.storeSheet = false; document.body.classList.remove('sheet-open'); }
     if (A.routes[screen]) A.routes[screen](arg);
     if (changed) {
       // Przy pierwszym ekranie strona jest już na górze – pomijamy przewijanie (wymusza dodatkowe przeliczenie układu).

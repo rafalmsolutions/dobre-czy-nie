@@ -360,7 +360,7 @@
     const done = f.done.length ? `<p class="small muted" style="font-weight:800">UZUPEŁNIŁEŚ: ${f.done.length}</p>` : '';
     if (fillTab === 'data') {
       box.innerHTML = `${tabs}<p class="small">Te popularne produkty mają w bazie zdjęcie składu albo tabeli wartości, ale nikt ich jeszcze nie przepisał, więc nie mają pełnej oceny. Odczytamy zdjęcie za Ciebie, Ty tylko sprawdzasz. Produkt nie musi być w domu.</p>${done}
-        ${todo.slice(0, 40).map(x => `<a class="item fill-item" href="#/p/${esc(x.c)}" data-act="fill-go" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n || x.c)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: ${what(x.k)}</span></span><span class="pct" style="background:#FFF2C2;color:#6B4A00">+${10 * x.k.length}</span></a>`).join('')}
+        ${todo.slice(0, 40).map(x => `<a class="item fill-item" href="#/p/${esc(x.c)}" data-act="fill-go" data-code="${esc(x.c)}">${A.safeImg(x.i) ? `<img class="thumb" src="${esc(A.safeImg(x.i))}" alt="" loading="lazy">` : '<span class="thumb"></span>'}<span class="grow"><span class="t1">${esc(x.n || x.c)}</span><span class="t2">${esc(x.b || '')}${x.b ? ' · ' : ''}brakuje: ${what(x.k)}</span></span>${A.quiet() ? '' : `<span class="pct" style="background:#FFF2C2;color:#6B4A00">+${10 * x.k.length}</span>`}</a>`).join('')}
         ${todo.length ? '' : '<div class="empty">Wszystko z tej listy jest uzupełnione. Dziękujemy! Nowe produkty pojawią się po cotygodniowej aktualizacji bazy.</div>'}`;
       return;
     }

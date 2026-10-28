@@ -86,6 +86,15 @@ const su = await page.evaluate(() => [
   App.sameUse({ categories: ['en:breakfasts', 'en:spreads', 'en:sweet-spreads', 'en:cocoa-and-its-products', 'en:hazelnut-spreads', 'en:chocolate-spreads', 'en:cocoa-and-hazelnuts-spreads'] }, { categories: ['en:cocoa-and-its-products', 'en:cocoa-powders'] }),
   App.sameUse({ categories: ['en:beverages', 'en:juices'] }, { categories: ['en:juices'] })]);
 ok(su[0] === false && su[1] === true && su[2] === true && su[3] === false && su[4] === false, 'zamiennik: krem kakaowy ≠ powidła ani kakao w proszku, krem ↔ krem, napój tylko za napój (' + su + ')');
+// 3.0.3: nieznany kod w trybie bez nagród – bez „Nagroda odkrywcy”
+await go('#/p/' + C.missing);
+ok(!/Nagroda odkrywcy|do nagrody|\+\d+ pkt/.test(await page.innerText('#scr-product')), 'tryb zakupowy: nieznany kod bez nagrody odkrywcy');
+// 3.0.3: własny skład zostaje oznaczony po ponownym otwarciu i da się go usunąć
+await page.evaluate(code => { const l = App.store.get('local', {}); l[code] = { code, kind: 'food', source: 'local', name: 'TEST', ingredients: 'woda, cukier, E250', nutriments: {} }; App.store.set('local', l); }, C.missing2);
+await go('#/p/' + C.missing2);
+ok(await page.locator('#localNote').count() === 1 && /tylko w tym telefonie/.test(await page.innerText('#localNote')), 'własny skład: oznaczenie po ponownym otwarciu');
+await page.click('[data-act=local-clear]'); await page.waitForTimeout(1600);
+ok(await page.locator('#localNote').count() === 0 && await page.evaluate(code => !App.store.get('local', {})[code], C.missing2), 'własny skład: „Usuń mój wpis” wraca do danych z bazy');
 // 3.0.2: Preferencje – autozapis i „Gotowe”
 await go('#/profil/preferencje');
 ok(await page.locator('.pf-pref [type=submit]').innerText() === 'Gotowe' && /zapisują się od razu/.test(await page.innerText('.pf-pref')), 'preferencje: „Gotowe” i informacja o autozapisie');

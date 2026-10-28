@@ -132,8 +132,9 @@
       const items = Object.entries(A.disc.items).sort((a, b) => (b[1].at || 0) - (a[1].at || 0));
       const views = items.reduce((s, [, it]) => s + (it.views || 0), 0), conf = items.filter(([, it]) => it.status === 'confirmed').length;
       el.innerHTML = `<div class="wrap">
-        <div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Album · strona specjalna</span>${A.hudPill()}</div>
+        <div class="topbar"><a class="btn btn-white iconbtn" href="#/album" aria-label="Wróć do albumu"><svg><use href="#i-back"/></svg></a><span class="grow small muted" style="font-weight:800">Karty</span>${A.hudPill()}</div>
         <h1 class="al-h"><span class="w-light">Twoje</span> <span class="w-bold">odkrycia</span></h1>
+        <button class="btn btn-dark btn-block" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj brakujący produkt</button>
         ${(() => { const lv = A.disc.level || (A.disc.trusted ? 'trusted' : 'new'), st = A.disc.streak || 0;
           const L = { new: ['Nowy odkrywca', `Każdy Twój produkt potwierdzają 2 kolejne osoby. Po 5 potwierdzonych z rzędu zostaniesz zaufanym odkrywcą.`, st, 5],
             trusted: ['Zaufany odkrywca', 'Twoje produkty trafiają do albumu od razu, bez czekania. Mniej więcej co 10. przechodzi wyrywkową kontrolę: odrzucenie zeruje serię. Po 15 z rzędu zostaniesz strażnikiem bazy.', st, 15],

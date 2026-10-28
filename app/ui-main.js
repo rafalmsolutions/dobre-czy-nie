@@ -55,6 +55,7 @@
       case 'report': A.reportCurrent(); break;
       case 'report-missing': A.openReport({ code: el.dataset.code, reason: 'missing', local: true }); break;
       case 'manual-ing': A.manualIng(); break;
+      case 'local-clear': A.clearLocal(); break;
       case 'rate-ing': A.rateIngredients(); break;
       case 'how': A.openDlg('howDlg'); break;
       case 'photo-open': A.openPhoto(); break;
@@ -83,6 +84,8 @@
       case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
+      case 'list-store-sheet': A.listStoreSheet(el.dataset.cat, el.dataset.store, true); break;
+      case 'list-sheet-close': { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); break; }
       case 'list-who': A.listWhoSet(el.dataset.cat, el.dataset.store, el.dataset.who); break;
       case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;
       case 'ach-cat': case 'ach-pick': A.achAction(act, el); break;
@@ -113,7 +116,7 @@
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
       if (!A.$('scanner').hidden) { e.preventDefault(); A.closeScanner(); return; }
       if (!A.$('reveal').hidden) { e.preventDefault(); A.closeReveal(); return; }
-      if (document.body.classList.contains('sheet-open')) { e.preventDefault(); if (A.whoSheet) { A.whoSheet = false; A.render(); } else if (A.closeSheet) A.closeSheet(); return; }
+      if (document.body.classList.contains('sheet-open')) { e.preventDefault(); if (A.whoSheet) { A.whoSheet = false; A.render(); } else if (A.storeSheet) { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); } else if (A.closeSheet) A.closeSheet(); return; }
     }
     // Pułapka fokusu w pełnoekranowych gratulacjach.
     // Pułapka fokusu w nakładce nowej karty.

@@ -56,6 +56,14 @@ ok(detailCalls === 1, 'przełączanie osób niczego nie pobiera (' + detailCalls
 const names = t => t.split('|').filter(Boolean).map(x => x.replace(/ \d+%$/, ''));
 ok(names(first.all).every(n => names(first.me).includes(n) && names(first.f1).includes(n)), 'cała rodzina ⊆ Ty i ⊆ Kuba');
 await page.$eval('.list-who [data-who="all"]', e => e.click()); await page.waitForTimeout(250);
+// 3.0.3: sklep jako jeden przycisk, lista sklepów w panelu
+if (await page.locator('.store-sw').count()) {
+  ok(await page.locator('#listBody [data-act=list-store]').count() === 0, 'sklepy: zwinięte do jednego przycisku');
+  await page.click('.store-sw'); await page.waitForTimeout(250);
+  ok(await page.locator('.ls-sheet [data-act=list-store]').count() >= 1 && /W którym sklepie/.test(await page.innerText('.ls-sheet')), 'sklepy: panel „W którym sklepie?”');
+  await page.click('.ls-sheet [data-act=list-store][data-store=all]'); await page.waitForTimeout(250);
+  ok(await page.locator('.ls-sheet').count() === 0 && /Wszystkie sklepy/.test(await page.innerText('.store-sw')), 'sklepy: wybór zamyka panel');
+} else ok(false, 'sklepy: brak przycisku wyboru sklepu');
 // Profil pilnuje soli: 1,3 g to „średnio” (−10). Bez pełnych danych lista pokazywała wyżej.
 await page.$eval('.list-who [data-who=me]', e => e.click()); await page.waitForTimeout(800);
 r = await rows();

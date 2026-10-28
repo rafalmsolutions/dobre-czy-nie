@@ -69,9 +69,7 @@
         return;
       }
       // Dane, które użytkownik właśnie uzupełnił, a baza jeszcze ich nie pokazuje.
-      if (local && !prod.ingredients) prod.ingredients = local.ingredients;
-      if (local && local.nutriments && !Object.values(prod.nutriments || {}).some(v => v != null)) prod.nutriments = Object.assign({}, local.nutriments);
-      show(prod, {});
+      show(prod, {}); // show() dokłada dane z telefonu (mergeLocal) i je oznacza
       return;
     }
     const kind = (res.e && res.e.kind) || 'network';
@@ -87,8 +85,8 @@
   function mergeLocal(prod) {
     const local = A.store.get('local', {})[prod.code];
     if (!local) return prod;
-    if (!prod.ingredients && local.ingredients) prod.ingredients = local.ingredients;
-    if (local.nutriments && !Object.values(prod.nutriments || {}).some(v => v != null)) prod.nutriments = Object.assign({}, local.nutriments);
+    if (!prod.ingredients && local.ingredients) { prod.ingredients = local.ingredients; prod.localIngr = true; }
+    if (local.nutriments && !Object.values(prod.nutriments || {}).some(v => v != null) && Object.values(local.nutriments).some(v => v != null)) { prod.nutriments = Object.assign({}, local.nutriments); prod.localNut = true; }
     return prod;
   }
   // Czego brakuje? Kopia bazy nie ma tekstu składu, ale wie, czy skład istnieje (lista dodatków nie jest wtedy pusta/null).
@@ -215,6 +213,8 @@
       if (up.changed) { A.shelves = up.state; A.saveShelves(); }
     }
     const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : '', prod.kind === 'food' ? favBtn(prod) : ''), prodCard(prod, cur.guess === null ? null : pm)];
+    // 3.0.3: dane wpisane w tym telefonie (bazy jeszcze ich nie ma) – stale widoczne, z możliwością powrotu do danych z bazy.
+    if (!added && (cur.local || prod.localIngr || prod.localNut) && A.store.get('local', {})[prod.code]) parts.push(`<div class="panel local-note" id="localNote" role="note"><b>${prod.localNut && !prod.localIngr ? 'Wartości odżywcze' : 'Skład'} wpisany przez Ciebie</b><span>Zapisany tylko w tym telefonie i używany w ocenie zamiast brakujących danych z bazy.</span><button class="linkbtn small" type="button" data-act="local-clear">Usuń mój wpis i wróć do danych z bazy</button></div>`);
     if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
     if (cur.guess === null) {
@@ -546,7 +546,7 @@
         <div class="inline-form"><input class="field mono" id="fixCode" inputmode="numeric" autocomplete="off" maxlength="20" value="${esc(code)}" aria-label="Cyfry spod kodu kreskowego"><button class="btn btn-dark btn-sm" type="submit">Szukaj</button></div><p class="msg" id="fixMsg" role="status"></p></form>`);
       // Najpierw szybka odpowiedź przy półce (skład z etykiety), potem – jeśli ktoś chce – dodanie do bazy z nagrodą.
       parts.push(ingDet(true));
-      parts.push(`<div class="panel stack add-cta" id="addCta"><div class="row" style="gap:12px;align-items:center"><span class="disc-gold" aria-hidden="true">★</span><span class="grow stack" style="gap:2px"><b style="font-family:var(--f-display);font-size:1.1rem">Dodaj produkt do bazy</b><span class="small">Nagroda odkrywcy: <b>+10 od razu</b>, +50 i <b>Złota karta</b>, gdy 2 osoby potwierdzą. Produkt zobaczą wszyscy.</span></span></div></div>`);
+      parts.push(`<div class="panel stack add-cta" id="addCta"><div class="row" style="gap:12px;align-items:center"><span class="disc-gold" aria-hidden="true">★</span><span class="grow stack" style="gap:2px"><b style="font-family:var(--f-display);font-size:1.1rem">Dodaj produkt do bazy</b><span class="small">${A.quiet() ? 'Gdy 2 osoby go potwierdzą, produkt zobaczą wszyscy.' : 'Nagroda odkrywcy: <b>+10 od razu</b>, +50 i <b>Złota karta</b>, gdy 2 osoby potwierdzą. Produkt zobaczą wszyscy.'}</span></span></div></div>`);
       if (proxy) {
         parts.push(`<form class="stack" id="addForm" novalidate>
           <label for="addName"><b style="font-family:var(--f-display)">Nazwa produktu</b></label>
@@ -560,7 +560,7 @@
           ${PHOTO_STEPS.map(([k, t, d], i) => `<div class="photo-step" id="ps-${k}"><span class="num">${i + 1}</span><span class="grow"><b style="display:block">${t}</b><span class="small muted">${d}</span></span><span id="pv-${k}"></span><span class="btn btn-blue btn-sm filebtn"><span id="pb-${k}">Zrób zdjęcie</span><input type="file" accept="image/*" capture="environment" data-photo="${k}" aria-label="Zdjęcie: ${t}"></span></div>`).join('')}
           <div class="disc-check" id="addCode" role="status" hidden></div>
           <p class="msg" id="addMsg" role="status"></p>
-          <button class="btn btn-grey btn-block" type="submit" id="addSend">Jeszcze 3 zdjęcia do nagrody</button>
+          <button class="btn btn-grey btn-block" type="submit" id="addSend">${A.quiet() ? 'Jeszcze 3 zdjęcia' : 'Jeszcze 3 zdjęcia do nagrody'}</button>
           <p class="small muted center">Zdjęcia trafią do otwartej bazy Open Food Facts i będą dostępne dla wszystkich na licencji CC BY-SA. Fotografuj samo opakowanie, bez osób.</p></form>`);
       } else {
         parts.push(`<div class="card stack"><b style="font-family:var(--f-display)">Dodaj produkt w 2 minuty</b><ol class="small" style="margin:0;padding-left:20px;display:grid;gap:4px"><li>Zainstaluj darmową aplikację Open Food Facts. To otwarta baza, z której korzysta Lupka.</li><li>Zeskanuj w niej ten sam kod: <span class="mono">${esc(code)}</span>.</li><li>Zrób 3 zdjęcia: przód, skład i tabelę wartości odżywczych.</li></ol>
@@ -609,7 +609,7 @@
     }
     const ready = n === 3 && bc.s !== 'other';
     btn.className = 'btn btn-block ' + (ready ? 'btn-gold' : 'btn-grey');
-    btn.textContent = ready ? 'Wyślij i odbierz nagrodę' : `Jeszcze ${3 - n} ${plural(3 - n, 'zdjęcie', 'zdjęcia', 'zdjęć')} do nagrody`;
+    btn.textContent = ready ? (A.quiet() ? 'Wyślij do bazy' : 'Wyślij i odbierz nagrodę') : `Jeszcze ${3 - n} ${plural(3 - n, 'zdjęcie', 'zdjęcia', 'zdjęć')}${A.quiet() ? '' : ' do nagrody'}`;
   }
   A.submitAdd = async () => {
     const code = cur && cur.missing ? cur.prod.code : null; if (!code) return;
@@ -744,6 +744,7 @@
   /* ---------- Ocena składu z etykiety (OCR) ---------- */
   function ingredientForm(code, kind) {
     return `<div class="stack" id="ingCard" data-code="${esc(code)}">
+      <p class="small muted" style="margin:0">Skład zostaje tylko w tym telefonie i nie trafia do bazy. Możesz go później usunąć.</p>
       <div class="row" role="group" aria-label="Rodzaj produktu"><button class="cat-tab" type="button" data-kind="food" aria-pressed="${kind === 'food'}">Jedzenie</button><button class="cat-tab" type="button" data-kind="cosmetic" aria-pressed="${kind === 'cosmetic'}">Kosmetyk</button></div>
       <span class="btn btn-white btn-sm filebtn" style="align-self:flex-start"><svg><use href="#i-photo"/></svg>Zdjęcie składu<input type="file" id="ingPhoto" accept="image/*" capture="environment" aria-label="Zrób zdjęcie składu"></span>
       <div id="ocrBox" hidden class="stack"><p class="small muted" id="ocrMsg">Odczytuję tekst ze zdjęcia…</p><div class="progress"><i id="ocrBar"></i></div></div>
@@ -782,6 +783,12 @@
     const keys = Object.keys(local); if (keys.length > 50) delete local[keys[0]];
     A.store.set('local', local);
     show(prod, { local: true });
+  };
+  A.clearLocal = () => {
+    if (!cur || !cur.prod) return;
+    const code = cur.prod.code, local = A.store.get('local', {});
+    delete local[code]; A.store.set('local', local);
+    cur = null; openProduct(code); A.toast('Usunięto Twój wpis. Pokazujemy dane z bazy.');
   };
   A.manualIng = () => {
     if (!cur || !cur.prod) return;

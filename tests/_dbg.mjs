@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+import { setup, C } from './lib.mjs';
+const b = await chromium.launch(); const ctx = await b.newContext({ serviceWorkers: 'block' }); await setup(ctx, {});
+await ctx.route(new RegExp('openfoodfacts\\.org/api/v2/product/' + C.missing2), r => r.fulfill({ json: { status: 1, product: { code: C.missing2, product_name_pl: 'Skyr 0%', brands: 'Pilos', nutriscore_grade: 'a', nutriments: { sugars_100g: 3.5 }, categories_hierarchy: ['en:yogurts'] } } }));
+const page = await ctx.newPage(); page.on('pageerror', e => console.log('ERR', e.message));
+await page.addInitScript(() => { if (sessionStorage.getItem('i')) return; sessionStorage.setItem('i','1'); localStorage.setItem('dcn-onboarded','true'); localStorage.setItem('dcn-settings', JSON.stringify({guess:false})); });
+await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(800);
+await page.evaluate(code => { const l = App.store.get('local', {}); l[code] = { code, kind: 'food', source: 'local', name: 'TEST', ingredients: 'woda, cukier, E250', nutriments: {} }; App.store.set('local', l); }, C.missing2);
+await page.goto('http://localhost:8790/app/index.html#/p/' + C.missing2); await page.waitForTimeout(2500);
+console.log(await page.evaluate(() => { const c = App.currentProduct(); return { local: c.local, li: c.prod.localIngr, src: c.prod.source, ing: c.prod.ingredients, note: !!document.getElementById('localNote') }; }));
+await b.close();

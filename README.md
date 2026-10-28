@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Poprawki po teście 3.0.2 (28.10.2026, wersja 3.0.3)
+- Własny skład/wartości z telefonu (mergeLocal oznacza prod.localIngr/localNut): przy każdym otwarciu panel „Skład wpisany przez Ciebie – tylko w tym telefonie” i „Usuń mój wpis i wróć do danych z bazy” (A.clearLocal). Formularz ręcznego składu od razu mówi, że wpis zostaje w telefonie.
+- „Ukryj punkty i nagrody”: bez „+10/+20” na liście „Uzupełnij dane” i bez „Nagroda odkrywcy”/„do nagrody” przy nieznanym kodzie.
+- Lista kategorii: sklep jako jeden przycisk „Sklep: … ▾” z panelem „W którym sklepie?” (jak „Dla kogo kupujesz?”); nazwa produktu na pełną szerokość, przyciski w drugim rzędzie.
+- „Twoje odkrycia”: przycisk „Skanuj brakujący produkt”.
+
 ## Poprawki po ponownym teście (28.10.2026, wersja 3.0.2)
 - Braki danych jedną regułą (A.dataGaps): także wynik bez części odżywczej (brak Nutri-Score i danych do jego wyliczenia) jest „wstępny”.
 - „Na tle podobnych”: przy brakach danych bez „lepszy niż X%” i „jeden z lepszych wyborów”, tylko wyjaśnienie. Wyszukiwarka i listy kategorii: „Wstępnie: …” (A.preLabel).
