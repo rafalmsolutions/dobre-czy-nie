@@ -403,21 +403,35 @@ const CHOLESTEROL_PLUS_WORDS = { prefix: ['owsian', 'owies', 'beta glukan', 'bet
 const WHOLEGRAIN_WORDS = { prefix: ['pelnoziarnist', 'razow', 'z pelnego ziarna', 'otrab'] };
 
 /* Sklepy i kategorie dla listy „Dobre dla Ciebie”. Tagi jak w Open Food Facts. */
+/* Sieci działające w Polsce (3.0.5: rozszerzona lista). key = nazwa bez znaków (szukamy jej w polu „stores” produktu),
+   alias = inne spotykane pisownie. Literówki do 1–2 znaków łączy A.storeKeyOf. Tesco nie ma (wyszło z Polski w 2021). */
 const STORES = [
   { key: 'biedronka', label: 'Biedronka' },
   { key: 'lidl', label: 'Lidl' },
-  { key: 'aldi', label: 'Aldi' },
   { key: 'kaufland', label: 'Kaufland' },
   { key: 'auchan', label: 'Auchan' },
   { key: 'carrefour', label: 'Carrefour' },
-  { key: 'netto', label: 'Netto' },
   { key: 'dino', label: 'Dino' },
-  { key: 'stokrotka', label: 'Stokrotka' },
+  { key: 'netto', label: 'Netto' },
+  { key: 'aldi', label: 'Aldi' },
   { key: 'zabka', label: 'Żabka' },
+  { key: 'stokrotka', label: 'Stokrotka' },
   { key: 'lewiatan', label: 'Lewiatan' },
   { key: 'polomarket', label: 'Polomarket' },
   { key: 'intermarche', label: 'Intermarché' },
   { key: 'spar', label: 'Spar' },
+  { key: 'leclerc', label: 'E.Leclerc' },
+  { key: 'spolem', label: 'Społem' },
+  { key: 'mila', label: 'Mila' },
+  { key: 'globus', label: 'Globus' },
+  { key: 'delikatesycentrum', label: 'Delikatesy Centrum' },
+  { key: 'topaz', label: 'Topaz' },
+  { key: 'chatapolska', label: 'Chata Polska', alias: ['polskachata'] },
+  { key: 'groszek', label: 'Groszek' },
+  { key: 'freshmarket', label: 'Freshmarket' },
+  { key: 'makro', label: 'Makro' },
+  { key: 'selgros', label: 'Selgros' },
+  { key: 'dealz', label: 'Dealz' },
   { key: 'rossmann', label: 'Rossmann' },
   { key: 'hebe', label: 'Hebe' }
 ];

@@ -27,7 +27,8 @@ const RATE = { perHour: 40, hits: new Map() }; // ochrona przed zalewem (w obrę
 const SEARCH = 'https://search.openfoodfacts.org/search';
 const CAT_TTL = 24 * 3600, SEARCH_TTL = 12 * 3600;
 /* Sklepy, które aplikacja może dopisać do produktu (pole „stores” w Open Food Facts, dopisywane przez add_stores – bez kasowania innych). */
-const STORE_NAMES = { biedronka: 'Biedronka', lidl: 'Lidl', aldi: 'Aldi', kaufland: 'Kaufland', auchan: 'Auchan', carrefour: 'Carrefour', netto: 'Netto', dino: 'Dino', stokrotka: 'Stokrotka', zabka: 'Żabka', lewiatan: 'Lewiatan', polomarket: 'Polomarket', intermarche: 'Intermarché', rossmann: 'Rossmann', hebe: 'Hebe', spar: 'Spar' };
+const STORE_NAMES = { biedronka: 'Biedronka', lidl: 'Lidl', aldi: 'Aldi', kaufland: 'Kaufland', auchan: 'Auchan', carrefour: 'Carrefour', netto: 'Netto', dino: 'Dino', stokrotka: 'Stokrotka', zabka: 'Żabka', lewiatan: 'Lewiatan', polomarket: 'Polomarket', intermarche: 'Intermarché', rossmann: 'Rossmann', hebe: 'Hebe', spar: 'Spar',
+  leclerc: 'E.Leclerc', spolem: 'Społem', mila: 'Mila', globus: 'Globus', delikatesycentrum: 'Delikatesy Centrum', topaz: 'Topaz', chatapolska: 'Chata Polska', groszek: 'Groszek', freshmarket: 'Freshmarket', makro: 'Makro', selgros: 'Selgros', dealz: 'Dealz' };
 const storeLabel = v => STORE_NAMES[String(v || '').toLowerCase()] || '';
 const CAT_FIELDS = 'code,product_name,product_name_pl,brands,quantity,image_front_small_url,image_front_url,nutriscore_grade,nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,nutriments,categories_tags,categories,stores';
 // Pełne dane produktów dla list (te same pola co ekran produktu w aplikacji, core.js FIELDS).

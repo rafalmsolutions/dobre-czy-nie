@@ -70,20 +70,25 @@ if (await page.locator('[data-act=complete]').count()) {
   ok(await page.evaluate(c => App.storeTagged(c), C.oil), 'sklep zapamiętany przy produkcie');
 } else ok(false, 'produkt bez składu: przycisk „Uzupełnij”');
 
-// 6. (3.0.4) Własny sklep: dopisany w profilu, przy produkcie głos zamiast zapisu w bazie
+// 6. (3.0.4/3.0.5) Własny sklep: dopisany w profilu, przy produkcie głos zamiast zapisu w bazie
 await page.goto('http://localhost:8790/app/index.html#/profil/sklepy'); await page.waitForTimeout(900);
-ok(await page.locator('#storeSuggest option[value="Społem"]').count() === 1, 'profil: podpowiedzi sklepów z bazy dla kraju');
-ok(await page.locator('input[name=mystore][value="x:topaz"]').count() === 1, 'profil: częsty sklep z bazy na liście');
-await page.fill('#storeAddInput', 'Społem'); await page.press('#storeAddInput', 'Enter'); await page.waitForTimeout(300);
-ok(await page.evaluate(() => App.myStores().includes('x:spolem')) && /Dodano: Społem/.test(await txt('#storeAddMsg')), 'profil: własny sklep dodany i zaznaczony');
-await page.evaluate(() => App.setMyStores(['x:spolem']));
+ok(await page.locator('input[name=mystore][value=spolem]').count() === 1 && await page.locator('input[name=mystore][value=topaz]').count() === 1, 'profil: polskie sieci (Społem, Topaz) na liście');
+ok(await page.evaluate(() => ['Carefour', 'Rossman', 'Polska Chata', 'Kamila'].map(App.storeKeyOf).join()) === 'carrefour,rossmann,chatapolska,x:kamila', 'sklepy: literówki i warianty łączone ze znaną siecią');
+await page.fill('#storeAddInput', 'Sklep Testowy Lupka'); await page.press('#storeAddInput', 'Enter'); await page.waitForTimeout(300);
+ok(await page.evaluate(() => App.myStores().includes('x:skleptestowylupka')) && /Dodano: Sklep Testowy Lupka/.test(await txt('#storeAddMsg')), 'profil: własny sklep dodany i zaznaczony');
+// limit 8: dziewiąty wybór odrzucony, poprzednie zostają
+for (const k of ['kaufland', 'auchan', 'carrefour', 'netto', 'dino', 'aldi']) { const c = page.locator(`input[name=mystore][value=${k}]`); if (!(await c.isChecked())) await page.locator(`label.ck-row:has(input[name=mystore][value=${k}])`).click(); await page.waitForTimeout(80); }
+const before9 = await page.evaluate(() => App.myStores().slice().sort().join());
+await page.locator('label.ck-row:has(input[name=mystore][value=zabka])').click(); await page.waitForTimeout(300);
+ok(!(await page.locator('input[name=mystore][value=zabka]').isChecked()) && /najwyżej 8/.test(await txt('#storeLimitMsg')) && await page.evaluate(() => App.myStores().slice().sort().join()) === before9, 'profil: 9. sklep odrzucony z komunikatem, zapis bez zmian');
+await page.evaluate(() => App.setMyStores(['x:skleptestowylupka']));
 await go(C.nutella);
-ok(await page.locator('#storeBox [data-k="x:spolem"]').count() === 1, 'pytanie „Kupujesz to w:” z własnym sklepem');
+ok(await page.locator('#storeBox [data-k="x:skleptestowylupka"]').count() === 1, 'pytanie „Kupujesz to w:” z własnym sklepem');
 const e0 = S.edit.length;
-await page.$eval('#storeBox [data-k="x:spolem"]', e => e.click()); await page.waitForTimeout(500);
-ok(S.vote.length === 1 && field(S.vote[0], 'name') === 'Społem' && S.edit.length === e0, 'własny sklep: głos, bez zapisu w bazie');
+await page.$eval('#storeBox [data-k="x:skleptestowylupka"]', e => e.click()); await page.waitForTimeout(500);
+ok(S.vote.length === 1 && field(S.vote[0], 'name') === 'Sklep Testowy Lupka' && S.edit.length === e0, 'własny sklep: głos, bez zapisu w bazie');
 ok(/wskażą go jeszcze 2 osoby/.test(await txt('#storeBox')), 'własny sklep: informacja, ile osób jeszcze potrzeba');
-ok(await page.evaluate(code => App.storeOf({ code, stores: [] }, 'x:spolem'), C.nutella), 'własny sklep: produkt liczony jako z Twojego sklepu');
+ok(await page.evaluate(code => App.storeOf({ code, stores: [] }, 'x:skleptestowylupka'), C.nutella), 'własny sklep: produkt liczony jako z Twojego sklepu');
 await page.goto('http://localhost:8790/app/index.html#/profil/ustawienia'); await page.waitForTimeout(400);
 ok(/Polska/.test(await txt('#countryRow')), 'ustawienia: kraj zakupów Polska');
 

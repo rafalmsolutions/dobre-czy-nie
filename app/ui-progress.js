@@ -84,7 +84,6 @@
   A.route('profile', arg => {
     sub = SUBS[arg] ? arg : '';
     if (sub === 'ustawienia' || sub === 'informacje' || sub === 'sklepy') editing = 'me';
-    if (sub === 'sklepy' && A.loadStoreCatalog && !A.storeCatalog().length) A.loadStoreCatalog().then(c => { if (c.length && A.current.screen === 'profile' && sub === 'sklepy') renderProfile(); });
     if (!person()) editing = 'me';
     draftCustom = (person() ? person().p : A.profile).custom.slice(); confirmWipe = false; confirmDel = false; renderProfile();
   });
@@ -154,15 +153,15 @@
       </div>
       ${me ? `<div class="pf-shops"${sec('sklepy')}>
         <p class="small muted">Nieobowiązkowe. Produkty z tych sklepów pokażemy wyżej, a przy dodawaniu produktu sklep podpowie się sam. Zmiany zapisują się od razu.</p>
-        ${(() => { const my = A.myStores(), cat = A.storeCatalog();
-          // Znane sieci, Twoje dopisane sklepy, potem najczęstsze sklepy z bazy w Twoim kraju (kolejność = kolejność zapisu).
-          const keys = [...new Set(STORES.map(x => x.key).concat(my, cat.filter(c => c.n >= 5).slice(0, 20).map(c => c.key)))];
+        ${(() => { const my = A.myStores();
+          // 3.0.5: sieci działające w Polsce (lista sprawdzona ręcznie) i Twoje dopisane sklepy. Surowe nazwy z bazy bywają zagraniczne albo z literówkami, więc ich nie podpowiadamy.
+          const keys = [...new Set(STORES.map(x => x.key).concat(my))];
           return `<div class="rows" id="storeRows">${keys.map(k => ckRow('mystore', k, A.storeLabel(k), my.includes(k))).join('')}</div>
           <h3 class="pf-sh">Nie ma Twojego sklepu?</h3>
-          <div class="inline-form"><input class="field" id="storeAddInput" maxlength="40" list="storeSuggest" autocomplete="off" placeholder="np. Społem, Topaz, sklep osiedlowy" aria-label="Nazwa sklepu"><button class="btn btn-dark btn-sm" type="button" data-act="store-add">Dodaj</button></div>
-          <datalist id="storeSuggest">${cat.filter(c => !my.includes(c.key)).slice(0, 150).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
+          <div class="inline-form"><input class="field" id="storeAddInput" maxlength="40" autocomplete="off" placeholder="np. Społem, Topaz, sklep osiedlowy" aria-label="Nazwa sklepu"><button class="btn btn-dark btn-sm" type="button" data-act="store-add">Dodaj</button></div>
+          
           <p class="msg" id="storeAddMsg" role="status"></p>
-          <p class="small muted">Możesz wybrać do 8 sklepów. Własny sklep działa od razu w Twoim telefonie. Do bazy Open Food Facts trafi przy produkcie dopiero wtedy, gdy wskażą go co najmniej 3 osoby.</p>`; })()}
+          <p class="msg" id="storeLimitMsg" role="status"></p><p class="small muted">Możesz wybrać do 8 sklepów. Własny sklep działa od razu w Twoim telefonie. Do bazy Open Food Facts trafi przy produkcie dopiero wtedy, gdy wskażą go co najmniej 3 osoby.</p>`; })()}
         <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       <div class="pf-set"${sec('ustawienia')}>
@@ -184,6 +183,13 @@
       <p class="small muted">Dane produktów: Open Food Facts i Open Beauty Facts (licencja ODbL). Wersja aplikacji ${esc(A.CFG.appVersion || '1.0')}.</p><p class="small muted" id="dataDate"></p>
     </div>` : ''}</div>`;
     renderCustomChips();
+    const sr = A.$('storeRows');
+    if (sr) sr.addEventListener('change', e => {
+      if (e.target.name !== 'mystore') return;
+      const n = sr.querySelectorAll('input[name="mystore"]:checked').length, m = A.$('storeLimitMsg');
+      if (n > 8) { e.target.checked = false; e.stopImmediatePropagation(); if (m) m.textContent = 'Możesz wybrać najwyżej 8 sklepów. Odznacz któryś, żeby dodać nowy.'; }
+      else if (m) m.textContent = '';
+    }, true);
     A.$('watchSet').addEventListener('change', e => {
       if (e.target.name !== 'watch') return;
       const n = A.$('watchSet').querySelectorAll('input[name="watch"]:checked').length;

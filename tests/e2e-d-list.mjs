@@ -63,6 +63,13 @@ if (await page.locator('.store-sw').count()) {
   ok(await page.locator('.ls-sheet [data-act=list-store]').count() >= 1 && /W którym sklepie/.test(await page.innerText('.ls-sheet')), 'sklepy: panel „W którym sklepie?”');
   await page.click('.ls-sheet [data-act=list-store][data-store=all]'); await page.waitForTimeout(250);
   ok(await page.locator('.ls-sheet').count() === 0 && /Wszystkie sklepy/.test(await page.innerText('.store-sw')), 'sklepy: wybór zamyka panel');
+  // 3.0.5: produkt wskazany przez Ciebie w Twoim sklepie, choć słabo dopasowany – sklep jest w panelu, a lista go pokazuje z wyjaśnieniem
+  await page.evaluate(() => { const m = App.store.get('d-storetag', {}); m['5900000002002'] = 'x:mojsklep'; App.store.set('d-storetag', m); const n = App.storeNames(); n['x:mojsklep'] = 'Mój Sklep'; App.store.set('d-storenames', n); });
+  await page.evaluate(() => App.listStoreSheet('en:prepared-meats', 'all', true)); await page.waitForTimeout(250);
+  ok(await page.locator('.ls-sheet [data-store="x:mojsklep"]').count() === 1, 'sklepy: w panelu także sklep ze słabo dopasowanym produktem (' + (await page.innerText('.ls-sheet').catch(() => '')).replace(/\s+/g, ' ').slice(0, 120) + ')');
+  await page.click('.ls-sheet [data-store="x:mojsklep"]'); await page.waitForTimeout(250);
+  ok(/nie znaleźliśmy produktów dobrze dopasowanych/.test(await page.innerText('#listBody')) && /orzech/i.test(await page.innerText('#shopList')), 'sklepy: wybrany sklep bez dobrych produktów – pokazujemy jego produkty z wyjaśnieniem');
+  await page.evaluate(() => App.listStore('en:prepared-meats', 'all')); await page.waitForTimeout(200);
 } else ok(false, 'sklepy: brak przycisku wyboru sklepu');
 // Profil pilnuje soli: 1,3 g to „średnio” (−10). Bez pełnych danych lista pokazywała wyżej.
 await page.$eval('.list-who [data-who=me]', e => e.click()); await page.waitForTimeout(800);

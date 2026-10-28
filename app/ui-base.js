@@ -675,7 +675,17 @@ const App = {};
      Lista podpowiedzi: sklepy wpisywane przy produktach w Open Food Facts w Twoim kraju (data/stores.json z cotygodniowej kopii). */
   A.country = () => 'pl'; // kraj zakupów; na razie tylko Polska (ustawienie przygotowane pod kolejne kraje)
   A.storeSlug = v => fold(v).replace(/[^a-z0-9]/g, '').slice(0, 40);
-  A.storeKeyOf = raw => { const f = A.storeSlug(raw); if (f.length < 2) return null; const k = STORES.find(x => f.includes(x.key)); return k ? k.key : 'x:' + f; };
+  const lev = (a, b) => { if (Math.abs(a.length - b.length) > 2) return 9; let p = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) { const c = [i]; for (let j = 1; j <= b.length; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[b.length]; };
+  // Krótkie nazwy (Dino, Mila, Lidl) tylko jako osobne słowo, żeby „Kamila” nie stała się Milą.
+  const knownIn = (f, words) => STORES.find(x => [x.key].concat(x.alias || []).some(k => k.length >= 5 ? f.includes(k) : words.includes(k)));
+  // Znana sieć: nazwa zawiera klucz albo alias, albo różni się literówką (1 znak przy krótkich, 2 przy dłuższych nazwach).
+  A.storeKeyOf = raw => {
+    const f = A.storeSlug(raw); if (f.length < 2) return null;
+    const words = fold(raw).split(/[^a-z0-9]+/).filter(Boolean);
+    const k = knownIn(f, words) || (f.length >= 5 ? STORES.find(x => [x.key].concat(x.alias || []).some(a => a.length >= 5 && lev(f, a) <= (a.length >= 8 ? 2 : 1))) : null);
+    return k ? k.key : 'x:' + f;
+  };
   const isStoreKey = k => typeof k === 'string' && (STORES.some(s => s.key === k) || /^x:[a-z0-9]{2,40}$/.test(k));
   A.storeNames = () => A.store.get('d-storenames', {}) || {};
   A.myStores = () => { const v = A.store.get('d-stores', []); return (Array.isArray(v) ? v : []).filter(isStoreKey).slice(0, 8); };
@@ -709,7 +719,7 @@ const App = {};
   A.storeOf = (prod, key) => {
     if (!prod || !key) return false;
     const tag = (A.store.get('d-storetag', {}) || {})[prod.code]; if (tag && tag === key) return true; // wskazany przez Ciebie
-    return key.startsWith('x:') ? (prod.stores || []).some(s => 'x:' + A.storeSlug(s) === key) : (prod.stores || []).some(s => fold(s).replace(/\s+/g, '').includes(key));
+    return (prod.stores || []).some(s => A.storeKeyOf(s) === key);
   };
 
   /* ---------- Historia ---------- */

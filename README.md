@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Poprawki sklepów po teście 3.0.4 (28.10.2026, wersja 3.0.5)
+- Lista sieci działających w Polsce rozszerzona do 28 (m.in. E.Leclerc, Społem, Mila, Globus, Delikatesy Centrum, Topaz, Chata Polska, Groszek, Freshmarket, Makro, Selgros, Dealz; bez Tesco). Ta sama lista w pośredniku (STORE_NAMES).
+- A.storeKeyOf łączy warianty i literówki ze znaną siecią (alias, odległość edycyjna 1–2), krótkie nazwy tylko jako osobne słowo („Kamila” ≠ Mila).
+- Profil → Ulubione sklepy: tylko sprawdzona lista + Twoje sklepy; bez podpowiedzi z surowych nazw z bazy (zagraniczne sieci, literówki). Limit 8 egzekwowany przy zaznaczaniu (komunikat, zapis bez zmian).
+- Lista kategorii: panel „W którym sklepie?” liczy wszystkie ocenione produkty (z liczbą dobrze dopasowanych), także wskazane przez Ciebie; sklep bez dobrych produktów pokazuje jego produkty z wyjaśnieniem.
+
 ## Sklepy spoza listy i kraj zakupów (28.10.2026, wersja 3.0.4)
 - Kopia bazy zapisuje `data/stores.json`: sklepy wpisywane przy produktach w Open Food Facts w Polsce (najczęstsza pisownia, liczba produktów, min. 2, do 200; `store_catalog` w scripts/build_data.py).
 - Aplikacja: dowolny sklep ma klucz `x:<nazwa bez znaków>` (A.storeKeyOf, A.storeSlug), nazwy własnych sklepów w `d-storenames`, katalog z kopii w `d-storecat` (A.loadStoreCatalog). Do 8 ulubionych sklepów.
