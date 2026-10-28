@@ -31,6 +31,7 @@ ok(/Nie liczymy: Ola/.test(await page.innerText('#famOff').catch(() => '')), 'pr
 
 // Wyłączam siebie: zostaje tylko Kuba.
 await page.goto('http://localhost:8790/app/index.html#/'); await page.waitForTimeout(600);
+await page.click('#scr-home [data-act=who-sheet]'); await page.waitForTimeout(300);
 await sw('me').click(); await page.waitForTimeout(300);
 await sw('f1').click(); await page.waitForTimeout(300);
 ok(await sw('f1').getAttribute('aria-checked') === 'true', 'ostatniej włączonej osoby nie da się wyłączyć');
