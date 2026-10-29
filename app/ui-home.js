@@ -65,7 +65,7 @@
       body = `<h1 id="startTitle" class="ob-h" tabindex="-1">${nm ? `Co jest dla Ciebie ważne, ${esc(nm)}?` : 'Co jest dla Ciebie ważne?'}</h1>
         <p class="small muted ob-p">Wybierz do ${GOALS_MAX}. Cel zaznacza, czego mamy pilnować w produktach.</p>
         <div class="goal-grid">${GOALS.map(g => A.goalTile(g, draft.goals.includes(g.key), 'goal')).join('')}</div>
-        ${A.watchLine(draft.watch)}<p class="msg" role="status" id="startMsg">${esc(msg)}</p>${later}`;
+        ${A.watchLine(draft.watch)}${later}`;
       if (draft.goals.length) next = `Dalej (${draft.goals.length} ${plural(draft.goals.length, 'cel', 'cele', 'celów')})`;
     } else if (step === 3) {
       const rowsOf = g => QUICK_AVOID.filter(q => q[0] === g || (g === 'diet' && q[0] === 'avoid')).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label)).join('');
@@ -97,7 +97,7 @@
       <button class="btn btn-dark btn-block" type="button" data-act="start-person-save">${sh.i === 'new' ? 'Dodaj osobę' : 'Zapisz'}</button>
       ${sh.i === 'new' ? '<button class="linkbtn" type="button" data-act="start-sheet-close">Anuluj</button>' : '<button class="linkbtn red-link" type="button" data-act="start-person-del">Usuń tę osobę</button>'}</div>` : '';
     el.innerHTML = `<div class="wrap ob">${top}<div class="ob-main stack">${body}</div>
-      <div class="ob-foot"><button class="btn btn-dark btn-block" type="button" data-act="start-next">${next}</button>
+      <div class="ob-foot">${step === 2 ? `<p class="ob-limit" role="status" id="startMsg"${msg ? '' : ' hidden'}>${esc(msg)}</p>` : ''}<button class="btn btn-dark btn-block" type="button" data-act="start-next">${next}</button>
         <button class="linkbtn ob-skip" type="button" data-act="start-skip">Pomiń na razie</button></div></div>${sheet}`;
     document.body.classList.toggle('sheet-open', !!sheet);
   }

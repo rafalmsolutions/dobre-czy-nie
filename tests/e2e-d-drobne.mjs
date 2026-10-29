@@ -57,5 +57,23 @@ const sw = await page.innerText('.store-sw').catch(() => ''), txt = await page.i
 const nBtn = (sw.match(/(\d+) produkt/) || [])[1], nTxt = (txt.match(/sprawdziliśmy (\d+) produkt/i) || [])[1];
 ok(nBtn && nBtn === nTxt, `liczba na przycisku (${nBtn}) = liczba w zdaniu (${nTxt})`);
 ok(/1 pominęliśmy – za mało danych/.test(txt), 'produkt bez danych nazwany jako pominięty');
+// 3.0.17 (11): komunikat o limicie celów w stopce nad „Dalej”, widoczny bez przewijania.
+await page.evaluate(() => localStorage.removeItem('dcn-onboarded'));
+await go('#/start'); await page.reload(); await page.waitForTimeout(800); // pełne przeładowanie: nowy szkic startu
+await page.click('[data-act=start-next]'); await page.waitForTimeout(200);
+ok(await page.locator('#startMsg').isHidden(), 'krok 2 bez nadmiaru: komunikat ukryty');
+for (const k of await page.$$eval('[data-act=goal]', l => l.slice(0, 4).map(e => e.dataset.k))) { await page.click(`[data-act=goal][data-k="${k}"]`); await page.waitForTimeout(120); }
+const lim = await page.evaluate(() => { const m = document.getElementById('startMsg'), r = m.getBoundingClientRect(); return { t: m.textContent, inFoot: !!m.closest('.ob-foot'), vis: r.top >= 0 && r.bottom <= innerHeight && !m.hidden }; });
+ok(/najwyżej 3 cele/.test(lim.t) && lim.inFoot && lim.vis, 'czwarty cel: komunikat nad „Dalej”, na ekranie (' + JSON.stringify(lim) + ')');
+const g0 = (await page.$$eval('[data-act=goal][aria-pressed=true]', l => l.map(e => e.dataset.k)))[0];
+await page.click(`[data-act=goal][data-k="${g0}"]`); await page.waitForTimeout(120);
+ok(await page.locator('#startMsg').isHidden(), 'po odznaczeniu celu komunikat znika');
+
+// 3.0.17 (10): kafle kategorii na 375 px – nazwa nie nachodzi na strzałkę.
+await page.setViewportSize({ width: 375, height: 812 });
+await page.evaluate(() => localStorage.setItem('dcn-onboarded', 'true'));
+await go('#/najlepsze');
+const over = await page.evaluate(() => [...document.querySelectorAll('.cat-link')].filter(a => { const g = a.querySelector('.grow'), r = a.querySelector('.arr'); return g.scrollWidth > g.clientWidth + 1 || g.getBoundingClientRect().right > r.getBoundingClientRect().left + 1; }).map(a => a.textContent.trim()));
+ok(!over.length, '375 px: żadna nazwa kategorii nie nachodzi na strzałkę (' + (over.join(', ') || 'brak') + ')');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

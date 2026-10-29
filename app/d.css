@@ -1079,3 +1079,13 @@ div.ob-person{cursor:default}
 .d-testbn-x{position:relative;z-index:1;flex:none;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:#F1F2F4;color:#5E6066;cursor:pointer}
 .d-testbn-x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
 .d-testbn-go:focus-visible::after{outline:3px solid #2E9E55;outline-offset:2px}
+/* 3.0.17: kafle kategorii na wąskich ekranach – długie nazwy („Płatki śniadaniowe”) mieszczą się przed strzałką, bez łamania słów */
+@media (max-width:440px){
+  .cat-grid .cat-link{gap:6px;padding:8px 8px 8px 10px;font-size:clamp(14px,3.9vw,16px)}
+  .cat-grid .d-cat-img{width:36px;height:36px;margin:-2px 0 -2px -4px}
+  .cat-grid .cat-link .arr{font-size:1.2rem}
+}
+/* 3.0.17: komunikat o limicie celów nad przyciskiem „Dalej” (zawsze na ekranie, a nie pod kafelkami) */
+.ob-limit{align-self:center;margin:0 0 2px;padding:8px 14px;border-radius:14px;background:#FDECEC;border:1px solid #F3B9B9;color:#8E2B3F;font-weight:700;font-size:14px;line-height:1.3;text-align:center;box-shadow:0 4px 14px rgba(40,40,50,.08)}
+.ob-limit[hidden]{display:none}
+.ob:has(.ob-limit:not([hidden])) .ob-main{padding-bottom:200px} /* treść da się przewinąć nad komunikat */
