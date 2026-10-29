@@ -4,7 +4,7 @@ const dir = path.join(__dirname, '..', 'app');
 const ctx = { console, Intl, URL, setTimeout };
 vm.createContext(ctx);
 for (const f of ['data.js', 'core.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8').replace(/^'use strict';/m, ''), ctx, { filename: f });
-const D = vm.runInContext('({ normalizeProduct, analyze, personalMatch, cleanProfile, migrateProfileD, watchFromGoals, WATCH, GOALS, WATCH_MAX })', ctx);
+const D = vm.runInContext('({ normalizeProduct, analyze, personalMatch, cleanProfile, migrateProfileD, watchFromGoals, WATCH, GOALS, WATCH_MAX, catListFilter })', ctx);
 
 let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) pass++; else { fail++; console.log('  ✗ ' + name); } };
@@ -114,5 +114,13 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(M(P({ ingredients_text_pl: 'mąka pszenno-żytnia, woda, sól' }), { allergens: ['gluten'] }).status === 'fail', 'mąka pszenno-żytnia: gluten');
   ok(M(P({ ingredients_text_pl: 'płatki owsiane 100%' }), { allergens: ['gluten'] }).status === 'fail', 'płatki owsiane: gluten');
   ok(M(P({ ingredients_text_pl: 'mleko, ser (mleko, sól)' }), { allergens: ['milk'] }).status === 'fail', 'ser: mleko'); }
+// 3.0.14: kafel „Słodkie kremy” (en:sweet-spreads) bez dżemów, miodów i musów; inne kategorie bez zmian.
+{ const S = (name, cats) => P({ product_name_pl: name, categories_hierarchy: ['en:spreads', 'en:sweet-spreads'].concat(cats || []) });
+  const list = [S('Nutella', ['en:chocolate-spreads']), S('Masa krówkowa'), S('Krem czekoladowy'), S('Konfitura truskawkowa', ['en:jams']), S('Miód lipowy', ['en:honeys']),
+    S('Ovolovo Gruszka Mus owocowy', ['en:fruit-and-vegetable-preserves']), S('Marmolada wieloowocowa'), S('Powidła śliwkowe'), S('Kubuś mus pitaya')];
+  const kept = D.catListFilter('en:sweet-spreads', list).map(p => p.name);
+  ok(kept.join('|') === 'Nutella|Masa krówkowa|Krem czekoladowy', 'słodkie kremy: tylko kremy (' + kept.join('|') + ')');
+  ok(D.catListFilter('en:jams', list).length === list.length, 'dżemy: lista bez filtra');
+  ok(D.catListFilter('en:sweet-spreads', [S('Musli z kremem')]).length === 1, '„musli” to nie „mus”'); }
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

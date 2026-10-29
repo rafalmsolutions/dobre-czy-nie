@@ -235,7 +235,7 @@
     if (building[key]) return building[key];
     building[key] = (async () => {
       let list = [];
-      try { list = await A.fetchCategory(key); } catch (e) { list = []; }
+      try { list = catListFilter(key, await A.fetchCategory(key)); } catch (e) { list = []; }
       const cur = A.album.pages[key];
       if (!list.length) return cur || null; // bez danych nie zamrażamy strony – spróbujemy przy następnej wizycie
       const keep = cur ? cur.slots.filter(s => A.slotCard(key, s.id)) : [];

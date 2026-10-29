@@ -508,6 +508,15 @@ const DEPARTMENTS = [
   { key: 'other', label: 'Inne', icon: 'dept_other', tags: [], words: [] }
 ];
 
+/* 3.0.14: kategorie OFF szersze niż nazwa kafla. en:sweet-spreads obejmuje też dżemy, miody i musy owocowe (te mają swój kafel „Dżemy”),
+   więc lista „Słodkie kremy” i strona albumu pomijają produkty z tymi tagami albo słowami w nazwie (słowa bez polskich znaków, jak po fold). */
+const CAT_LIST_FILTER = {
+  'en:sweet-spreads': {
+    tags: ['en:jams', 'en:marmalades', 'en:honeys', 'en:honey-based-preparations', 'en:bee-products', 'en:fruit-and-vegetable-preserves', 'en:fruit-jellies'],
+    words: ['dzem', 'powidl', 'marmolad', 'konfitur', ' mus ', 'miod', 'produkt owocowy', 'owoce w zelu']
+  }
+};
+
 /* Kafelki „Najlepsze dla Ciebie” na ekranie głównym (klucz kategorii jak w SHOP_CATEGORIES); reszta na ekranie „Wszystkie kategorie”. */
 const HOME_TILES = [
   { cat: 'en:yogurts', label: 'Jogurty', icon: 'prod_yogurt', bg: '#FFF3CC' },

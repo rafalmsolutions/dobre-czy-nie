@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## „Słodkie kremy” bez dżemów i miodów (29.10.2026, wersja 3.0.14)
+
+- Kategoria Open Food Facts `en:sweet-spreads` obejmuje też dżemy, powidła, miody i musy owocowe, więc lista „Słodkie kremy” pokazywała głównie je.
+  Teraz lista i strona albumu „Słodkie kremy” pomijają produkty z tagami dżemów, miodów i przetworów owocowych albo z takimi słowami w nazwie (`CAT_LIST_FILTER` w `app/data.js`, `catListFilter` w `app/core.js`).
+- Na dziś zostaje ok. 40 kremów (czekoladowe, orzechowe, karmelowe, masy krówkowe). Dżemy i powidła są w kaflu „Dżemy”.
+- Klucz kategorii się nie zmienił, więc zebrane karty w albumie zostają.
+
 ## Zaproszenie do testów w Google Play (29.10.2026, wersja 3.0.13)
 
 - Na ekranie Start, pod wyszukiwarką, karta „Masz Androida? Pomóż Lupce trafić do Google Play” z linkiem do lupka.app/testuj/.

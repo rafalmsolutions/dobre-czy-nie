@@ -777,6 +777,18 @@ function departmentFor(item) {
   return 'other';
 }
 
+/* 3.0.14: produkty z kopii kategorii, które pasują do nazwy kafla (CAT_LIST_FILTER w data.js). Bez reguły – lista bez zmian. */
+function catListFilter(key, list) {
+  const f = CAT_LIST_FILTER[key];
+  if (!f || !Array.isArray(list)) return list;
+  return list.filter(pr => {
+    const cats = Array.isArray(pr && pr.categories) ? pr.categories : [];
+    if (f.tags.some(t => cats.includes(t))) return false;
+    const name = ' ' + fold(pr && pr.name).replace(/[^a-z0-9]+/g, ' ') + ' ';
+    return !f.words.some(w => name.includes(w));
+  });
+}
+
 /* ===================== Wersja D: profil „Nie jem” + „Pilnuję” =====================
    Te deklaracje zastępują wcześniejsze o tej samej nazwie (cleanProfile, personalMatch, rankForUser). */
 function cleanProfile(p) {

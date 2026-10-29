@@ -385,7 +385,7 @@
     const have = LISTS[cat], sig = JSON.stringify([A.profile, A.family]);
     if (have && have.complete && have.sig === sig && Date.now() - have.at < 6 * 3600e3) { drawList(cat, storeKey, have); return; }
     try {
-      const list = await A.fetchCategory(cat, sec => { const w = A.$('listWait'); if (w && listToken === token) w.textContent = `Wyszukiwarka produktów ma limit zapytań. Spróbuję za ${sec} s…`; });
+      const list = catListFilter(cat, await A.fetchCategory(cat, sec => { const w = A.$('listWait'); if (w && listToken === token) w.textContent = `Wyszukiwarka produktów ma limit zapytań. Spróbuję za ${sec} s…`; }));
       if (listToken !== token || A.current.screen !== 'list') return;
       const codes = candidates(list);
       const w = A.$('listWait'); if (w) w.textContent = `Sprawdzam szczegóły ${codes.length} ${plural(codes.length, 'produktu', 'produktów', 'produktów')}…`;
