@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="only light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#2E9A3E">
+<title>Usuwanie danych – Lupka</title>
+<link rel="canonical" href="https://lupka.app/usun-dane.html">
+<meta name="description" content="Jak usunąć swoje dane z aplikacji Lupka: w aplikacji jednym przyciskiem albo e-mailem. Co usuwamy, co zostaje i jak długo.">
+<style>
+  :root{--ink:#2B2416;--muted:#6E6250;--green:#2E9A3E;--bg:#FFF6E5;--card:#FFFFFF;--line:#EADBC0}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+  h1{font-size:1.6rem;line-height:1.2;margin:8px 0 4px}
+  h2{font-size:1.15rem;margin:22px 0 6px}
+  section{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:4px 16px 12px;margin-top:12px}
+  a{color:#1E6B2A;font-weight:600}
+  .muted{color:var(--muted);font-size:.92rem}
+  .todo{background:#FFE9A8;border-radius:6px;padding:0 4px}
+  ul{padding-left:20px}
+  .back{display:inline-block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" id="back" href="/">← Lupka</a>
+  <script>
+  // Skąd przyszedłeś: z aplikacji (?z=app) – „Wróć do aplikacji”, ze strony – „Wróć na stronę Lupki”. Z tej samej witryny wracamy w historii.
+  (() => {
+    const APP = '/app/', SITE = '/';
+    const z = new URLSearchParams(location.search).get('z'), a = document.getElementById('back');
+    const fromApp = z === 'app';
+    a.textContent = fromApp ? '← Wróć do aplikacji' : '← Wróć na stronę Lupki';
+    a.href = fromApp ? APP : SITE;
+    let same = false; try { same = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) { }
+    if (same && history.length > 1) a.addEventListener('click', e => { e.preventDefault(); history.back(); });
+  })();
+  </script>
+  <h1>Jak usunąć swoje dane z aplikacji „Lupka”</h1>
+  <p class="muted">Aplikacja „Lupka: skaner składu produktów” (Google Play i lupka.app). Wydawca: Rafał Mokrowiecki. Wersja z dnia 29.10.2026.</p>
+
+  <section>
+    <h2>Sposób 1: w aplikacji (najszybciej)</h2>
+    <ol>
+      <li>Otwórz Lupkę i stuknij <b>Profil</b> na dolnym pasku.</li>
+      <li>Wejdź w <b>Ustawienia</b>.</li>
+      <li>Na dole stuknij <b>Usuń wszystkie moje dane</b>, a potem <b>Usuń wszystko</b>.</li>
+    </ol>
+    <p>Dane w telefonie znikają od razu. W tym samym momencie aplikacja prosi nasz serwer o usunięcie Twoich danych odkrywcy (patrz niżej). Nie trzeba się logować, bo Lupka nie ma kont.</p>
+  </section>
+
+  <section>
+    <h2>Sposób 2: e-mailem</h2>
+    <p>Jeśli nie masz już aplikacji albo wolisz napisać, wyślij wiadomość na <a href="mailto:rafalmsolutions@gmail.com?subject=Lupka%20-%20usuni%C4%99cie%20danych">rafalmsolutions@gmail.com</a> z tematem „Lupka – usunięcie danych”.</p>
+    <p>Lupka nie ma kont, więc żeby znaleźć Twoje dane na serwerze, podaj w wiadomości to, co pamiętasz: pseudonim z ekranu „Twoje odkrycia” albo kody kreskowe lub nazwy produktów, które dodałeś. Usuniemy je najpóźniej w ciągu 30 dni i potwierdzimy to w odpowiedzi.</p>
+  </section>
+
+  <section>
+    <h2>Co usuwamy</h2>
+    <ul>
+      <li><b>W telefonie:</b> imię, profil (cele, alergie, diety, to, czego pilnujesz), profile domowników, listy zakupów, historię sprawdzonych produktów, ulubione, album kart, punkty i odznaki, ustawienia.</li>
+      <li><b>Na serwerze odkrywców:</b> losowy identyfikator aplikacji, pseudonim, Twoje odpowiedzi „tak / nie / nie mam pewności” przy cudzych produktach, odwiedziny produktów, głosy na sklepy, liczniki i stopień „zaufany odkrywca”, skróty adresu IP.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Co zostaje i dlaczego</h2>
+    <ul>
+      <li><b>Produkty, które dodałeś do Open Food Facts</b> (zdjęcia opakowań, nazwa, skład): są już publiczne w otwartej bazie na licencjach CC BY-SA i ODbL. U nas zostają bez pseudonimu i bez powiązania z Tobą. O ich usunięcie z Open Food Facts możesz poprosić fundację Open Food Facts.</li>
+      <li><b>Anonimowe statystyki użycia</b> (GoatCounter): nie zawierają żadnego identyfikatora osoby, więc nie da się ich przypisać do Ciebie.</li>
+      <li><b>Wiadomości e-mail</b>, które do nas wysłałeś (np. zgłoszenia błędów): przechowujemy do 12 miesięcy; na prośbę usuniemy je wcześniej.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Jak długo trzymamy dane, jeśli ich nie usuniesz</h2>
+    <ul>
+      <li>Skrót adresu IP: do potwierdzenia albo odrzucenia produktu, którego dotyczy.</li>
+      <li>Dzienne liczniki do limitów: 30 dni.</li>
+      <li>Pozostałe dane odkrywcy: dopóki działa funkcja odkrywców albo do czasu, gdy je usuniesz.</li>
+      <li>Dane w telefonie: dopóki ich nie usuniesz. Jeśli po odinstalowaniu aplikacji coś zostało, wyczyść dane witryny lupka.app w ustawieniach przeglądarki.</li>
+    </ul>
+    <p>Szczegóły: <a href="/privacy.html">Polityka prywatności</a>.</p>
+  </section>
+</main>
+</body>
+</html>

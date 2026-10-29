@@ -490,7 +490,7 @@ ${cta('W aplikacji te same kategorie są posortowane dla Twojej rodziny.', '/app
 }
 
 /* ---------- Zapis ---------- */
-const urls = [['/', today], ['/jak-liczymy/', today], ['/aplikacje-do-sprawdzania-skladu/', '2026-10-22'], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-29']];
+const urls = [['/', today], ['/jak-liczymy/', today], ['/aplikacje-do-sprawdzania-skladu/', '2026-10-22'], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-29'], ['/usun-dane.html', '2026-10-29']];
 write('jak-liczymy/index.html', methodPage());
 write('lupka-czy-yuka/index.html', yukaPage());
 write('aplikacje-do-sprawdzania-skladu/index.html', appsPage());
