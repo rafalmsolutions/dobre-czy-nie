@@ -107,7 +107,13 @@
     const res = A.pendingCard, cels = A.heldCelebrations ? A.heldCelebrations() : [];
     const busy = !A.$('reveal').hidden || !A.$('celebrate').hidden;
     if ((!res && !cels.length) || busy) { bar.hidden = true; bar.innerHTML = ''; document.body.classList.remove('has-rwbar'); return; }
-    const badge = e => e.type === 'achievement' ? 'odznaka „' + e.name + '”' : e.type === 'level' ? 'nowy poziom' : 'wyzwanie ukończone';
+    // 3.0.16: kilka stopni tej samej odznaki naraz → „Mój profil · brąz, srebro” (zamiast „Mój profil, Mój profil”).
+    const TIER = ['brąz', 'srebro', 'złoto'], achs = (A.cfg && A.cfg.achievements && A.cfg.achievements.achievements) || [];
+    const tierOf = e => { const a = achs.find(x => x.id === e.id); return a && a.tier ? TIER[a.tier - 1] : ''; };
+    const named = list => { const out = []; list.forEach(e => { const t = e.type === 'achievement' ? tierOf(e) : '', o = out.find(x => x.name === e.name && x.ach && e.type === 'achievement');
+      if (o) { if (t) o.tiers.push(t); } else out.push({ name: e.name, ach: e.type === 'achievement', tiers: t ? [t] : [], e }); });
+      return out.map(o => o.tiers.length ? o.name + ' · ' + o.tiers.join(', ') : o.name); };
+    const badge = e => e.type === 'achievement' ? 'odznaka „' + named([e])[0] + '”' : e.type === 'level' ? 'nowy poziom' : 'wyzwanie ukończone';
     let ic, t1, t2;
     if (res) {
       const c = res.card, slot = (A.slotsOf(c.k) || []).find(s => s.id === c.slot), page = A.pageInfo(c.k) || { label: '' };
@@ -116,8 +122,8 @@
       t2 = [slot ? (slot.secret ? 'tajne miejsce' : '„' + slot.label + '”') : '', page.label].filter(Boolean).join(' · ') + (cels.length ? ' · + ' + cels.map(badge).join(', ') : '');
     } else {
       ic = '<span class="rw-medal" aria-hidden="true">★</span>';
-      t1 = cels[0].type === 'achievement' ? 'Nowa odznaka' : cels[0].type === 'level' ? 'Nowy poziom' : 'Wyzwanie ukończone';
-      t2 = cels.map(e => e.name).join(', ');
+      t1 = cels[0].type === 'achievement' ? (cels.filter(e => e.type === 'achievement').length > 1 ? 'Nowe odznaki' : 'Nowa odznaka') : cels[0].type === 'level' ? 'Nowy poziom' : 'Wyzwanie ukończone';
+      t2 = named(cels).join(', ');
     }
     bar.innerHTML = `${ic}<span class="grow"><b>${esc(t1)}</b><span>${esc(t2)}</span></span><button class="btn btn-gold btn-sm" type="button" data-act="rw-open">Odbierz</button><button class="rw-x" type="button" data-act="rw-close" aria-label="Później"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
     bar.hidden = false; document.body.classList.add('has-rwbar');
@@ -171,7 +177,7 @@
       <div class="rv-stage${rv.flipped ? ' open' : ''}">${rv.flipped ? `<div class="rv-rays" aria-hidden="true" style="background:${c.h ? RAYS.holo : RAYS[c.r]}"></div><div class="rv-front">${A.cardHtml(c, 190)}</div>`
         : `<button class="rv-back" type="button" data-act="reveal-flip" aria-label="Odsłoń nową kartę" style="background:${BACK[c.r] || BACK.zwykla}"><span class="rv-q">?</span><b class="rv-slot">${slot.secret ? '???' : esc(slot.label)}</b><span class="rv-logo"><span>dobre </span><b>czy nie?</b></span></button>`}</div>
       ${rv.flipped ? `<div class="rv-text" role="status"><h2><span class="w-light">${esc(h1[0])}</span> <span class="w-bold">${esc(h1[1])}</span></h2><p>${esc(text)}${extra ? ' ' + esc(extra) : ''}</p>${A.labelTip(Object.assign({}, slot, { secret: false })) ? `<p class="rv-tip"><b>Na etykiecie:</b> ${esc(A.labelTip(Object.assign({}, slot, { secret: false })))}</p>` : ''}
-        ${gal ? `<div class="rv-progress rv-gal">${A.galleryHtml(c.k, openIdx(c.k), { size: 'tiny', fresh: si >= 0 ? si : null })}<span class="stack" style="gap:4px;text-align:left"><b>Plakat: ${esc(page.label)}</b><span>Odsłoniłeś kolejny fragment: ${have} z ${A.ALBUM_SLOTS}</span></span></div>`
+        ${gal ? `<div class="rv-progress rv-gal">${A.galleryHtml(c.k, openIdx(c.k), { size: 'tiny', fresh: si >= 0 ? si : null })}<span class="stack" style="gap:4px;text-align:left"><b>Plakat: ${esc(page.label)}</b><span>Odsłonięty kolejny fragment: ${have} z ${A.ALBUM_SLOTS}</span></span></div>`
           : `<div class="rv-progress"><div class="row" style="justify-content:space-between"><b>Strona: ${esc(page.label)}</b><b>${have} z ${A.ALBUM_SLOTS}</b></div><span class="xp"><i style="width:${have * 10}%"></i></span></div>`}
       </div>
         <div class="rv-btns rv-dock"><button class="btn btn-white" type="button" data-act="reveal-close">Wynik produktu</button>${rv.res.pageFull ? '<button class="btn btn-green" type="button" data-act="reveal-page">Dalej ›</button>' : `<a class="btn btn-green" href="#/album/${esc(c.k)}" data-act="reveal-album">Zobacz stronę</a>`}</div>`
@@ -187,7 +193,7 @@
       <h2 class="pd-h"><span class="w-light">Strona</span> <span class="w-bold">ukończona!</span></h2>
       ${A.gallery(key) ? `<div class="pd-gal m-pop">${A.galleryHtml(key, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], { size: 'mid' })}<span class="pd-tw t1">✦</span><span class="pd-tw t2">✦</span><span class="pd-tw t3">✦</span><span class="pd-label">${esc(page.label)} · plakat odsłonięty</span></div>`
         : `<div class="pd-plate m-pop"><span class="pd-ring"></span>${page.img ? `<img src="${esc(page.img)}" alt="">` : ''}<span class="pd-tw t1">✦</span><span class="pd-tw t2">✦</span><span class="pd-tw t3">✦</span><span class="pd-label">${esc(page.label)} · ${A.ALBUM_SLOTS} / ${A.ALBUM_SLOTS}</span></div>`}
-      <p class="pd-p">Zdobyłeś wszystkie miejsca na tej stronie${rare ? `, w tym ${rare} ${plural(rare, 'trudniejsze', 'trudniejsze', 'trudniejszych')}` : ''}${holo ? ` i ${holo} ${plural(holo, 'błyszczącą kartę', 'błyszczące karty', 'błyszczących kart')}` : ''}.</p>
+      <p class="pd-p">Masz wszystkie miejsca na tej stronie${rare ? `, w tym ${rare} ${plural(rare, 'trudniejsze', 'trudniejsze', 'trudniejszych')}` : ''}${holo ? ` i ${holo} ${plural(holo, 'błyszczącą kartę', 'błyszczące karty', 'błyszczących kart')}` : ''}.</p>
       <div class="chips" style="justify-content:center"><span class="reward-chip gold">+100 pkt</span><span class="reward-chip">Złota ramka strony</span></div>
       <div class="rv-btns" style="margin-top:auto"><button class="btn btn-white" type="button" data-act="share-page" data-k="${esc(key)}">Udostępnij</button><a class="btn btn-green" href="#/album/${esc(key)}" data-act="reveal-album">Zobacz stronę</a></div></div>`;
   }

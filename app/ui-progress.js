@@ -201,7 +201,7 @@
   }
   function renderCustomChips() {
     const el = A.$('customChips'); if (!el) return;
-    el.innerHTML = draftCustom.length ? draftCustom.map((c, i) => `<span class="pchip" style="cursor:default">${esc(c)}<button type="button" class="x" data-act="rm-custom" data-i="${i}" aria-label="Usuń ${esc(c)}">×</button></span>`).join('') : '<span class="small muted">Nie dodałeś jeszcze własnych składników.</span>';
+    el.innerHTML = draftCustom.length ? draftCustom.map((c, i) => `<span class="pchip" style="cursor:default">${esc(c)}<button type="button" class="x" data-act="rm-custom" data-i="${i}" aria-label="Usuń ${esc(c)}">×</button></span>`).join('') : '<span class="small muted">Nie ma jeszcze własnych składników.</span>';
   }
   A.profAction = (act, el) => {
     if (act === 'prof-goal') {

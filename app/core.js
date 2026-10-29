@@ -222,6 +222,8 @@ function validBarcode(code) {
 
 function normalizeProduct(p, source) {
   const kind = source === 'obf' ? 'cosmetic' : 'food';
+  // 3.0.16: znak ℮ (ilość szacunkowa) z etykiety trafia do bazy jako „℮” albo „e” – „400 g e” → „400 g”.
+  const cleanQty = q => String(q || '').replace(/℮/g, ' ').replace(/(\d\s*(?:g|kg|mg|ml|cl|dl|l)\.?)\s+e\b\.?/gi, '$1').replace(/^\s*e\s+(?=\d)/i, '').replace(/\s{2,}/g, ' ').trim();
   const name = p.product_name_pl || p.product_name || p.generic_name_pl || p.generic_name || '';
   const ingredients = p.ingredients_text_pl || p.ingredients_text || '';
   const cats = Array.isArray(p.categories_hierarchy) && p.categories_hierarchy.length ? p.categories_hierarchy : (Array.isArray(p.categories_tags) ? p.categories_tags : []);
@@ -229,7 +231,7 @@ function normalizeProduct(p, source) {
   const num = k => { const v = n[k]; if (v === undefined || v === null || v === '') return null; const x = Number(v); return isFinite(x) && x >= 0 ? x : null; };
   return {
     code: String(p.code || ''), kind, source, name: name.trim(),
-    brand: String(p.brands || '').split(',')[0].trim(), quantity: p.quantity || '',
+    brand: String(p.brands || '').split(',')[0].trim(), quantity: cleanQty(p.quantity),
     image: p.image_front_small_url || p.image_front_url || p.image_url || '',
     imageLarge: p.image_front_url || p.image_url || p.image_front_small_url || '',
     imageIngredients: p.image_ingredients_url || '', imageNutrition: p.image_nutrition_url || '',
@@ -773,6 +775,10 @@ function departmentFor(item) {
   const cats = Array.isArray(item && item.categories) ? item.categories : [];
   for (const d of DEPARTMENTS) if (d.tags.some(t => cats.includes(t))) return d.key;
   const name = ' ' + fold((item && item.name) || '') + ' ';
+  // 3.0.16: napoje roślinne („mleko owsiane/sojowe/migdałowe/ryżowe/kokosowe”) to nie nabiał – dział „Napoje”, zanim „mleko” trafi do Nabiału.
+  if (/ (mleko|mleczko|napoj|napoje|drink) (owsian|sojow|migdal|ryzow|kokos|roslin|orzech|grochow|konopn|z owsa|z soi|z migdal|z ryzu)/.test(name)) return 'drinks';
+  // „sok pomarańczowy”, „nektar jabłkowy”: nazwa owocu nie przenosi napoju do warzyw i owoców.
+  if (/ (sok|soki|soczek|nektar|nektary) /.test(name)) return 'drinks';
   for (const d of DEPARTMENTS) if (d.words.some(w => name.includes(w.length <= 3 ? ' ' + w : w))) return d.key;
   return 'other';
 }

@@ -769,7 +769,7 @@ const App = {};
     if (!s) return 'Wpisz cyfry spod kodu kreskowego.';
     if (/[a-zA-Ząćęłńóśźż]/.test(s)) return 'Kod kreskowy składa się z samych cyfr. Wpisz liczby spod kresek, bez liter.';
     const d = s.replace(/\D/g, '');
-    if (d.length < 8) return `Wpisałeś ${d.length} ${plural(d.length, 'cyfrę', 'cyfry', 'cyfr')}. Kod kreskowy ma zwykle 8 albo 13 cyfr.`;
+    if (d.length < 8) return `Wpisano ${d.length} ${plural(d.length, 'cyfrę', 'cyfry', 'cyfr')}. Kod kreskowy ma zwykle 8 albo 13 cyfr.`;
     if (d.length > 14) return 'Ten kod jest za długi. Kod kreskowy ma zwykle 8 albo 13 cyfr.';
     return '';
   };

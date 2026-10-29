@@ -262,7 +262,7 @@
       ${sh.items.length ? `<div class="shop-items" id="shelfItems">${groups.length ? groups.map(g => `<h3 class="dept-h">${esc(g.label)}</h3><div class="sgroup">${g.items.map(itemHtml).join('')}</div>`).join('') : '<div class="empty" id="allBought"><b style="font-family:var(--f-display);color:var(--ink)">Wszystko w koszyku ✓</b></div>'}</div>
         ${bought.length ? `<details class="bought" id="boughtBox"${ui.showBought ? ' open' : ''}><summary>W koszyku: ${bought.length} <span class="muted">· ${ui.showBought ? 'zwiń' : 'pokaż'}</span></summary><div class="sgroup" style="margin-top:8px">${bought.map(itemHtml).join('')}</div></details>` : ''}`
         : `<div class="empty stack" style="align-items:center"><b style="font-family:var(--f-display);color:var(--ink)">Lista jest pusta</b><span>Wpisz albo podyktuj, co kupić, np. „mleko, chleb i dwa jogurty”. Produkty dodasz też przyciskiem „Na listę” po skanie.</span></div>`}
-      ${A.quiet && A.quiet() ? '' : `<p class="small center muted shop-pts">Odhaczysz całą listę (min. 3 rzeczy) w sklepie? <b>+10 pkt</b></p>`}
+      ${(A.quiet && A.quiet()) || pr.done >= pr.total ? '' : `<p class="small center muted shop-pts">Odhaczysz całą listę (min. 3 rzeczy) w sklepie? <b>+10 pkt</b></p>`}
     </div>${sheetHtml(sh)}`;
     document.body.classList.toggle('sheet-open', !!ui.sheet);
     if (focusSel) { const f = A.$('scr-shelves').querySelector(focusSel); if (f) f.focus(); }

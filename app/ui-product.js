@@ -129,7 +129,7 @@
     // Po 5 sprawdzonych produktach jeden raz pytamy o uwagi.
     if (A.CFG.contactEmail && !A.store.get('askedFeedback', false) && (A.game.sets.product_checked || []).length >= 5) {
       A.store.set('askedFeedback', true);
-      setTimeout(() => A.toast('Sprawdziłeś już 5 produktów. Co działa, a co nie?', `<a href="${A.feedbackHref()}">Napisz nam</a>`), 1500);
+      setTimeout(() => A.toast('To już 5 sprawdzonych produktów. Co działa, a co nie?', `<a href="${A.feedbackHref()}">Napisz nam</a>`), 1500);
     }
     const ask = A.settings.guess !== false && !A.quiet() && pm.pct != null && !guessedToday(prod.code) && !opts.local;
     if (!ask) cur.guess = 'skip-silent';
@@ -215,7 +215,7 @@
     const parts = [topbar(added ? 'Produkt dodany przez Ciebie' : cur.local ? 'Skład wpisany przez Ciebie' : '', prod.kind === 'food' ? favBtn(prod) : ''), prodCard(prod, cur.guess === null ? null : pm)];
     // 3.0.3: dane wpisane w tym telefonie (bazy jeszcze ich nie ma) – stale widoczne, z możliwością powrotu do danych z bazy.
     if (!added && (cur.local || prod.localIngr || prod.localNut) && A.store.get('local', {})[prod.code]) parts.push(`<div class="panel local-note" id="localNote" role="note"><b>${prod.localNut && !prod.localIngr ? 'Wartości odżywcze' : 'Skład'} wpisany przez Ciebie</b><span>Zapisany tylko w tym telefonie i używany w ocenie zamiast brakujących danych z bazy.</span><button class="linkbtn small" type="button" data-act="local-clear">Usuń mój wpis i wróć do danych z bazy</button></div>`);
-    if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Dodałeś ten produkt ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane, które wpisałeś.</p>`);
+    if (added) parts.push(`<p class="small" id="addedNote" role="status" style="font-weight:700">Ten produkt dodano ${esc(agoText(prod.addedAt))}. Open Food Facts udostępni go wszystkim zwykle w ciągu kilku minut. Do tego czasu widzisz dane wpisane przez Ciebie.</p>`);
     if (cur.snapshot) parts.push(`<p class="small muted" id="snapNote" role="status">Dane z naszej kopii bazy Open Food Facts. Pełny skład pobieramy w tle.</p>`);
     if (cur.guess === null) {
       parts.push(`<div class="panel stack center" id="guessBox" style="align-items:center">
@@ -355,7 +355,7 @@
     const offUrl = `${prod.source === 'obf' ? OBF : OFF}/product/${encodeURIComponent(prod.code)}`;
     s.push(`<div class="card stack"><div class="actions"><button class="btn btn-white btn-sm" type="button" data-act="share"><svg><use href="#i-share"/></svg>Udostępnij</button><button class="btn btn-white btn-sm" type="button" data-act="report">Zgłoś błąd</button>${prod.source !== 'local' ? '<button class="btn btn-white btn-sm" type="button" data-act="manual-ing">Wpisz skład ręcznie</button>' : ''}</div>
       <div id="ingSlot"></div>
-      <div class="source">${prod.source === 'local' ? (prod.added ? '<span>Dane, które dodałeś do Open Food Facts (licencja ODbL). Dziękujemy!</span>' : '<span>Skład wpisany przez Ciebie, zapisany tylko w tym telefonie.</span>') : `<span>Źródło danych: <a href="${offUrl}" target="_blank" rel="noopener">${prod.source === 'obf' ? 'Open Beauty Facts' : 'Open Food Facts'}</a> (licencja ODbL). Widzisz błąd? Możesz go poprawić w bazie.</span>`}<span>Ocena ma charakter informacyjny i nie jest poradą medyczną.</span></div></div>`);
+      <div class="source">${prod.source === 'local' ? (prod.added ? '<span>Dane dodane przez Ciebie do Open Food Facts (licencja ODbL). Dziękujemy!</span>' : '<span>Skład wpisany przez Ciebie, zapisany tylko w tym telefonie.</span>') : `<span>Źródło danych: <a href="${offUrl}" target="_blank" rel="noopener">${prod.source === 'obf' ? 'Open Beauty Facts' : 'Open Food Facts'}</a> (licencja ODbL). Widzisz błąd? Możesz go poprawić w bazie.</span>`}<span>Ocena ma charakter informacyjny i nie jest poradą medyczną.</span></div></div>`);
     return s.join('');
   }
 
@@ -504,7 +504,7 @@
     if (!r.error || r.error === 'duplicate') { if (!r.error) A.shelves = r.state; A.saveShelves(); }
     if (!r.error) A.rememberAdded(alt, alt.pct);
     const g = A.award('swap_to_better', { code: alt.code });
-    A.toast(g.blocked === 'once_product_day' ? 'Ten zamiennik już dziś wybrałeś. Jest na półce.' : `Zamienione! „${alt.name}” jest na półce „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
+    A.toast(g.blocked === 'once_product_day' ? 'Ten zamiennik już dziś wybrano. Jest na półce.' : `Zamienione! „${alt.name}” jest na półce „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
   };
 
   /* ---------- Brak produktu: dodaj do bazy i zdobądź nagrodę odkrywcy ---------- */
@@ -619,7 +619,7 @@
     if (bEl && n) {
       bEl.hidden = false; bEl.className = 'disc-check ' + (bc.s === 'match' ? 'ok' : bc.s === 'other' ? 'bad' : 'warn');
       bEl.innerHTML = bc.s === 'match' ? '<b>✓ Kod na zdjęciu zgadza się ze skanem</b>'
-        : bc.s === 'other' ? `<b>To chyba inny produkt</b><span>Zeskanowałeś ${esc(cur.prod.code)}, a na zdjęciu jest ${esc(bc.other)}. Zrób zdjęcia tego samego opakowania.</span>`
+        : bc.s === 'other' ? `<b>To chyba inny produkt</b><span>Zeskanowany kod to ${esc(cur.prod.code)}, a na zdjęciu jest ${esc(bc.other)}. Zrób zdjęcia tego samego opakowania.</span>`
         : '<b>Nie widzimy kodu kreskowego na zdjęciach</b><span>Zrób zdjęcie tyłu tak, żeby było widać kod. Bez tego produkt potwierdzą dopiero inne osoby.</span>';
     }
     const ready = n === 3 && bc.s !== 'other';
@@ -926,7 +926,7 @@
     if (reasonEl.value === 'other' && comment.length < 5) { msg.textContent = 'Opisz krótko problem, żebyśmy wiedzieli, co sprawdzić.'; A.$('repComment').focus(); return; }
     const hourAgo = Date.now() - 3600e3;
     const sent = A.store.get('reportTimes', []).filter(t => typeof t === 'number' && t > hourAgo);
-    if (sent.length >= REPORT_LIMIT) { msg.textContent = 'Wysłałeś już kilka zgłoszeń w ciągu godziny. Dziękujemy! Spróbuj ponownie później.'; return; }
+    if (sent.length >= REPORT_LIMIT) { msg.textContent = 'Wysłano już kilka zgłoszeń w ciągu godziny. Dziękujemy! Spróbuj ponownie później.'; return; }
     const r = { code: reportCtx.code, name: reportCtx.name || '', reason: reasonEl.value, reasonLabel: reasonEl.dataset.label, comment, email, method: METHOD_VERSION, app: A.CFG.appVersion || '', at: new Date().toISOString() };
     A.$('repSend').disabled = true;
     A.store.set('reportTimes', sent.concat(Date.now()));

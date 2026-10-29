@@ -931,7 +931,7 @@
       "name": "Zaufany odkrywca",
       "category": "baza",
       "icon": "check",
-      "description": "Dodaj 5 produktów potwierdzonych przez innych, bez żadnego odrzuconego po drodze. Zostajesz zaufanym odkrywcą.",
+      "description": "Dodaj 5 produktów potwierdzonych przez innych, bez żadnego odrzuconego po drodze. Dostajesz status zaufanego odkrywcy.",
       "metric": "disc_best",
       "target": 5,
       "reward": {
@@ -946,7 +946,7 @@
       "name": "Zaufany odkrywca",
       "category": "baza",
       "icon": "check",
-      "description": "15 potwierdzonych produktów z rzędu. Zostajesz strażnikiem bazy: Twoje potwierdzenia liczą się podwójnie.",
+      "description": "15 potwierdzonych produktów z rzędu. Dostajesz status strażnika bazy: Twoje potwierdzenia liczą się podwójnie.",
       "metric": "disc_best",
       "target": 15,
       "reward": {

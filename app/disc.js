@@ -77,8 +77,8 @@
     A.disc.best = Math.max(A.disc.best || 0, A.disc.streak);
     const rank = { new: 0, trusted: 1, guardian: 2 };
     if (rank[A.disc.level] > rank[before]) {
-      if (A.disc.level === 'guardian') { A.award('disc_guardian', { code: 'guardian' }); A.toast('Zostałeś strażnikiem bazy! Twoje potwierdzenia liczą się teraz podwójnie.', '<a href="#/odkrycia">Zobacz</a>'); }
-      else { A.award('disc_trusted', { code: 'trusted' }); A.toast('Zostałeś zaufanym odkrywcą! Twoje produkty trafiają do albumu od razu, bez czekania.', '<a href="#/odkrycia">Zobacz</a>'); }
+      if (A.disc.level === 'guardian') { A.award('disc_guardian', { code: 'guardian' }); A.toast('Masz status strażnika bazy! Twoje potwierdzenia liczą się teraz podwójnie.', '<a href="#/odkrycia">Zobacz</a>'); }
+      else { A.award('disc_trusted', { code: 'trusted' }); A.toast('Masz status zaufanego odkrywcy! Twoje produkty trafiają do albumu od razu, bez czekania.', '<a href="#/odkrycia">Zobacz</a>'); }
     } else if (rank[A.disc.level] < rank[before]) A.toast('Jeden z Twoich produktów został odrzucony w kontroli, więc znów czekają na potwierdzenie. Seria liczy się od nowa.');
     (r.items || []).forEach(x => { const it = A.disc.items[x.code] = Object.assign(A.disc.items[x.code] || { paidViews: 0 }, { name: x.name, status: x.status, views: x.views, wanted: !!x.wanted, at: x.at }); if (!it.name) it.name = x.code; });
     save();
@@ -115,7 +115,7 @@
     if (!box || !code) return;
     box.querySelectorAll('button').forEach(b => { b.disabled = true; });
     const vote = btn.dataset.v, r = await api('/disc/vote', { device: A.appUuid(), code, vote });
-    if (!r || !r.ok) { box.querySelectorAll('button').forEach(b => { b.disabled = false; }); A.toast(r && r.error === 'limit' ? 'Dziś oceniłeś już 10 produktów. Dziękujemy! Wróć jutro.' : 'Nie udało się wysłać odpowiedzi. Spróbuj za chwilę.'); return; }
+    if (!r || !r.ok) { box.querySelectorAll('button').forEach(b => { b.disabled = false; }); A.toast(r && r.error === 'limit' ? 'Dziś to już 10 ocenionych produktów. Dziękujemy! Wróć jutro.' : 'Nie udało się wysłać odpowiedzi. Spróbuj za chwilę.'); return; }
     A.award(vote === 'unsure' ? 'disc_unsure' : 'disc_vote', { code });
     const t = vote === 'yes' ? (r.status === 'confirmed' ? 'Dzięki! Produkt potwierdzony.' : 'Dzięki! Potrzebna jeszcze jedna osoba.') : vote === 'no' ? 'Zgłoszenie przyjęte' : 'W porządku';
     const d = vote === 'no' ? 'Po dwóch takich zgłoszeniach wpis znika, a autor traci nagrodę. Masz właściwy produkt? Możesz go uzupełnić w bazie.' : vote === 'unsure' ? 'Zapytamy kogoś innego.' : r.status === 'confirmed' ? 'Odkrywca dostaje złotą kartę, a produkt jest już pewny dla wszystkich.' : 'Gdy potwierdzi go jeszcze jedna osoba, odkrywca dostanie złotą kartę.';
@@ -136,16 +136,16 @@
         <h1 class="al-h"><span class="w-light">Twoje</span> <span class="w-bold">odkrycia</span></h1>
         <button class="btn btn-dark btn-block" type="button" data-act="scan"><svg><use href="#i-scan"/></svg>Skanuj brakujący produkt</button>
         ${(() => { const lv = A.disc.level || (A.disc.trusted ? 'trusted' : 'new'), st = A.disc.streak || 0;
-          const L = { new: ['Nowy odkrywca', `Każdy Twój produkt potwierdzają 2 kolejne osoby. Po 5 potwierdzonych z rzędu zostaniesz zaufanym odkrywcą.`, st, 5],
-            trusted: ['Zaufany odkrywca', 'Twoje produkty trafiają do albumu od razu, bez czekania. Mniej więcej co 10. przechodzi wyrywkową kontrolę: odrzucenie zeruje serię. Po 15 z rzędu zostaniesz strażnikiem bazy.', st, 15],
+          const L = { new: ['Nowy odkrywca', `Każdy Twój produkt potwierdzają 2 kolejne osoby. Po 5 potwierdzonych z rzędu dostaniesz status zaufanego odkrywcy.`, st, 5],
+            trusted: ['Zaufany odkrywca', 'Twoje produkty trafiają do albumu od razu, bez czekania. Mniej więcej co 10. przechodzi wyrywkową kontrolę: odrzucenie zeruje serię. Po 15 z rzędu dostaniesz status strażnika bazy.', st, 15],
             guardian: ['Strażnik bazy', 'Twoje produkty trafiają do albumu od razu, a Twoje odpowiedzi „czy to ten produkt?” liczą się podwójnie. Wyrywkowa kontrola obowiązuje nadal.', st, 0] }[lv];
           return `<div class="disc-trust${lv !== 'new' ? ' on' : ''}"><span class="disc-shield" aria-hidden="true">${A.dIcon('healthy', 22)}</span><span class="stack" style="gap:4px;flex:1"><b>${L[0]}</b><span class="small">${L[1]}</span>${L[3] ? `<span class="disc-steps"><span class="xp"><i style="width:${Math.min(100, L[2] / L[3] * 100)}%"></i></span><span class="small">${L[2]} z ${L[3]} potwierdzonych z rzędu</span></span>` : ''}</span></div>`; })()}
         <div class="al-stats three"><div><b>${items.length}</b><span>dodanych</span></div><div><b>${conf}</b><span>potwierdzonych</span></div><div><b>${views}</b><span>${plural(views, 'osoba sprawdziła', 'osoby sprawdziły', 'osób sprawdziło')}</span></div></div>
         ${items.length ? `<div class="stack" style="gap:10px">${items.map(([code, it]) => `<a class="disc-item ${STATUS[it.status] ? STATUS[it.status][1] : 'pending'}" href="#/p/${esc(code)}"><span class="disc-ic" aria-hidden="true">${it.status === 'confirmed' ? '★' : it.status === 'rejected' ? '!' : '…'}</span><span class="grow stack" style="gap:2px"><b>${esc(it.name || code)}</b><span class="small">${esc((STATUS[it.status] || STATUS.pending)[0])}${it.spot && it.status === 'pending' ? ' (wyrywkowa kontrola)' : ''}${it.wanted ? ' · poszukiwany (+100)' : ''}${it.views ? ` · sprawdziło ${it.views} ${plural(it.views, 'osoba', 'osoby', 'osób')}` : ''}</span></span></a>`).join('')}</div>`
-          : '<div class="empty stack"><b>Nie dodałeś jeszcze żadnego produktu</b><span>Gdy zeskanujesz coś, czego nie ma w bazie, zrób 3 zdjęcia i dodaj to. Za potwierdzony produkt dostaniesz złotą kartę i +50 pkt.</span></div>'}
+          : '<div class="empty stack"><b>Nie ma jeszcze Twoich produktów</b><span>Gdy zeskanujesz coś, czego nie ma w bazie, zrób 3 zdjęcia i dodaj to. Za potwierdzony produkt dostaniesz złotą kartę i +50 pkt.</span></div>'}
         <div class="card stack"><b style="font-family:var(--f-display)">Poszukiwane</b><span class="small muted">Te kody ktoś skanował, a bazy brak. Masz taki produkt w domu? Dodanie daje podwójną nagrodę (+100).</span>
           ${wanted == null ? '<div class="sk" style="height:60px"></div>' : wanted.length ? wanted.slice(0, 10).map(w => `<a class="disc-want" href="#/p/${esc(w.code)}"><span class="mono">${esc(w.code)}</span><b>szukało ${w.n} ${plural(w.n, 'osoba', 'osoby', 'osób')}</b></a>`).join('') : '<span class="small">Na razie nic. Wróć za kilka dni.</span>'}</div>
-        <div class="card stack"><label for="discNick"><b style="font-family:var(--f-display)">Pseudonim odkrywcy</b> <span class="small muted">(nieobowiązkowy)</span></label><input class="field" id="discNick" maxlength="24" autocomplete="off" placeholder="np. Ola z Poznania" value="${esc(A.disc.nick || '')}"><span class="small muted">Widzą go osoby, które potwierdzają Twoje produkty. Bez pseudonimu jesteś „innym odkrywcą”.</span></div>
+        <div class="card stack"><label for="discNick"><b style="font-family:var(--f-display)">Pseudonim odkrywcy</b> <span class="small muted">(nieobowiązkowy)</span></label><input class="field" id="discNick" maxlength="24" autocomplete="off" placeholder="np. Ola z Poznania" value="${esc(A.disc.nick || '')}"><span class="small muted">Widzą go osoby, które potwierdzają Twoje produkty. Bez pseudonimu widzą: „inny odkrywca”.</span></div>
       </div>`;
       const nick = A.$('discNick');
       if (nick) nick.addEventListener('change', () => { A.disc.nick = nick.value.replace(/[<>]/g, '').trim().slice(0, 24); save(); A.toast('Zapisano pseudonim.'); });

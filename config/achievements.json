@@ -178,7 +178,7 @@
       "name": "Kartograf sklepów",
       "category": "baza",
       "icon": "pin",
-      "description": "Wskaż, w jakim sklepie kupiłeś 10 produktów.",
+      "description": "Wskaż sklep, w którym kupiono 10 produktów.",
       "metric": "stores_tagged",
       "target": 10,
       "reward": {

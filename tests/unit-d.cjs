@@ -4,7 +4,7 @@ const dir = path.join(__dirname, '..', 'app');
 const ctx = { console, Intl, URL, setTimeout };
 vm.createContext(ctx);
 for (const f of ['data.js', 'core.js']) vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8').replace(/^'use strict';/m, ''), ctx, { filename: f });
-const D = vm.runInContext('({ normalizeProduct, analyze, personalMatch, cleanProfile, migrateProfileD, watchFromGoals, WATCH, GOALS, WATCH_MAX, catListFilter })', ctx);
+const D = vm.runInContext('({ normalizeProduct, analyze, personalMatch, cleanProfile, migrateProfileD, watchFromGoals, WATCH, GOALS, WATCH_MAX, catListFilter, departmentFor })', ctx);
 
 let pass = 0, fail = 0;
 const ok = (c, name) => { if (c) pass++; else { fail++; console.log('  ✗ ' + name); } };
@@ -122,5 +122,18 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(kept.join('|') === 'Nutella|Masa krówkowa|Krem czekoladowy', 'słodkie kremy: tylko kremy (' + kept.join('|') + ')');
   ok(D.catListFilter('en:jams', list).length === list.length, 'dżemy: lista bez filtra');
   ok(D.catListFilter('en:sweet-spreads', [S('Musli z kremem')]).length === 1, '„musli” to nie „mus”'); }
+// 3.0.16: napoje roślinne nie w Nabiale; zwykłe mleko zostaje w Nabiale.
+{ const dep = n => D.departmentFor({ name: n });
+  const plant = ['mleko owsiane', 'Mleko sojowe', 'mleko migdałowe', 'mleko ryżowe', 'mleko kokosowe', 'napój owsiany', 'Napój roślinny', 'mleczko kokosowe'];
+  const dairy = ['mleko', 'Mleko 2%', 'mleko UHT', 'mleko bez laktozy', 'mleko 3,2% Łaciate'];
+  ok(plant.every(n => dep(n) === 'drinks'), 'napoje roślinne → Napoje (' + plant.map(n => n + ':' + dep(n)).join(', ') + ')');
+  ok(dairy.every(n => dep(n) === 'dairy'), 'mleko krowie → Nabiał (' + dairy.map(n => n + ':' + dep(n)).join(', ') + ')');
+  const juice = ['sok pomarańczowy', 'Sok jabłkowy 1 l', 'nektar z czarnej porzeczki', 'soki owocowe'], fruit = ['pomarańcze', 'jabłka', 'sos pomidorowy'];
+  ok(juice.every(n => dep(n) === 'drinks'), 'soki i nektary → Napoje (' + juice.map(n => n + ':' + dep(n)).join(', ') + ')');
+  ok(dep('pomarańcze') === 'veg' && dep('jabłka') === 'veg' && dep('sos pomidorowy') !== 'drinks', 'owoce zostają w warzywach i owocach, sos nie jest sokiem (' + fruit.map(n => n + ':' + dep(n)).join(', ') + ')'); }
+// 3.0.16: znak ℮ w gramaturze.
+{ const q = v => P({ quantity: v }).quantity;
+  ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');
+  ok(q('2 x 125 g') === '2 x 125 g' && q('500 g') === '500 g' && q('') === '' && q(undefined) === '', 'zwykła gramatura bez zmian'); }
 console.log(`unit-d: ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

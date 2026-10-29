@@ -16,6 +16,19 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Drobne poprawki z testu (29.10.2026, wersja 3.0.16)
+
+- Pierwsze uruchomienie, „Nowa osoba”: komunikat „Wpisz imię albo pseudonim.” znika, gdy zaczniesz wpisywać imię.
+- Lista zakupów: podpowiedź „Odhaczysz całą listę…? +10 pkt” nie wisi, gdy wszystko jest już w koszyku.
+- Pasek nowych odznak: kilka stopni tej samej odznaki naraz to „Mój profil · brąz, srebro” (zamiast „Mój profil, Mój profil”), nagłówek „Nowe odznaki”.
+- Lista zakupów: „mleko owsiane/sojowe/migdałowe/ryżowe/kokosowe”, „napój owsiany/roślinny” trafiają do działu „Napoje”, nie do Nabiału. Zwykłe mleko (także 2%, UHT, bez laktozy) zostaje w Nabiale.
+  Soki i nektary („sok pomarańczowy”) też trafiają do „Napoje”, a nie do warzyw i owoców.
+- Forma bezosobowa zamiast męskiej we wszystkich komunikatach do użytkownika (np. „Wpisano 3 cyfry”, „Ten produkt dodano…”, „Masz status zaufanego odkrywcy”).
+- Gramatura bez znaku ℮ zapisanego w bazie jako „e” („400 g e” → „400 g”).
+- Lista kategorii: ta sama liczba produktów na przycisku sklepu i w zdaniu „sprawdziliśmy…”; produkty bez danych do oceny nazwane wprost („1 pominęliśmy – za mało danych”).
+- Pierwsze uruchomienie: wybory „Tylko dla siebie / Dla siebie i domowników” i kafle celów mają nazwy dla czytnika ekranu.
+- Testy: `tests/e2e-d-drobne.mjs`, nowe przypadki w `tests/unit-d.cjs`.
+
 ## Porównanie w kategorii: właściwa kategoria (29.10.2026, wersja 3.0.15)
 
 - Porównanie „Na tle podobnych produktów” i „Zamień na lepsze” brały dwie ostatnie kategorie z bazy. Bywały to kategorie bez danych albo inne produkty
