@@ -7,7 +7,7 @@
   const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
   let step = 1, draft = null, msg = '';
   A.route('start', () => {
-    if (!draft) draft = { goals: A.profile.goals.slice(), watch: A.profile.watch.slice(), picks: {}, name: A.userName() };
+    if (!draft) draft = { goals: A.profile.goals.slice(), watch: A.profile.watch.slice(), picks: {}, name: A.userName(), fam: A.family.length > 0, people: A.family.map(f => ({ id: f.id, name: f.name, picks: Object.fromEntries(['allergens', 'diet', 'avoid'].flatMap(g => (f.p[g] || []).map(k => [g + ':' + k, true]))) })), sheet: null };
     if (!Object.keys(draft.picks).length) ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => { draft.picks[g + ':' + k] = true; }));
     renderStart();
   });
@@ -23,33 +23,71 @@
   };
   A.goalTile = (g, on, act) => { const t = GOAL_TILES[g.key]; return `<button class="goal-tile d-goal" type="button" data-act="${act}" data-k="${g.key}" aria-pressed="${on}"><span class="tick" aria-hidden="true"><svg width="14" height="14"><use href="#i-check"/></svg></span><span class="d-goal-ic">${A.dIcon(t.icon, 24)}</span><b>${esc(t.label)}</b><span>${esc(t.hint)}</span></button>`; };
   A.watchLine = watch => watch.length ? `<p class="small d-watchline"><b>Będę pilnować:</b> ${watch.map(k => esc((WATCH.find(w => w.key === k) || {}).label || k).toLowerCase()).join(', ')}.</p>` : '';
+  /* 3.0.7: start w stylu Profilu: 1) imię i dla kogo, 2) cele (kafelki), 3) czego nie jesz (lista), 4) domownicy (gdy „dla rodziny”).
+     Na każdym kroku informacja, że wszystko zmienisz w Profilu; na ostatnim krótko „Jak liczymy dopasowanie”. */
+  const CK = '<span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+  const pickRow = (key, on, label) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b></span><input class="ck-in" type="checkbox" data-pick="${key}"${on ? ' checked' : ''}>${CK}</label>`;
+  const pickSum = picks => QUICK_AVOID.filter(([g, k]) => picks[g + ':' + k]).map(([g, k]) => (g === 'diet' ? '' : '✕ ') + opt(g, k).label.toLowerCase()).join(' · ') || 'bez ustawień';
+  const total = () => draft.fam ? 4 : 3;
+  const readPicks = () => A.$('scr-start').querySelectorAll('.ob-main [data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
+  const howHtml = `<details class="ob-how"><summary>Jak liczymy dopasowanie?</summary><ol>
+      <li>Zaczynamy od oceny składu produktu, takiej samej dla wszystkich.</li>
+      <li>Każda rzecz, której ktoś pilnuje, dodaje albo odejmuje punkty. Zawsze pokażemy ile i dlaczego.</li>
+      <li>Jeśli produkt zawiera coś, czego ktoś nie je, oznaczymy go „Nie pasuje”.</li></ol></details>`;
+  const later = '<p class="ob-later">Wszystko to możesz zmienić później w <b>Profilu</b>.</p>';
   function renderStart() {
-    const el = A.$('scr-start');
-    const bar = `<div class="steps-bar" aria-label="Krok ${step} z 3">${[1, 2, 3].map(i => `<i class="${i <= step ? 'on' : ''}"></i>`).join('')}<span class="small muted" style="margin-left:6px;font-weight:800">Krok ${step} z 3</span></div>`;
-    let body = '';
+    const el = A.$('scr-start'), n = total(), last = step === n;
+    const top = `<div class="ob-top">${step > 1 ? '<button class="btn btn-white iconbtn ob-back" type="button" data-act="start-back" aria-label="Wstecz"><svg><use href="#i-back"/></svg></button>' : ''}<span class="ob-bar" role="progressbar" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${step}" aria-label="Krok ${step} z ${n}"><i style="width:${Math.round(step / n * 100)}%"></i></span><span class="ob-step">Krok ${step} z ${n}</span></div>`;
+    let body = '', next = 'Dalej';
     if (step === 1) {
-      body = `<p class="small muted">Pomożemy Ci wybierać produkty, które pasują właśnie do Ciebie.</p>
-        <div><h1 id="startTitle" style="font-size:1.8rem">Jaki masz cel?</h1><p class="small muted">Wybierz do ${GOALS_MAX}. Cel zaznacza, czego mamy pilnować w produktach. Zmienisz to w profilu.</p></div>
-        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, draft.goals.includes(g.key), 'goal')).join('')}</div>
-        ${A.watchLine(draft.watch)}
-        <p class="msg" role="status" id="startMsg">${esc(msg)}</p>`;
+      body = `<div class="ob-brand"><svg width="30" height="30" aria-hidden="true"><use href="#i-lupka"/></svg><b>lupka</b></div>
+        <h1 id="startTitle" class="ob-h" tabindex="-1">Cześć! Dla kogo robisz zakupy?</h1>
+        <p class="small muted ob-p">Lupka sprawdzi każdy produkt osobno dla każdej osoby.</p>
+        <div class="stack" style="gap:6px"><label class="small" for="startName" style="font-weight:800">Twoje imię <span class="muted" style="font-weight:600">(nieobowiązkowe, zostaje tylko w telefonie)</span></label><input class="field" id="startName" maxlength="30" autocomplete="given-name" placeholder="np. Ola" value="${esc(draft.name)}"></div>
+        <div class="ob-choices" role="radiogroup" aria-label="Dla kogo robisz zakupy">
+          <button type="button" class="ob-choice${!draft.fam ? ' on' : ''}" role="radio" aria-checked="${!draft.fam}" data-act="start-mode" data-v="me"><span class="rd" aria-hidden="true"></span><span><b>Tylko dla siebie</b><small>Dopasujemy produkty do Ciebie</small></span></button>
+          <button type="button" class="ob-choice${draft.fam ? ' on' : ''}" role="radio" aria-checked="${draft.fam}" data-act="start-mode" data-v="fam"><span class="rd" aria-hidden="true"></span><span><b>Dla siebie i domowników</b><small>Np. dziecko z alergią, partner na diecie</small></span></button></div>
+        ${later}`;
     } else if (step === 2) {
-      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Czego nie jesz?</h1><p class="small muted">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać. Pełna lista alergenów i własne składniki są w profilu.</p></div>
-        <div class="pchips">${QUICK_AVOID.map(([g, k]) => `<label class="pchip"><input type="checkbox" data-pick="${g}:${k}"${draft.picks[g + ':' + k] ? ' checked' : ''}>${esc(opt(g, k).label)}</label>`).join('')}</div>
-        <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Zawsze sprawdź etykietę.</p>`;
+      const nm = String(draft.name || '').trim();
+      body = `<h1 id="startTitle" class="ob-h" tabindex="-1">${nm ? `Co jest dla Ciebie ważne, ${esc(nm)}?` : 'Co jest dla Ciebie ważne?'}</h1>
+        <p class="small muted ob-p">Wybierz do ${GOALS_MAX}. Cel zaznacza, czego mamy pilnować w produktach.</p>
+        <div class="goal-grid">${GOALS.map(g => A.goalTile(g, draft.goals.includes(g.key), 'goal')).join('')}</div>
+        ${A.watchLine(draft.watch)}<p class="msg" role="status" id="startMsg">${esc(msg)}</p>${later}`;
+      if (draft.goals.length) next = `Dalej (${draft.goals.length} ${plural(draft.goals.length, 'cel', 'cele', 'celów')})`;
+    } else if (step === 3) {
+      const rowsOf = g => QUICK_AVOID.filter(q => q[0] === g || (g === 'diet' && q[0] === 'avoid')).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label)).join('');
+      body = `<h1 id="startTitle" class="ob-h" tabindex="-1">Czego nie jesz?</h1>
+        <p class="small muted ob-p">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać.</p>
+        <h3 class="pf-sh">Alergeny</h3><div class="rows">${rowsOf('allergens')}</div>
+        <h3 class="pf-sh">Dieta i inne</h3><div class="rows">${rowsOf('diet')}</div>
+        <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Zawsze sprawdź etykietę. Pełna lista alergenów i własne składniki: Profil → Wykluczenia.</p>
+        ${last ? howHtml : ''}${later}`;
+      if (last) next = 'Zaczynamy';
     } else {
-      body = `<div><h1 id="startTitle" style="font-size:1.8rem">Jak masz na imię?</h1><p class="small muted">Nieobowiązkowe. Imię zostaje tylko w tym telefonie.</p></div>
-        <input class="field" id="startName" maxlength="30" autocomplete="given-name" placeholder="np. Ania" value="${esc(draft.name)}" aria-label="Twoje imię">
-        <div class="panel stack"><b style="font-family:var(--f-display)">Jak liczymy dopasowanie?</b><ul class="why">
-          <li class="why-plus"><span class="why-ic">1</span><span>Zaczynamy od oceny składu produktu, takiej samej dla wszystkich.</span></li>
-          <li class="why-plus"><span class="why-ic">2</span><span>Każda rzecz, której pilnujesz, dodaje albo odejmuje punkty. Zawsze pokażemy ile i dlaczego.</span></li>
-          <li class="why-plus"><span class="why-ic">3</span><span>Jeśli produkt zawiera coś, czego nie jesz, oznaczymy go „Nie pasuje”.</span></li></ul></div>`;
+      const me = String(draft.name || '').trim() || 'Ty';
+      body = `<h1 id="startTitle" class="ob-h" tabindex="-1">Kto jeszcze je w domu?</h1>
+        <p class="small muted ob-p">Dodaj osoby, dla których kupujesz. Przy każdym produkcie zobaczysz wynik dla każdej z nich.</p>
+        <div class="rows">
+          <div class="ob-person"><span class="ob-av" aria-hidden="true">${esc(me.charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(me)}${me !== 'Ty' ? ' (Ty)' : ''}</b><small>${esc([].concat(draft.goals.map(k => ((GOAL_TILES[k] || {}).label || k).toLowerCase()), pickSum(draft.picks) === 'bez ustawień' ? [] : [pickSum(draft.picks)]).join(' · ') || 'bez ustawień')}</small></span></div>
+          ${draft.people.map((x, i) => `<button type="button" class="ob-person" data-act="start-person" data-i="${i}" aria-label="Zmień: ${esc(x.name)}"><span class="ob-av" aria-hidden="true">${esc(x.name.charAt(0).toUpperCase())}</span><span class="grow"><b>${esc(x.name)}</b><small>${esc(pickSum(x.picks))}</small></span><span class="small muted" style="font-weight:800">Zmień</span></button>`).join('')}
+          ${draft.people.length < A.FAMILY_MAX ? '<button type="button" class="ob-add" data-act="start-person" data-i="new">＋ Dodaj osobę</button>' : ''}</div>
+        <p class="small muted">Do ${A.FAMILY_MAX} domowników. Cele i pełne ustawienia każdej osoby zmienisz w Profilu → Domownicy.</p>
+        ${howHtml}${later}`;
+      next = 'Zaczynamy';
     }
-    el.innerHTML = `<div class="wrap" style="gap:12px">${bar}${body}
-      <div class="stack" style="margin-top:auto;gap:6px">
-        <button class="btn btn-green btn-block" type="button" data-act="start-next">${step < 3 ? (step === 1 && draft.goals.length ? `Dalej (${draft.goals.length} ${plural(draft.goals.length, 'cel', 'cele', 'celów')})` : 'Dalej') : 'Zaczynamy!'}</button>
-        <div class="row" style="justify-content:space-between">${step > 1 ? '<button class="linkbtn" type="button" data-act="start-back">Wstecz</button>' : '<span></span>'}<button class="linkbtn" type="button" data-act="start-skip">Pomiń na razie</button></div>
-      </div></div>`;
+    const sh = draft.sheet;
+    const sheet = sh ? `<div class="ls-dim" data-act="start-sheet-close"></div><div class="ls-sheet" role="dialog" aria-modal="true" aria-labelledby="obSheetT"><span class="ls-grab" aria-hidden="true"></span>
+      <h2 id="obSheetT">${sh.i === 'new' ? 'Nowa osoba' : 'Zmień: ' + esc(sh.name)}</h2>
+      <div class="stack" style="gap:6px;margin-top:6px"><label class="small" for="obPName" style="font-weight:800">Imię lub pseudonim</label><input class="field" id="obPName" maxlength="30" autocomplete="off" placeholder="np. Kuba" value="${esc(sh.name)}"></div>
+      <p class="msg" role="status" id="obPMsg"></p>
+      <h3 class="pf-sh">Czego nie je?</h3><div class="rows">${QUICK_AVOID.map(([g, k]) => pickRow(g + ':' + k, sh.picks[g + ':' + k], opt(g, k).label)).join('')}</div>
+      <button class="btn btn-dark btn-block" type="button" data-act="start-person-save">${sh.i === 'new' ? 'Dodaj osobę' : 'Zapisz'}</button>
+      ${sh.i === 'new' ? '<button class="linkbtn" type="button" data-act="start-sheet-close">Anuluj</button>' : '<button class="linkbtn red-link" type="button" data-act="start-person-del">Usuń tę osobę</button>'}</div>` : '';
+    el.innerHTML = `<div class="wrap ob">${top}<div class="ob-main stack">${body}</div>
+      <div class="ob-foot"><button class="btn btn-dark btn-block" type="button" data-act="start-next">${next}</button>
+        <button class="linkbtn ob-skip" type="button" data-act="start-skip">Pomiń na razie</button></div></div>${sheet}`;
+    document.body.classList.toggle('sheet-open', !!sheet);
   }
   function saveStart(finish) {
     const p = Object.assign({}, A.profile, { goals: draft.goals.slice(), watch: draft.watch.slice() });
@@ -61,12 +99,33 @@
     if (finish) {
       const nm = String(draft.name || '').replace(/[<>]/g, '').trim().slice(0, 30);
       A.store.set('name', nm);
+      // Domownicy z ekranu startowego (tylko przy „dla siebie i domowników”): zapis szybkich wykluczeń, reszta ustawień zostaje.
+      if (draft.fam) {
+        const keep = new Set(draft.people.filter(x => x.id).map(x => x.id));
+        A.family.filter(f => !keep.has(f.id)).forEach(f => A.familyRemove(f.id));
+        draft.people.forEach(x => {
+          let f = x.id ? A.family.find(y => y.id === x.id) : null;
+          if (!f) { f = A.familyAdd(); if (!f) return; }
+          f.name = x.name;
+          const fp = Object.assign({}, f.p);
+          ['allergens', 'diet', 'avoid'].forEach(g => {
+            const quick = QUICK_AVOID.filter(q => q[0] === g).map(q => q[1]);
+            fp[g] = (f.p[g] || []).filter(k => !quick.includes(k)).concat(quick.filter(k => x.picks[g + ':' + k]));
+          });
+          f.p = cleanProfile(fp);
+        });
+        A.saveFamily();
+      }
       A.store.set('onboarded', true);
       draft = null; step = 1;
+      document.body.classList.remove('sheet-open');
       A.go('#/');
     }
   }
+  const focusTitle = () => { const t = A.$('startTitle'); if (t) t.focus(); };
   A.startAction = (act, el) => {
+    if (step === 1 && A.$('startName')) draft.name = A.$('startName').value;
+    if (step === 3 && !draft.sheet) readPicks();
     if (act === 'goal') {
       const k = el.dataset.k, i = draft.goals.indexOf(k);
       if (i >= 0) { draft.goals.splice(i, 1); draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, false); msg = ''; }
@@ -74,19 +133,37 @@
       else { draft.watch = A.toggleGoalWatch(draft.watch, draft.goals, k, true); draft.goals.push(k); msg = ''; }
       renderStart();
       const again = A.$('scr-start').querySelector(`[data-k="${k}"]`); if (again) again.focus();
+    } else if (act === 'start-mode') {
+      draft.fam = el.dataset.v === 'fam'; renderStart();
+      const b = A.$('scr-start').querySelector(`[data-act=start-mode][data-v="${el.dataset.v}"]`); if (b) b.focus();
     } else if (act === 'start-next') {
-      if (step === 2) A.$('scr-start').querySelectorAll('[data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
-      if (step === 3) { draft.name = A.$('startName').value; saveStart(true); return; }
-      step++; msg = ''; renderStart(); A.$('startTitle').focus();
+      if (step >= total()) { saveStart(true); return; }
+      step++; msg = ''; renderStart(); focusTitle(); window.scrollTo({ top: 0 });
     } else if (act === 'start-back') {
-      if (step === 2) A.$('scr-start').querySelectorAll('[data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
-      if (step === 3) draft.name = A.$('startName').value;
-      step = Math.max(1, step - 1); renderStart();
+      step = Math.max(1, step - 1); msg = ''; renderStart(); focusTitle();
     } else if (act === 'start-skip') {
-      if (step === 2) A.$('scr-start').querySelectorAll('[data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
       saveStart(true);
+    } else if (act === 'start-person') {
+      const i = el.dataset.i, x = i === 'new' ? null : draft.people[Number(i)];
+      draft.sheet = { i, name: x ? x.name : '', picks: Object.assign({}, x ? x.picks : {}) };
+      renderStart(); const f = A.$('obPName'); if (f) f.focus();
+    } else if (act === 'start-sheet-close') {
+      draft.sheet = null; renderStart();
+      const b = A.$('scr-start').querySelector('[data-act=start-person][data-i="new"]') || A.$('startTitle'); if (b) b.focus();
+    } else if (act === 'start-person-save') {
+      const sh = draft.sheet, nm = A.$('obPName').value.replace(/[<>]/g, '').trim().slice(0, 30);
+      if (!nm) { A.$('obPMsg').textContent = 'Wpisz imię albo pseudonim.'; A.$('obPName').focus(); return; }
+      const picks = {}; A.$('scr-start').querySelectorAll('.ls-sheet [data-pick]').forEach(c => { picks[c.dataset.pick] = c.checked; });
+      if (sh.i === 'new') draft.people.push({ id: null, name: nm, picks });
+      else Object.assign(draft.people[Number(sh.i)], { name: nm, picks });
+      draft.sheet = null; renderStart();
+      const b = A.$('scr-start').querySelector('[data-act=start-person][data-i="new"]') || A.$('scr-start').querySelector('[data-act=start-next]'); if (b) b.focus();
+      A.announce(`Dodano: ${nm}.`);
+    } else if (act === 'start-person-del') {
+      draft.people.splice(Number(draft.sheet.i), 1); draft.sheet = null; renderStart();
     }
   };
+  A.closeStartSheet = () => { if (draft && draft.sheet) { draft.sheet = null; renderStart(); return true; } return false; };
 
   /* ---------- Dla Ciebie ---------- */
   // Czy osoba ustawiła coś, co zmienia ocenę (cel inny niż „Po prostu zdrowiej” albo ograniczenie)?

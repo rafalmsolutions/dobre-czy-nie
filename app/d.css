@@ -1017,3 +1017,35 @@ a.seg-b{display:flex;align-items:center;justify-content:center;text-decoration:n
 .store-sw svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .who-ck .ck.rd{border-radius:50%}
 .who-ck[aria-checked="true"] .ck.rd{background:var(--ink);border-color:var(--ink)}
+
+/* ===== 3.0.7 Start (pierwsze uruchomienie) w stylu Profilu ===== */
+.ob{min-height:100vh;min-height:100dvh;gap:14px;padding-bottom:0}
+.ob-top{display:flex;align-items:center;gap:10px;min-height:44px}
+.ob-back{width:44px;height:44px;flex:none}
+.ob-bar{flex:1;height:6px;border-radius:6px;background:#D3D5D9;overflow:hidden}.ob-bar i{display:block;height:100%;background:var(--ink);border-radius:6px}
+.ob-step{font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+.ob-main{gap:14px;flex:1}
+.ob-brand{display:flex;align-items:center;gap:8px;font:800 22px var(--f-display);color:var(--ink)}
+.ob-h{font:800 28px/1.15 var(--f-display);color:var(--ink);margin:0;outline:none}
+.ob-p{margin:-6px 0 0}
+.ob-choices{display:flex;flex-direction:column;gap:10px}
+.ob-choice{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border-radius:16px;background:#fff;border:2px solid transparent;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.ob-choice.on{border-color:var(--ink)}
+.ob-choice .rd{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid #A3A5AA;display:flex;align-items:center;justify-content:center}
+.ob-choice.on .rd{border-color:var(--ink)}.ob-choice.on .rd::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.ob-choice b{display:block;font-size:16px;font-weight:800}.ob-choice small{display:block;color:var(--muted);font-weight:600;font-size:13px}
+.ob-later{margin:0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.6);font-size:13px;font-weight:600;color:var(--muted)}
+.ob-later b{color:var(--ink)}
+.ob-person{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:6px 2px;border:0;border-bottom:1px solid #D7D9DD;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+div.ob-person{cursor:default}
+.ob-person .grow{display:flex;flex-direction:column;min-width:0}
+.ob-person b{font-size:16px;font-weight:800}.ob-person small{color:var(--muted);font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ob-av{flex:none;width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.ob-add{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;border:0;border-bottom:1px solid #D7D9DD;background:none;font:inherit;font-weight:800;color:var(--ink);cursor:pointer;text-align:left;padding:0 2px}
+.ob-how{background:#fff;border-radius:14px;padding:12px 14px}
+.ob-how summary{font-weight:800;cursor:pointer}
+.ob-how ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.4}
+.ob-foot{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;gap:6px;padding:16px max(16px,calc((100vw - 560px) / 2)) calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(232,233,235,0),#E8E9EB 26%)}
+.ob-main{padding-bottom:130px}
+.ob-skip{align-self:center}
+.ls-sheet .rows{max-height:44vh;overflow:auto}

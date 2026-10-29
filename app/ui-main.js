@@ -87,7 +87,7 @@
       case 'list-store-sheet': A.listStoreSheet(el.dataset.cat, el.dataset.store, true); break;
       case 'list-sheet-close': { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); break; }
       case 'list-who': A.listWhoSet(el.dataset.cat, el.dataset.store, el.dataset.who); break;
-      case 'goal': case 'start-next': case 'start-back': case 'start-skip': A.startAction(act, el); break;
+      case 'goal': case 'start-next': case 'start-back': case 'start-skip': case 'start-mode': case 'start-person': case 'start-person-save': case 'start-person-del': case 'start-sheet-close': A.startAction(act, el); break;
       case 'ach-cat': case 'ach-pick': A.achAction(act, el); break;
       default:
         if (SHELF_ACTS.includes(act)) A.shelfAction(act, el);
@@ -117,7 +117,7 @@
       if (!A.$('celebrate').hidden) { e.preventDefault(); A.nextCelebration(); return; }
       if (!A.$('scanner').hidden) { e.preventDefault(); A.closeScanner(); return; }
       if (!A.$('reveal').hidden) { e.preventDefault(); A.closeReveal(); return; }
-      if (document.body.classList.contains('sheet-open')) { e.preventDefault(); if (A.whoSheet) { A.whoSheet = false; A.render(); } else if (A.storeSheet) { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); } else if (A.closeSheet) A.closeSheet(); return; }
+      if (document.body.classList.contains('sheet-open')) { e.preventDefault(); if (A.closeStartSheet && A.closeStartSheet()) { } else if (A.whoSheet) { A.whoSheet = false; A.render(); } else if (A.storeSheet) { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); } else if (A.closeSheet) A.closeSheet(); return; }
     }
     // Pułapka fokusu w pełnoekranowych gratulacjach.
     // Pułapka fokusu w nakładce nowej karty.
