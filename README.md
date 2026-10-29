@@ -16,6 +16,14 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Porównanie w kategorii: właściwa kategoria (29.10.2026, wersja 3.0.15)
+
+- Porównanie „Na tle podobnych produktów” i „Zamień na lepsze” brały dwie ostatnie kategorie z bazy. Bywały to kategorie bez danych albo inne produkty
+  (krem czekoladowy porównywany z kakao w proszku, bez zamienników).
+- Teraz aplikacja bierze najwęższą kategorię, która ma dane i w której większość produktów ma tę samą postać (krem ↔ krem). Kategorie bez pliku
+  i o innej postaci pomija (`A.pickCompareCats` w `app/ui-product.js`). Zasada „ta sama postać” dla zamienników (`sameUse`) bez zmian.
+- Test: `tests/e2e-d-catpick.mjs` (produkt, którego hierarchia kończy się kategorią bez pliku i kakao w proszku).
+
 ## „Słodkie kremy” bez dżemów i miodów (29.10.2026, wersja 3.0.14)
 
 - Kategoria Open Food Facts `en:sweet-spreads` obejmuje też dżemy, powidła, miody i musy owocowe, więc lista „Słodkie kremy” pokazywała głównie je.

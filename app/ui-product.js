@@ -378,24 +378,39 @@
     return mine.some(c => xs.has(c));
   };
   A.sameUse = sameUse;
+  /* 3.0.15: kategorie do porównania i zamienników. Kolejność categories_hierarchy z OFF nie zawsze idzie od ogólnej do najwęższej
+     (krem czekoladowy kończy się na „confectionary-based-spreads” – bez pliku – i „cocoa-powders”). Bierzemy kategorie od końca,
+     najpierw wąskie (specific), potem ogólne; pomijamy te bez produktów (404) i te, w których większość produktów ma inną postać
+     niż skanowany (FORM_CATS: krem ≠ kakao w proszku). Najwyżej 2 kategorie i 6 prób; pierwsza przyjęta to „najwęższa”. */
+  const sameForm = (prod, x) => { const xs = new Set(x.categories || []); return !FORM_CATS.some(f => (prod.categories || []).includes(f) && !xs.has(f)); };
+  A.pickCompareCats = async (prod, fetchCat) => {
+    const all = (prod.categories || []).slice().reverse().filter(c => /^en:[a-z0-9-]{2,60}$/.test(c));
+    const narrowFirst = all.filter(c => !GENERIC_CATS.has(c) && !BROAD_RE.test(c)).concat(all.filter(c => GENERIC_CATS.has(c) && !BROAD_RE.test(c)), all.filter(c => BROAD_RE.test(c)));
+    if (!narrowFirst.length && prod.category) narrowFirst.push(prod.category);
+    const cats = []; let list = [], tries = 0;
+    for (const c of narrowFirst) {
+      if (cats.length >= 2 || tries >= 6) break;
+      tries++;
+      const got = await fetchCat(c), others = got.filter(x => x.code !== prod.code);
+      if (!others.length) continue; // brak pliku albo sam ten produkt
+      if (others.filter(x => sameForm(prod, x)).length * 2 < others.length) continue; // inna postać produktu
+      cats.push(c);
+      const seen = new Set(list.map(x => x.code));
+      list = list.concat(got.filter(x => !seen.has(x.code)));
+      if (list.filter(x => x.code !== prod.code).length >= 8) break;
+    }
+    return { cats, list };
+  };
   let catLoading = null; // produkt, dla którego trwa porównanie (chroni przed wielokrotnym klikaniem)
   async function loadCategory() {
     const mine = cur, body = () => A.$('catBody');
     if (catLoading === mine) return;
     catLoading = mine;
     try {
-      // Najpierw najwęższa kategoria; gdy ma za mało produktów, kategoria nadrzędna (np. „jogurty owocowe” → „jogurty”).
-      const cats = (mine.prod.categories || []).slice().reverse().filter(c => /^en:[a-z0-9-]{2,60}$/.test(c)).slice(0, 2);
-      if (!cats.length && mine.prod.category) cats.push(mine.prod.category);
+      // Najpierw najwęższa kategoria z danymi; gdy ma za mało produktów, kolejna (np. „jogurty owocowe” → „jogurty”).
       const onWait = sec => { const b = body(); if (b && cur === mine) b.innerHTML = `<p class="small muted">Wyszukiwarka produktów ma limit zapytań. Porównam za ${sec} s…</p><div class="sk" style="height:56px"></div>`; };
-      let list = [], levels = 0;
-      for (const c of cats) {
-        levels++;
-        const got = await A.fetchCategory(c, onWait);
-        const seen = new Set(list.map(x => x.code));
-        list = list.concat(got.filter(x => !seen.has(x.code)));
-        if (list.filter(x => x.code !== mine.prod.code).length >= 8) break;
-      }
+      const picked = await A.pickCompareCats(mine.prod, c => A.fetchCategory(c, onWait));
+      const cats = picked.cats; let list = picked.list;
       if (cur !== mine || !body()) return;
       if (A.withDetail) list = list.map(A.withDetail); // pełne dane produktów, które już znamy (te same wyniki co na liście i po otwarciu)
       const cmp = compareInCategory(mine.prod, mine.an, list, A.profile);
