@@ -15,3 +15,7 @@ __pycache__/
 /aplikacje-do-sprawdzania-skladu/
 twa/
 android/node_modules/
+
+# Pliki npm z lokalnej instalacji Playwright (npm i -D playwright)
+/package.json
+/package-lock.json
