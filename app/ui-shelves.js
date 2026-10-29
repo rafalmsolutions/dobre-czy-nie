@@ -262,7 +262,7 @@
       ${sh.items.length ? `<div class="shop-items" id="shelfItems">${groups.length ? groups.map(g => `<h3 class="dept-h">${esc(g.label)}</h3><div class="sgroup">${g.items.map(itemHtml).join('')}</div>`).join('') : '<div class="empty" id="allBought"><b style="font-family:var(--f-display);color:var(--ink)">Wszystko w koszyku ✓</b></div>'}</div>
         ${bought.length ? `<details class="bought" id="boughtBox"${ui.showBought ? ' open' : ''}><summary>W koszyku: ${bought.length} <span class="muted">· ${ui.showBought ? 'zwiń' : 'pokaż'}</span></summary><div class="sgroup" style="margin-top:8px">${bought.map(itemHtml).join('')}</div></details>` : ''}`
         : `<div class="empty stack" style="align-items:center"><b style="font-family:var(--f-display);color:var(--ink)">Lista jest pusta</b><span>Wpisz albo podyktuj, co kupić, np. „mleko, chleb i dwa jogurty”. Produkty dodasz też przyciskiem „Na listę” po skanie.</span></div>`}
-      ${(A.quiet && A.quiet()) || pr.done >= pr.total ? '' : `<p class="small center muted shop-pts">Odhaczysz całą listę (min. 3 rzeczy) w sklepie? <b>+10 pkt</b></p>`}
+      ${(A.quiet && A.quiet()) || pr.done >= pr.total ? '' : `<p class="small center muted shop-pts">Cała lista odhaczona? <b>+10 pkt</b> raz dziennie, gdy co najmniej 3 rzeczy były na liście od 30 min.</p>`}
     </div>${sheetHtml(sh)}`;
     document.body.classList.toggle('sheet-open', !!ui.sheet);
     if (focusSel) { const f = A.$('scr-shelves').querySelector(focusSel); if (f) f.focus(); }
@@ -287,8 +287,9 @@
       A.shelves = r.state; A.saveShelves();
       if (r.item && r.item.checked) rememberBought(r.item);
       if (r.completed) {
-        const g = A.award('list_completed', { shelfId: active().id });
-        A.toast(g.gained ? 'Cała lista kupiona! Brawo!' : 'Cała lista kupiona!');
+        // 3.0.18: punkty tylko za listę przygotowaną wcześniej (Shelf.rewardable); raz dziennie (config/points-rules.json).
+        const g = Shelf.rewardable(active()) ? A.award('list_completed', { shelfId: active().id }) : { gained: 0 };
+        A.toast(g.gained && !(A.quiet && A.quiet()) ? 'Cała lista kupiona! Brawo!' : 'Cała lista kupiona!');
       }
       render(`[data-act=item-toggle][data-id="${el.dataset.id}"]`);
     }

@@ -9,7 +9,7 @@
     ['magnifier', 'odkrywanie', 'Sprawdź produkt', 'do 20 pkt dziennie', 'product_checked'],
     ['target', 'odkrywanie', 'Zgadnij: dobre czy nie', 'pudło też uczy: +3 pkt', 'guess_right'],
     ['swap', 'wybory', 'Zamień na lepsze', 'zamiennik trafia na listę', 'swap_to_better'],
-    ['cart', 'wybory', 'Odhacz całą listę w sklepie', 'raz dziennie na listę', 'list_completed'],
+    ['cart', 'wybory', 'Odhacz całą przygotowaną listę', 'raz dziennie; min. 3 rzeczy na liście od 30 min', 'list_completed'],
     ['plus', 'baza', 'Dodaj brakujący produkt', 'nazwa i 3 zdjęcia', 'product_added'],
     ['shield', 'baza', 'Zgłoś błąd w danych', 'do 3 dziennie', 'report_sent'],
     ['trophy', 'wybory', 'Ukończ wyzwanie tygodnia', 'nowe co poniedziałek', null]

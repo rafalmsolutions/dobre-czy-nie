@@ -46,7 +46,7 @@
       }
       case 'swap-alt': {
         const x = A.findAlt(el.dataset.code);
-        if (x && cur && cur.prod) { A.swapTo(cur.prod.code, { name: x.pr.name || 'Produkt ' + x.pr.code, code: x.pr.code, pct: x.pm.pct, categories: x.pr.categories }); el.disabled = true; el.textContent = 'Na liście'; const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę' + A.pt(' (+5 pkt)'); } }
+        if (x && cur && cur.prod) { A.swapTo(cur.prod.code, { name: x.pr.name || 'Produkt ' + x.pr.code, code: x.pr.code, pct: x.pm.pct, categories: x.pr.categories }); el.disabled = true; el.textContent = 'Na liście'; const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = A.shelfAddLabel(cur.prod); } }
         break;
       }
       case 'retry': A.retryProduct(el.dataset.code); break;

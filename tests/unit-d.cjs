@@ -131,6 +131,24 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   const juice = ['sok pomarańczowy', 'Sok jabłkowy 1 l', 'nektar z czarnej porzeczki', 'soki owocowe'], fruit = ['pomarańcze', 'jabłka', 'sos pomidorowy'];
   ok(juice.every(n => dep(n) === 'drinks'), 'soki i nektary → Napoje (' + juice.map(n => n + ':' + dep(n)).join(', ') + ')');
   ok(dep('pomarańcze') === 'veg' && dep('jabłka') === 'veg' && dep('sos pomidorowy') !== 'drinks', 'owoce zostają w warzywach i owocach, sos nie jest sokiem (' + fruit.map(n => n + ':' + dep(n)).join(', ') + ')'); }
+// 3.0.18: bez składu, ale z kategorii jednoznacznie zwierzęcej → „nie pasuje” z uczciwym powodem; produkty roślinne bez zmian.
+{ const N = (name, cats, extra) => D.normalizeProduct(Object.assign({ code: '5900000000002', product_name_pl: name, nutriscore_grade: 'd', categories_hierarchy: cats }, extra || {}), 'off');
+  const st = (prod, diet) => { const m = M(prod, { diet: [diet] }); return { s: m.status, why: (m.match.fails[0] || {}).why || '' }; };
+  const cheese = N('Pecorino biologico', ['en:dairies', 'en:fermented-foods', 'en:fermented-milk-products', 'en:cheeses', 'en:sheep-cheeses']);
+  const vcheese = N('Ser wegański', ['en:plant-based-foods-and-beverages', 'en:plant-based-foods', 'en:dairy-substitutes', 'en:cheeses', 'en:plant-based-cheese-alternatives']);
+  const tofu = N('Tofu naturalne', ['en:plant-based-foods-and-beverages', 'en:plant-based-foods', 'en:legumes-and-their-products', 'en:meat-alternatives', 'en:tofus']);
+  const ham = N('Szynka', ['en:meats-and-their-products', 'en:prepared-meats', 'en:hams']);
+  const honey = N('Miód lipowy', ['en:spreads', 'en:sweet-spreads', 'en:bee-products', 'en:honeys']);
+  const c1 = st(cheese, 'vegan');
+  ok(c1.s === 'fail' && c1.why === 'to ser (kategoria w bazie)', 'ser bez składu, weganin: nie pasuje, „to ser (kategoria w bazie)” (' + JSON.stringify(c1) + ')');
+  ok(st(cheese, 'vegetarian').s === 'unknown', 'ser bez składu, wegetarianin: bez zmian („nie wiemy”)');
+  ok(st(vcheese, 'vegan').s === 'unknown', 'ser wegański (plant-based): nie oznaczamy jako niepasujący');
+  ok(st(tofu, 'vegan').s === 'unknown' && st(tofu, 'vegetarian').s === 'unknown', 'tofu: bez zmian („nie wiemy”), nigdy „pasuje” z samej kategorii');
+  const h = st(ham, 'vegetarian');
+  ok(h.s === 'fail' && /wędlina/.test(h.why), 'szynka bez składu, wegetarianin: nie pasuje (' + h.why + ')');
+  ok(st(honey, 'vegan').s === 'fail' && st(honey, 'vegetarian').s !== 'fail', 'miód: nie dla wegan, dla wegetarian bez zmian');
+  ok(st(N('Ser z etykietą', ['en:cheeses'], { labels_tags: ['en:vegan'] }), 'vegan').s !== 'fail', 'etykieta wegańska wygrywa z kategorią');
+  ok(st(N('Ser', ['en:cheeses'], { ingredients_text_pl: 'mleko, sól, podpuszczka' }), 'vegan').why === 'zawiera składniki odzwierzęce', 'ze składem: powód ze składu jak dotąd'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

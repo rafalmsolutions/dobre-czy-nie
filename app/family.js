@@ -79,7 +79,7 @@
     const weakest = (bad.length ? bad : known).slice().sort((a, b) => (a.s.pm.pct ?? 0) - (b.s.pm.pct ?? 0))[0];
     const base = { personal: true, n: rows.length, who: weakest ? nm(weakest.r) : '' };
     if (bad.length) return Object.assign(base, { pct: weakest.s.pm.pct ?? 0, status: 'fail', level: 'bad', label: A.notFor(bad.map(x => nm(x.r))) });
-    if (unk.length) return Object.assign(base, { pct: null, status: 'unknown', level: 'unknown', label: 'Nie wiemy dla: ' + names(unk) });
+    if (unk.length) return Object.assign(base, { pct: null, status: 'unknown', level: 'unknown', label: 'Nie wiemy dla: ' + names(unk), unk: unk.map(x => x.r) });
     if (!weakest) return Object.assign(base, { pct: null, status: 'none', level: 'unknown', label: 'Za mało danych' });
     return Object.assign(base, { pct: weakest.s.pm.pct, status: 'ok', level: weakest.s.pm.level, label: known.every(x => x.s.st === 'ok') ? (rows.length === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim') : 'Najsłabiej: ' + nm(weakest.r) });
   };
@@ -130,6 +130,14 @@
     return 'Nie dla ' + (gen.length === 1 ? gen[0] : gen.slice(0, -1).join(', ') + ' i ' + gen[gen.length - 1]);
   };
   /* Dopełniacz imienia do „Dlaczego dla Kuby”: najczęstsze polskie końcówki. Imię z kilku słów, cyfr albo nietypowe zostaje bez zmian (null). */
+  /* 3.0.18: podpis znaczka „brak danych”: dla kogo („dla Ciebie”, „dla Kuby”, „dla Ciebie i Kuby”, „dla 3 osób”). */
+  A.forWhomGen = rows => {
+    const nm = r => r.id === 'me' ? 'Ciebie' : (A.nameGen(r.name) || r.name);
+    if (!rows || !rows.length) return '';
+    if (rows.length === 1) return 'dla ' + nm(rows[0]);
+    if (rows.length === 2) return 'dla ' + nm(rows[0]) + ' i ' + nm(rows[1]);
+    return 'dla ' + rows.length + ' osób';
+  };
   A.nameGen = name => {
     const n = String(name || '').trim();
     if (!/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+$/.test(n) || n.length < 3) return null;

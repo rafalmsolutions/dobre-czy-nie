@@ -394,6 +394,25 @@ const noVinegar = clean => clean.replace(VINEGAR_RE, ' ').replace(/ (spirit|wine
 const hasAlcohol = (clean, nm) => (nm && nm.alcohol != null && nm.alcohol > 0.5) || hasWords(noVinegar(clean), WORDS.alcohol);
 const wordText = s => ' ' + fold(s).replace(/[^a-z0-9%]+/g, ' ').trim() + ' ';
 
+/* 3.0.18: produkt bez składu z kategorii jednoznacznie zwierzęcej (ser, mięso, wędlina, ryba, jajka, nabiał; dla wegan też miód).
+   Zwraca nazwę do powodu („ser”) albo ''. Tylko do „nie pasuje” – nigdy nie oznaczamy niczego jako pasujące na podstawie samej kategorii.
+   Pomijamy produkty roślinne: „plant-based”, „vegan”, zamienniki („substitute”, „alternative”) w kategoriach albo wegańska etykieta/analiza. */
+const ANIMAL_CATS = [
+  ['ser', ['en:cheeses']], ['wędlina', ['en:prepared-meats', 'en:sausages', 'en:hams', 'en:cold-cuts']], ['mięso', ['en:meats', 'en:poultries', 'en:meats-and-their-products']],
+  ['ryba lub owoce morza', ['en:fishes', 'en:seafood', 'en:fishes-and-their-products', 'en:canned-fishes']], ['jajka', ['en:eggs', 'en:chicken-eggs']],
+  ['nabiał', ['en:dairies', 'en:milks', 'en:yogurts', 'en:butters', 'en:creams', 'en:quarks', 'en:fermented-milk-products', 'en:dairy-desserts']]];
+const VEGAN_ONLY_CATS = [['miód', ['en:honeys']]];
+function animalCategory(prod, vegan) {
+  const cats = (prod.categories || []).filter(c => typeof c === 'string');
+  const labels = new Set(prod.labels || []), analysis = new Set(prod.analysis || []);
+  if (cats.some(c => /plant-based|vegan|substitute|alternative/.test(c))) return '';
+  if (labels.has('en:vegan') || analysis.has('en:vegan') || (!vegan && labels.has('en:vegetarian'))) return '';
+  // Wegetarianie jedzą nabiał, sery i jajka – dla nich liczy się tylko mięso, wędlina i ryba.
+  const rules = vegan ? ANIMAL_CATS.concat(VEGAN_ONLY_CATS) : ANIMAL_CATS.filter(([n]) => !['ser', 'jajka', 'nabiał'].includes(n));
+  const hit = rules.find(([, tags]) => tags.some(t => cats.includes(t)));
+  return hit ? hit[0] : '';
+}
+
 /* Wynik: status 'ok' | 'fail' | 'unknown' | 'none', listy powodów. Nigdy nie mówimy „bezpieczne”. */
 function matchProfile(prod, an, profile) {
   const p = cleanProfile(profile);
@@ -434,10 +453,12 @@ function matchProfile(prod, an, profile) {
       if (k === 'vegan') {
         if (analysis.has('en:non-vegan') || animal || fishy || milky || eggy || hasWord(mainText, ['miod'])) fail('Wegańska', 'zawiera składniki odzwierzęce');
         else if (analysis.has('en:vegan') || labels.has('en:vegan')) { /* pasuje */ }
+        else if (!hasIng && animalCategory(prod, true)) fail('Wegańska', `to ${animalCategory(prod, true)} (kategoria w bazie)`);
         else unknown('Wegańska');
       } else if (k === 'vegetarian') {
         if (analysis.has('en:non-vegetarian') || animal || fishy) fail('Wegetariańska', 'zawiera mięso, ryby lub żelatynę');
         else if (analysis.has('en:vegetarian') || analysis.has('en:vegan') || labels.has('en:vegetarian') || labels.has('en:vegan')) { }
+        else if (!hasIng && animalCategory(prod, false)) fail('Wegetariańska', `to ${animalCategory(prod, false)} (kategoria w bazie)`);
         else unknown('Wegetariańska');
       } else if (k === 'lactose') {
         if (labels.has('en:lactose-free') || labels.has('en:no-lactose')) { }

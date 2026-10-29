@@ -109,7 +109,7 @@ const Shelf = (() => {
     if (sh.items.some(i => i.code === code)) return { state: st, error: 'duplicate' };
     const name = clean(prod.name, MAX_NAME) || 'Produkt ' + code;
     const it = { id: uid(), name, code, pct: typeof prod.pct === 'number' && isFinite(prod.pct) ? Math.max(0, Math.min(100, Math.round(prod.pct))) : null,
-      dept: departmentFor({ name, categories: prod.categories }), checked: true, qty: old.qty, unit: old.unit, fam: cleanFam(prod.fam), added: old.added };
+      dept: departmentFor({ name, categories: prod.categories }), checked: true, checkedAt: Date.now(), qty: old.qty, unit: old.unit, fam: cleanFam(prod.fam), added: old.added };
     sh.items[idx] = it;
     return { state: s, item: it, old: JSON.parse(JSON.stringify(old)), completed: isComplete(sh) };
   }
@@ -137,7 +137,7 @@ const Shelf = (() => {
         code: typeof it.code === 'string' && /^\d{6,14}$/.test(it.code) ? it.code : null,
         pct: typeof it.pct === 'number' && it.pct >= 0 && it.pct <= 100 ? Math.round(it.pct) : null,
         dept: DEPARTMENTS.some(d => d.key === it.dept) ? it.dept : 'other',
-        checked: it.checked === true,
+        checked: it.checked === true, checkedAt: it.checked === true && typeof it.checkedAt === 'number' ? it.checkedAt : null,
         qty: cleanQty(it.qty), unit: cleanUnit(it.unit), fam: cleanFam(it.fam),
         added: typeof it.added === 'number' ? it.added : Date.now()
       })).filter(it => it.name).slice(0, MAX_ITEMS)
@@ -233,7 +233,15 @@ const Shelf = (() => {
     const s = copy(st), sh = find(s, shelfId), it = sh && sh.items.find(i => i.id === itemId);
     if (!it) return { state: st, error: 'missing' };
     it.checked = !it.checked;
+    it.checkedAt = it.checked ? Date.now() : null;
     return { state: s, item: it, completed: isComplete(sh) };
+  }
+  /* 3.0.18: nagroda za całą listę tylko, gdy co najmniej 3 odhaczone rzeczy leżały na liście co najmniej 30 minut przed odhaczeniem
+     (lista zrobiona wcześniej, a nie dopisana i odhaczona od razu). */
+  const REWARD_MIN_ITEMS = 3, REWARD_MIN_AGE = 30 * 60 * 1000;
+  function rewardable(sh) {
+    if (!sh || !isComplete(sh)) return false;
+    return sh.items.filter(i => i.checked && typeof i.added === 'number' && typeof i.checkedAt === 'number' && i.checkedAt - i.added >= REWARD_MIN_AGE).length >= REWARD_MIN_ITEMS;
   }
   function removeItem(st, shelfId, itemId) {
     const s = copy(st), sh = find(s, shelfId);
@@ -272,7 +280,7 @@ const Shelf = (() => {
   }
   function hasCode(st, code) { return st.shelves.some(sh => sh.items.some(i => i.code === code && !i.checked)); }
 
-  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, splitSpeech, findGeneric, replaceItem, undoReplace, fmtQty, setQty, renameItem, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, shareText, breakfastGood, hasCode };
+  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, splitSpeech, findGeneric, replaceItem, undoReplace, fmtQty, setQty, renameItem, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, rewardable, shareText, breakfastGood, hasCode };
 })();
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') module.exports = Shelf;

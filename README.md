@@ -16,6 +16,18 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Znaczek „brak danych”, kategorie zwierzęce, uczciwsze punkty (30.10.2026, wersja 3.0.18)
+
+- Znaczek w nagłówku produktu przy braku danych: zamiast „?” napis „brak danych” i dla kogo ich brakuje („dla Kuby”, „dla Ciebie i Kuby”, „dla 3 osób”).
+  Zasada bez zmian: znaczek = osoby, dla których kupujesz; panel „Dlaczego dla…” = wybrana osoba.
+- Produkt bez składu z kategorii jednoznacznie zwierzęcej dostaje „nie pasuje” z uczciwym powodem, np. „Wegańska nie pasuje: to ser (kategoria w bazie)”.
+  Weganie: ser, mięso, wędlina, ryba, jajka, nabiał, miód. Wegetarianie: mięso, wędlina, ryba. Pomijamy produkty roślinne
+  („plant-based”, „vegan”, zamienniki w kategoriach, wegańska etykieta). Na podstawie samej kategorii nic nie dostaje „pasuje”.
+- Punkty: bez +5 pkt za dodanie na listę produktu, który komuś z kupujących nie pasuje (przycisk bez „(+5 pkt)”).
+  +10 pkt za całą listę najwyżej raz dziennie i tylko, gdy co najmniej 3 odhaczone rzeczy były na liście od 30 minut (czas odhaczenia zapisywany przy pozycji).
+  Nowy tekst podpowiedzi bez obietnicy „w sklepie”. Tryb „Ukryj punkty i nagrody” chowa wszystkie dopiski.
+- Testy: `tests/e2e-d-punkty.mjs`, nowe przypadki w `tests/unit-d.cjs` (ser, ser wegański, tofu, szynka, miód).
+
 ## Kafle kategorii i limit celów (30.10.2026, wersja 3.0.17)
 
 - „Najlepsze dla Ciebie” (#/najlepsze) na telefonie: długie nazwy kategorii („Płatki śniadaniowe”) mieszczą się przed strzałką – mniejszy obrazek i odstępy, czcionka zależna od szerokości ekranu (do 440 px), bez łamania słów.

@@ -154,8 +154,10 @@
     if (!cur || cur.guess === null) return '';
     const onShelf = Shelf.hasCode(A.shelves, prod.code);
     const inCmp = A.inCmp && A.inCmp(prod.code), canCmp = A.cmpAdd && prod.code && prod.kind !== 'cosmetic';
-    return `<div class="d-acts actions"><button class="btn btn-dark" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na liście' : A.quiet && A.quiet() ? 'Na listę' : 'Na listę (+5 pkt)'}</button>${canCmp ? `<button class="btn btn-white" type="button" data-act="cmp-prod" aria-pressed="${!!inCmp}">${inCmp ? (A.cmp.length > 1 ? 'Pokaż porównanie' : 'W porównaniu ✓') : 'Porównaj'}</button>` : ''}</div>`;
+    return `<div class="d-acts actions"><button class="btn btn-dark" type="button" data-act="shelf-add" ${onShelf ? 'disabled' : ''}>${onShelf ? 'Już na liście' : A.shelfAddLabel(prod)}</button>${canCmp ? `<button class="btn btn-white" type="button" data-act="cmp-prod" aria-pressed="${!!inCmp}">${inCmp ? (A.cmp.length > 1 ? 'Pokaż porównanie' : 'W porównaniu ✓') : 'Porównaj'}</button>` : ''}</div>`;
   }
+  // 3.0.18: zamiast „?” – „brak danych” i dla kogo ich brakuje (zasada bez zmian: znaczek = osoby, dla których kupujesz).
+  const noDataBadge = forWhom => `<div class="d-badge d-badge-nd" data-level="unknown" role="img" aria-label="Brak danych ${esc(forWhom)}"><b>brak<br>danych</b><span>${esc(forWhom)}</span></div>`;
   function prodCard(p, pm) {
     const img = A.safeImg(p.image), key = A.prodCatKey(p), dish = A.catImg(key);
     const catLabel = key ? ((SHOP_CATEGORIES.find(c => c.key === key) || {}).label || '') : '';
@@ -176,8 +178,8 @@
     const gaps = A.dataGaps(p, cur.snapshot);
     const gm = fv && fv.gm, gWho = fv ? (fv.n === 1 ? (fv.rows[0].id === 'me' ? 'dla Ciebie' : fv.rows[0].name) : fv.off.length ? fv.n + (fv.n < 5 ? ' osoby' : ' osób') : 'rodzina') : '';
     const famBadge = gm ? (gm.pct != null ? `<div class="d-badge" data-level="${esc(gm.level)}"${A.pctStyle(gm.pct)} role="img" aria-label="Dopasowanie (${esc(gWho)}): ${gm.pct} procent${fv.n > 1 ? ', najniższy wynik: ' + esc(gm.who) : ''}"><b${gm.pct >= 100 ? ' class="p3"' : ''}>${gm.pct}%</b><span>${esc(gWho)}</span></div>`
-      : `<div class="d-badge" data-level="unknown"><b>?</b><span>${esc(gWho)}</span></div>`) : '';
-    const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b${pm.pct >= 100 && pm.personal ? ' class="p3"' : ''}>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : `<div class="d-badge" data-level="unknown"><b>?</b><span>brak danych</span></div>`}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(gaps.length && pm.pct != null ? 'Wstępnie: ' + pm.label.replace(/^./, c => c.toLowerCase()) : pm.label)}</div></div>` : '';
+      : noDataBadge(gm.unk && gm.unk.length ? A.forWhomGen(gm.unk) : gWho)) : '';
+    const verdict = fv ? `<div class="d-verdict fam-verdict">${famBadge}${A.familyAnswerHtml(fv)}</div>` : pm ? `<div class="d-verdict">${pm.pct != null ? `<div class="d-badge" data-level="${esc(lvl)}"${A.pctStyle(pm.pct)} role="img" aria-label="${pm.personal ? 'Dopasowanie' : 'Ocena'} ${pm.pct} procent"><b${pm.pct >= 100 && pm.personal ? ' class="p3"' : ''}>${pm.pct}${pm.personal ? '%' : ''}</b><span>${pm.personal ? 'dla Ciebie' : 'na 100'}</span></div>` : noDataBadge('dla Ciebie')}<div class="mlabel lvl-${esc(pm.level)}" id="matchLabel">${esc(gaps.length && pm.pct != null ? 'Wstępnie: ' + pm.label.replace(/^./, c => c.toLowerCase()) : pm.label)}</div></div>` : '';
     const gapHtml = gaps.length && pm && (pm.pct != null || fv) ? `<div class="d-gaps" role="note"><b>Wynik wstępny</b> Brakuje ${gaps.join(' i ')} produktu. Dopasowanie jest wstępne i może się zmienić po uzupełnieniu danych.</div>` : '';
     return `<div class="d-hero${fv ? ' has-fam' : ''}" data-level="${esc(fv ? fv.level : lvl)}"${ringPct != null ? ` style="--sc:${A.scoreColor(ringPct)}"` : ''}><span class="d-arc" aria-hidden="true"></span>
       <div class="d-hmain">${main}</div>
@@ -455,6 +457,13 @@
   }
 
   /* ---------- Półka i zamiana ---------- */
+  /* 3.0.18: produkt „nie pasuje” (status fail) komuś z osób, dla których kupujesz – za dodanie na listę nie ma punktów. */
+  A.notForShoppers = prod => {
+    if (!prod || prod.kind === 'cosmetic') return false;
+    const an = cur && cur.prod === prod && cur.an ? cur.an : analyze(prod);
+    return A.activeRows().some(r => personalMatch(prod, an, r.p).status === 'fail');
+  };
+  A.shelfAddLabel = prod => 'Na listę' + (A.notForShoppers(prod) ? '' : A.pt(' (+5 pkt)'));
   A.addToShelf = (prod, pm, quiet) => {
     const sh = A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
     const fam = A.familyShort ? A.familyShort(prod, cur && cur.prod === prod ? cur.an : null, cur && cur.prod === prod ? cur.fam : null) : null;
@@ -467,8 +476,8 @@
         A.shelves = rr.state; A.saveShelves();
         A.rememberBought(rr.item); A.rememberAdded(prod, pm ? pm.pct : null);
         lastGeneric = { shelfId: sh.id, newId: rr.item.id, old: rr.old, bk, prevBought };
-        A.award('shelf_add', { code: prod.code });
-        if (rr.completed) A.award('list_completed', { shelfId: sh.id });
+        if (!A.notForShoppers(prod)) A.award('shelf_add', { code: prod.code });
+        if (rr.completed && Shelf.rewardable(rr.state.shelves.find(s => s.id === sh.id))) A.award('list_completed', { shelfId: sh.id });
         A.toast(`Zamieniono „${rr.old.name}” na ${rr.item.name} · w koszyku`, '<button class="toast-btn" type="button" data-act="undo-generic">Cofnij</button>', 7000);
         A.announce(`Zamieniono „${rr.old.name}” na ${rr.item.name}, w koszyku.`);
         A.renderShelvesIfOpen();
@@ -480,7 +489,7 @@
     if (r.error === 'full') { A.toast('Ta lista jest pełna. Usuń kupione rzeczy albo wybierz inną listę.'); return false; }
     if (r.error) { A.toast('Nie udało się dodać produktu.'); return false; }
     A.shelves = r.state; A.saveShelves(); A.rememberAdded(prod, pm ? pm.pct : null);
-    A.award('shelf_add', { code: prod.code });
+    if (!A.notForShoppers(prod)) A.award('shelf_add', { code: prod.code }); // 3.0.18: bez punktów za produkt, który komuś z kupujących nie pasuje
     if (!quiet) A.toast(`Dodano na listę „${sh.name}”.`, '<a href="#/polki">Zobacz</a>');
     return true;
   };
@@ -494,7 +503,7 @@
     const b = A.store.get('d-bought', {}); if (u.prevBought) b[u.bk] = u.prevBought; else delete b[u.bk]; A.store.set('d-bought', b);
     A.toast(`Przywrócono „${u.old.name}” na listę.`);
     A.renderShelvesIfOpen();
-    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = 'Na listę' + A.pt(' (+5 pkt)'); }
+    const sb = document.querySelector('#scr-product [data-act=shelf-add]'); if (sb && cur && cur.prod && !Shelf.hasCode(A.shelves, cur.prod.code)) { sb.disabled = false; sb.textContent = A.shelfAddLabel(cur.prod); }
   };
   A.swapTo = (fromCode, alt) => {
     // Usuwamy słabszy produkt z półki (jeśli tam był) i dodajemy zamiennik.

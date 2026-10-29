@@ -29,7 +29,8 @@
     },
     "list_completed": {
       "points": 10,
-      "oncePerShelfPerDay": true
+      "oncePerShelfPerDay": true,
+      "dailyCount": 1
     },
     "store_tagged": {
       "points": 5,
