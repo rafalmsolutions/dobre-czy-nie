@@ -1,0 +1,18 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+p.on('pageerror', e => console.log('PAGEERR', e.message)); const ok = (c, m) => console.log((c ? '✓ ' : '✗ ') + m);
+await p.goto('http://localhost:8790/app/index.html');
+await p.evaluate(() => { localStorage.setItem('dcn-started', '1'); });
+await p.goto('http://localhost:8790/app/index.html#/profil/osoby'); await p.waitForTimeout(800);
+await p.click('.pf-osoby [data-act=fam-add]'); await p.waitForTimeout(300);
+await p.fill('#profName', 'Zosia');
+ok(await p.locator('.pf-osoby .fam-tab.on').textContent() === 'Zosia', 'zakładka zmienia nazwę na żywo');
+const g = p.locator('.pf-osoby button[type=submit]'); ok(await g.isVisible(), 'jest Gotowe');
+await g.click(); await p.waitForTimeout(500);
+ok(p.url().endsWith('#/profil'), 'Gotowe wraca do Profilu');
+ok((await p.locator('.pf-index .fam-tab').allTextContents()).includes('Zosia'), 'Zosia zapisana');
+await p.goto('http://localhost:8790/app/index.html#/profil/ustawienia'); await p.waitForTimeout(600);
+await p.click('[data-act=wipe]'); await p.waitForTimeout(900);
+const box = await p.locator('[data-act=wipe-yes]').boundingBox();
+ok(box && box.y > 0 && box.y + box.height < 844, 'Usuń wszystko widoczne bez przewijania (y=' + (box && Math.round(box.y)) + ')');
+await b.close();

@@ -960,7 +960,7 @@ body.sheet-open .tabbar,body.sheet-open .rwbar{visibility:hidden}
 .pf-more[open] summary svg{transform:rotate(180deg)}
 .pf-more[open]{display:flex;flex-direction:column;gap:10px}
 .red-link{color:#B03A55 !important}
-.pf .save-state:empty{display:none}
+.pf .save-state{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;margin:0;transform:translate(-50%,-4px)}.pf .save-state.on{transform:translate(-50%,0)}.pf .save-state:empty{visibility:hidden} /* 3.0.8: plakietka nie przesuwa układu (wcześniej klik w „Gotowe” trafiał obok) */
 
 /* ===== 3.0 Karty ===== */
 .kt-h{font:800 32px/1.1 var(--f-display);color:var(--ink);margin:0}
@@ -1049,3 +1049,6 @@ div.ob-person{cursor:default}
 .ob-main{padding-bottom:130px}
 .ob-skip{align-self:center}
 .ls-sheet .rows{max-height:44vh;overflow:auto}
+/* 3.0.8: potwierdzenie usunięcia danych wyraźnie odróżnione od reszty ustawień */
+.wipe-note{background:#FDECEC;border:1px solid #F3B9B9;scroll-margin-bottom:96px}
+.wipe-note .actions{margin-top:10px}

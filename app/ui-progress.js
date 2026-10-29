@@ -119,6 +119,7 @@
           ${A.family.length < A.FAMILY_MAX ? '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>' : ''}</div>
         <div class="stack" style="gap:6px"><label for="profName"><b>${fp ? 'Imię lub pseudonim' : 'Twoje imię'}</b> <span class="small muted">${fp ? '' : '(nieobowiązkowe)'}</span></label><input class="field" id="profName" maxlength="30" autocomplete="${fp ? 'off' : 'given-name'}" value="${esc(fp ? fp.name : A.userName())}"></div>
         ${fp ? (confirmDel ? `<div class="ls-note"><b>Usunąć profil „${esc(fp.name)}”?</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="fam-del-yes">Usuń</button><button class="btn btn-white btn-sm" type="button" data-act="fam-del-no">Zostaw</button></div></div>` : '<button class="linkbtn small red-link" type="button" data-act="fam-del" style="align-self:flex-start">Usuń tę osobę</button>') : ''}
+        <button class="btn btn-dark btn-block" type="submit">Gotowe</button>
       </div>
       <div class="pf-pref"${sec('preferencje')}>
         <p class="pf-who">Edytujesz: <b>${esc(who)}</b></p>
@@ -173,7 +174,7 @@
           ${tgRow('setSound', 'Dźwięki i wibracje', 'Sygnał po skanie i dodaniu do listy.', A.settings.sound !== false)}</div>
         <h3 class="pf-sh">Sposób oceniania</h3><div class="rows">${tgRow('profNoScores', 'Tryb bez ocen', 'Pokazuj fakty bez punktów i werdyktów.', !!p.noScores)}</div>
         ${A.statsAvailable() ? `<h3 class="pf-sh">Prywatność</h3><div class="rows">${tgRow('setStats', 'Anonimowe statystyki', 'Pomagają sprawdzić, które funkcje są używane. Bez ciasteczek i kodów produktów.', A.settings.stats !== false)}</div>` : ''}
-        ${confirmWipe ? `<div class="ls-note"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, domownicy, listy zakupów, karty, punkty, historię) i Twoje dane z serwera odkrywców (głosy, statystyki; dodane produkty zostaną bez pseudonimu)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small red-link" type="button" data-act="wipe" style="align-self:flex-start">Usuń dane z urządzenia</button>'}
+        ${confirmWipe ? `<div class="ls-note wipe-note" id="wipeNote"><b class="small">Usunąć wszystkie dane z tego telefonu (profil, domownicy, listy zakupów, karty, punkty, historię) i Twoje dane z serwera odkrywców (głosy, statystyki; dodane produkty zostaną bez pseudonimu)? Tego nie da się cofnąć.</b><div class="actions"><button class="btn btn-red btn-sm" type="button" data-act="wipe-yes">Usuń wszystko</button><button class="btn btn-white btn-sm" type="button" data-act="wipe-no">Zostaw</button></div></div>` : '<button class="linkbtn small red-link" type="button" data-act="wipe" style="align-self:flex-start">Usuń dane z urządzenia</button>'}
       </div>` : ''}
     </form>
     ${me ? `<div class="pf-info stack"${sec('informacje')}>
@@ -233,7 +234,12 @@
       renderProfile(); const f = A.$('storeAddInput'); if (f) f.focus();
       A.$('storeAddMsg').textContent = `Dodano: ${A.storeLabel(key)}.`;
     } else if (act === 'rm-custom') { draftCustom.splice(Number(el.dataset.i), 1); renderCustomChips(); A.$('customInput').focus(); A.profAutoSave(); }
-    else if (act === 'wipe') { confirmWipe = true; saveDraftToDom(); renderProfile(); const b = A.$('scr-profile').querySelector('[data-act=wipe-no]'); if (b) b.focus(); }
+    else if (act === 'wipe') {
+      confirmWipe = true; saveDraftToDom(); renderProfile();
+      // Potwierdzenie jest na dole ekranu: przewijamy do niego, żeby przycisk „Usuń wszystko” był widoczny.
+      const n = A.$('wipeNote'); if (n) n.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      const b = A.$('scr-profile').querySelector('[data-act=wipe-no]'); if (b) b.focus({ preventScroll: true });
+    }
     else if (act === 'wipe-no') { confirmWipe = false; renderProfile(); }
     else if (act === 'fam-pick' || act === 'fam-add') {
       if (A.$('profileForm')) collect(false);

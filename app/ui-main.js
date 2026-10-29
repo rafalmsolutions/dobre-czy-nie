@@ -145,7 +145,7 @@
   document.addEventListener('input', e => {
     if (e.target.id === 'addItemInput') { A.shelfSuggest(e.target.value); return; }
     if (e.target.id === 'catSearch') { A.filterCats(e.target.value); return; }
-    if (e.target.id === 'profName') { clearTimeout(nameTimer); nameTimer = setTimeout(A.profAutoSave, 500); return; }
+    if (e.target.id === 'profName') { const tab = A.$('scr-profile').querySelector('.pf-osoby .fam-tab.on'), nm = e.target.value.replace(/[<>]/g, '').trim().slice(0, 30); if (tab && tab.dataset.id !== 'me' && nm) tab.textContent = nm; clearTimeout(nameTimer); nameTimer = setTimeout(A.profAutoSave, 500); return; }
     if (e.target.id === 'repComment') A.$('repCount').textContent = e.target.value.length + '/1000';
   });
   // Rozwinięcie wyjaśnienia lub dodatku (punkty za naukę, odznaki „Czytelnik etykiet” i „Cukrowy detektyw”).
