@@ -1,6 +1,7 @@
 // Profile rodziny (wersja D): dodanie domownika, osobny werdykt przy produkcie, usunięcie. Uruchom: node e2e-d-family.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
 import { setup, C, SEARCH } from './lib.mjs';
+import { fileURLToPath } from 'url';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 // Kategoria kremów: produkty z testów plus jeden bez orzechów i z małą ilością cukru (pasuje obojgu).
@@ -22,7 +23,7 @@ const st = await page.evaluate(() => ({ fam: App.family[0], me: App.profile }));
 ok(st.fam.name === 'Kuba' && st.fam.p.allergens.includes('nuts'), 'domownik: imię i alergia zapisane');
 ok(!st.me.allergens.includes('nuts') && st.me.watch.includes('sugar'), 'mój profil bez zmian');
 ok(await page.locator('#scr-profile input[name=cosmetic]').count() === 0, 'domownik: bez ustawień aplikacji i kosmetyków');
-await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-profile.png', fullPage: true });
+await page.screenshot({ path: fileURLToPath(new URL('./shots/', import.meta.url)) + 'fam-profile.png', fullPage: true });
 await page.evaluate(() => { location.hash = '#/profil'; }); await page.waitForTimeout(300);
 await page.click('.pf-index [data-act=fam-pick][data-id=me]'); await page.waitForTimeout(300);
 ok(await page.locator('input[name=allergens][value=nuts]').isChecked() === false, 'przełączenie na „Ja” pokazuje mój profil');
@@ -39,8 +40,8 @@ ok(await page.locator('#scr-product .d-hero[data-level=bad]').count() === 1, 'ko
 await page.waitForTimeout(1500);
 const alt = await page.innerText('#famAlt').catch(() => '');
 ok(/PASUJE WAM OBOJGU W TEJ KATEGORII/.test(alt), 'zamiennik dla wszystkich: ' + alt.replace(/\n/g, ' | '));
-await page.locator('#scr-product .d-hero').screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-hero.png' });
-await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'fam-product.png' });
+await page.locator('#scr-product .d-hero').screenshot({ path: fileURLToPath(new URL('./shots/', import.meta.url)) + 'fam-hero.png' });
+await page.screenshot({ path: fileURLToPath(new URL('./shots/', import.meta.url)) + 'fam-product.png' });
 await page.click('[data-act=fam-focus][data-id=me]'); await page.waitForTimeout(300);
 ok((await page.innerText('#matchBox')).includes('Dlaczego dla Ciebie'), 'stuknięcie „Ja”: moje wyjaśnienie');
 ok(await page.evaluate(() => App.store.get('d-focus', '') === 'me'), 'wybór najważniejszej osoby zapamiętany');

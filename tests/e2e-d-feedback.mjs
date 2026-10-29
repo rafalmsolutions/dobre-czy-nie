@@ -2,12 +2,13 @@
 // karty i odznaki w jednej zakładce, półka z ilością i odpowiedzią dla rodziny. Uruchom: node e2e-d-feedback.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
 import { setup, C } from './lib.mjs';
+import { fileURLToPath } from 'url';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 await ctx.route(/workers\.dev\/category/, r => r.fulfill({ json: { products: [] } }));
 let forgot = 0; await ctx.route(/workers\.dev\/disc\/forget/, r => { forgot++; return r.fulfill({ json: { ok: true } }); });
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
-const shots = new URL('./shots/', import.meta.url).pathname;
+const shots = fileURLToPath(new URL('./shots/', import.meta.url));
 // Użytkownik, który kiedyś zapisał „Zgadnij” włączone – po poprawce i tak domyślnie wyłączone.
 await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-settings', JSON.stringify({ guess: true }));
   localStorage.setItem('dcn-d-profile', JSON.stringify({ watch: ['sugar'] })); localStorage.setItem('dcn-d-family', JSON.stringify([{ id: 'f1', name: 'Kuba', p: { allergens: ['nuts'] } }])); });

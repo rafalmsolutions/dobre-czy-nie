@@ -2,9 +2,10 @@
 import { chromium } from 'playwright';
 import { setup, C, YOG } from './lib.mjs';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 const BASE = 'http://localhost:8790/archiwum/';
 const ONLY = process.argv[2] || '';
-const SHOTS = new URL('./shots/', import.meta.url).pathname;
+const SHOTS = fileURLToPath(new URL('./shots/', import.meta.url));
 fs.mkdirSync(SHOTS, { recursive: true });
 let pass = 0, fail = 0;
 const ok = (cond, name) => { if (cond) pass++; else { fail++; console.log('  ✗ ' + name); } };

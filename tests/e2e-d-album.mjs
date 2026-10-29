@@ -2,8 +2,9 @@
 // Uruchom: node e2e-d-album.mjs (serwer na porcie 8790).
 import { chromium } from 'playwright';
 import { setup, C } from './lib.mjs';
+import { fileURLToPath } from 'url';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
-const shots = new URL('./shots/', import.meta.url).pathname;
+const shots = fileURLToPath(new URL('./shots/', import.meta.url));
 const ean = p => { const d = p.split('').map(Number); const s = d.reverse().reduce((a, n, i) => a + n * (i % 2 === 0 ? 3 : 1), 0); return p + ((10 - s % 10) % 10); };
 // 31 popularnych jogurtów: zwykłe, naturalne, skyry, bio, bez laktozy, owocowe.
 const Y = [];

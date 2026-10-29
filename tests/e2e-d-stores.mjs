@@ -3,8 +3,9 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { setup, C } from './lib.mjs';
+import { fileURLToPath } from 'url';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
-const shots = new URL('./shots/', import.meta.url).pathname;
+const shots = fileURLToPath(new URL('./shots/', import.meta.url));
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const S = { edit: [], product: [] };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});

@@ -2,6 +2,7 @@
 import { chromium } from 'playwright';
 import fs from 'fs';
 import { setup } from './lib.mjs';
+import { fileURLToPath } from 'url';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 await ctx.route(/\/config\.js$/, r => { const body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8').replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
@@ -40,5 +41,5 @@ await page.fill('#itemNameInput', ''); await page.click('#qtyForm button[type=su
 ok(/Wpisz nazwę/.test(await page.innerText('#itemEditMsg')), 'pusta nazwa: komunikat');
 await page.fill('#itemNameInput', 'jabłka'); await page.click('#qtyForm button[type=submit]'); await page.waitForTimeout(200);
 ok(await page.evaluate(() => { const i = App.shelves.shelves.find(s => s.id === App.shelves.active).items.find(x => x.name === 'jabłka'); return i && i.dept === 'veg'; }), 'po zmianie nazwy dział liczy się od nowa (jabłka → warzywa i owoce)');
-await page.screenshot({ path: new URL('./shots/', import.meta.url).pathname + 'edit-item.png' });
+await page.screenshot({ path: fileURLToPath(new URL('./shots/', import.meta.url)) + 'edit-item.png' });
 await b.close(); process.exit(bad ? 1 : 0);
