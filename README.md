@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Ilość na liście zakupów (29.10.2026, wersja 3.0.9)
+
+- Ilość przy pozycji listy ma postać pigułki ze strzałką, więc widać, że po stuknięciu można zmienić ilość i jednostkę.
+- Długie nazwy na liście zawijają się do dwóch linii zamiast ucinać się po jednej.
+
 ## Drobne poprawki Profilu (29.10.2026, wersja 3.0.8)
 
 - Ekran „Domownicy” ma przycisk „Gotowe”, a nazwa osoby na zakładce zmienia się w trakcie wpisywania.
