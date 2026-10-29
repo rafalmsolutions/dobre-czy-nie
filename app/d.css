@@ -1066,3 +1066,4 @@ div.ob-person{cursor:default}
 .qty-form .qf-name{flex:1 1 100%;display:flex;flex-direction:column;gap:4px;font-weight:700}
 .qty-form .qf-name .field{width:100%}
 .qty-form .qf-msg{flex:1 1 100%;margin:0}.qty-form .qf-msg:empty{display:none}
+.msg.msg-info{color:#3E4046;font-weight:600} /* 3.0.12: informacja (np. „Dodano 2 rzeczy”) nie wygląda jak błąd */

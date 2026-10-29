@@ -26,6 +26,7 @@ await page.waitForTimeout(500);
 ok((await items()).join('|') === 'herbata zielona Teekanne', 'po pauzie jedna pozycja: ' + (await items()).join('|'));
 await page.waitForTimeout(1000);
 ok((await items()).join('|') === 'herbata zielona Teekanne|ogórki kiszone', 'ogórki kiszone jako jedna pozycja: ' + (await items()).join('|'));
+ok(await page.evaluate(() => document.getElementById('itemMsg').classList.contains('msg-info')), 'komunikat „Dodano…” jako informacja, nie błąd');
 await page.click('#micBtn'); await page.waitForTimeout(300);
 // Edycja nazwy: stuknięcie w nazwę otwiera pole nazwy, ilość i jednostkę.
 await page.click('.t1-edit:has-text("herbata zielona Teekanne")'); await page.waitForTimeout(200);

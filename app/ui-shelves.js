@@ -91,8 +91,8 @@
     const x = sug[n]; if (!x) return;
     const r = Shelf.addItem(A.shelves, active().id, { name: x.name, code: x.code || undefined, pct: x.pct, categories: x.categories, qty: x.qty || 1, unit: x.unit || 'szt' });
     sug = []; sugIdx = -1;
-    if (r.error) { ui.msg = r.error === 'duplicate' ? `„${r.item.name}” już jest na tej liście.` : r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render('#addItemInput'); return; }
-    A.shelves = r.state; A.saveShelves(); ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
+    if (r.error) { ui.msgInfo = false; ui.msg = r.error === 'duplicate' ? `„${r.item.name}” już jest na tej liście.` : r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render('#addItemInput'); return; }
+    A.shelves = r.state; A.saveShelves(); ui.msgInfo = false; ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
   }
   /* Strzałki wybierają podpowiedź, Enter ją dodaje, Escape zamyka. Zwraca true, gdy klawisz obsłużony. */
   A.shelfKey = e => {
@@ -113,7 +113,7 @@
   A.dictIdleMs = 8000;
   const DICT_MAX = 120000;
   const SR_ERR = { 'not-allowed': 'Nie mamy zgody na mikrofon. Zezwól na niego w ustawieniach przeglądarki albo wpisz rzecz.', 'service-not-allowed': 'Ta przeglądarka nie pozwala tu dyktować. Wpisz rzecz ręcznie.', network: 'Dyktowanie wymaga internetu. Wpisz rzecz ręcznie.', 'audio-capture': 'Nie znaleźliśmy mikrofonu.' };
-  const setMsg = m => { ui.msg = m; const el = A.$('itemMsg'); if (el) el.textContent = m; };
+  const setMsg = (m, info) => { ui.msgInfo = !!info; ui.msg = m; const el = A.$('itemMsg'); if (el) { el.textContent = m; el.classList.toggle('msg-info', !!info); } };
   const micState = () => { const b = A.$('micBtn'); if (b) { b.setAttribute('aria-pressed', listening ? 'true' : 'false'); b.setAttribute('aria-label', listening ? 'Zakończ dyktowanie' : 'Dyktuj listę'); b.classList.toggle('on', listening); } };
   const shelvesOpen = () => A.current && A.current.screen === 'shelves';
   const label = it => it.name + (it.unit === 'szt' ? (it.qty !== 1 ? ' ×' + String(it.qty).replace('.', ',') : '') : ' ' + Shelf.fmtQty(it));
@@ -132,7 +132,7 @@
       else { A.shelves = r.state; sess.added.push(label(r.item)); changed = true; }
     });
     if (changed) A.saveShelves();
-    ui.msg = sessMsg(false);
+    ui.msgInfo = true; ui.msg = sessMsg(false);
     if (shelvesOpen()) render(); // bez przenoszenia fokusu (na telefonie nie wyskakuje klawiatura)
   }
   // Nowy końcowy fragment; Android bywa, że powtarza w nim poprzednie słowa.
@@ -156,7 +156,7 @@
     if (s.interim) { takeFinal(s.interim); s.interim = ''; }
     flushBuf();
     const msg = sessMsg(true); sess = null;
-    ui.msg = msg;
+    ui.msgInfo = true; ui.msg = msg;
     const inp = A.$('addItemInput'); if (inp) inp.value = '';
     if (shelvesOpen()) render(); else micState();
     A.announce(msg);
@@ -203,7 +203,7 @@
     closeSug();
     sess = { added: [], dup: [], full: false, heard: false, lastFinal: '', interim: '', buf: '', flushT: null, started: Date.now(), timer: null, stopping: false, fatal: '' };
     listening = true; micState();
-    setMsg('Słucham… Wymieniaj produkty, np. „pomidory, ziemniaki, dwa jogurty”. Stuknij mikrofon, gdy skończysz.');
+    setMsg('Słucham… Wymieniaj produkty, np. „pomidory, ziemniaki, dwa jogurty”. Stuknij mikrofon, gdy skończysz.', true);
     idle(); startRec();
   };
   A.stopDictation = () => { if (sess) stopDict(); };
@@ -257,7 +257,7 @@
         <button class="btn btn-white iconbtn" type="button" data-act="shelf-share" aria-label="Udostępnij listę" ${pr.total ? '' : 'disabled'}>${SHARE}</button><button class="btn btn-white iconbtn" type="button" data-act="shelf-sheet" aria-label="Więcej: listy, zmiana nazwy, usuwanie">⋯</button></div>
       ${pr.total ? `<div class="shop-prog"><span class="xp green" role="progressbar" aria-valuenow="${pr.done}" aria-valuemin="0" aria-valuemax="${pr.total}" aria-label="Postęp zakupów"><i style="width:${pct}%"></i></span><span>w koszyku ${pr.done} z ${pr.total}</span></div>` : ''}
       <form class="inline-form add-item-form" id="addItemForm" novalidate><div class="sug-wrap"><input class="field" id="addItemInput" maxlength="60" autocomplete="off" placeholder="${SR ? 'Dodaj albo podyktuj…' : 'Dodaj, np. 2 kg ziemniaki'}" aria-label="Dodaj rzecz do listy" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="addSuggest"><ul class="sug-list" id="addSuggest" role="listbox" aria-label="Podpowiedzi" hidden></ul></div>${SR ? `<button class="btn btn-white iconbtn mic-btn" type="button" id="micBtn" data-act="dictate" aria-pressed="${listening ? 'true' : 'false'}" aria-label="${listening ? 'Zatrzymaj dyktowanie' : 'Dyktuj listę'}">${MIC}</button>` : ''}<button class="btn btn-dark iconbtn" type="submit" aria-label="Dodaj"><svg><use href="#i-plus"/></svg></button></form>
-      <p class="msg" role="status" id="itemMsg">${esc(ui.msg)}</p>
+      <p class="msg${ui.msgInfo ? ' msg-info' : ''}" role="status" id="itemMsg">${esc(ui.msg)}</p>
       ${quickHtml(sh)}
       ${sh.items.length ? `<div class="shop-items" id="shelfItems">${groups.length ? groups.map(g => `<h3 class="dept-h">${esc(g.label)}</h3><div class="sgroup">${g.items.map(itemHtml).join('')}</div>`).join('') : '<div class="empty" id="allBought"><b style="font-family:var(--f-display);color:var(--ink)">Wszystko w koszyku ✓</b></div>'}</div>
         ${bought.length ? `<details class="bought" id="boughtBox"${ui.showBought ? ' open' : ''}><summary>W koszyku: ${bought.length} <span class="muted">· ${ui.showBought ? 'zwiń' : 'pokaż'}</span></summary><div class="sgroup" style="margin-top:8px">${bought.map(itemHtml).join('')}</div></details>` : ''}`
@@ -274,7 +274,7 @@
   A.shelfAction = (act, el) => {
     if (act === 'shelf-sheet') { ui.sheet = true; ui.adding = false; ui.renaming = false; ui.confirmDelete = false; ui.shelfMsg = ''; render('.ls-sheet .ls-row.on'); }
     else if (act === 'shelf-sheet-close') { ui.sheet = false; ui.adding = ui.renaming = ui.confirmDelete = false; render('.list-sw'); }
-    else if (act === 'shelf-pick') { A.shelves = Shelf.setActive(A.shelves, el.dataset.id).state; A.saveShelves(); ui.msg = ''; ui.renaming = false; ui.confirmDelete = false; ui.sheet = false; render('.list-sw'); }
+    else if (act === 'shelf-pick') { A.shelves = Shelf.setActive(A.shelves, el.dataset.id).state; A.saveShelves(); ui.msgInfo = false; ui.msg = ''; ui.renaming = false; ui.confirmDelete = false; ui.sheet = false; render('.list-sw'); }
     else if (act === 'shelf-new') { ui.sheet = true; ui.adding = true; ui.shelfMsg = ''; render(A.shelves.shelves.length < Shelf.FREE_LIMIT ? '#newShelfName' : '#shelfLimit button'); }
     else if (act === 'shelf-cancel') { ui.adding = false; render('[data-act=shelf-new]'); }
     else if (act === 'shelf-rename') { ui.sheet = true; ui.renaming = true; render('#renameInput'); }
@@ -295,8 +295,8 @@
     else if (act === 'qadd') {
       const x = quickList(active()).find(q => q.k === el.dataset.k); if (!x) return;
       const r = Shelf.addItem(A.shelves, active().id, { name: x.name, code: x.code || undefined, pct: x.pct, categories: x.categories, qty: 1, unit: 'szt' });
-      if (r.error) { ui.msg = r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render(); return; }
-      A.shelves = r.state; A.saveShelves(); ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
+      if (r.error) { ui.msgInfo = false; ui.msg = r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render(); return; }
+      A.shelves = r.state; A.saveShelves(); ui.msgInfo = false; ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
     }
     else if (act === 'sug-add') addSug(+el.dataset.i);
     else if (act === 'dictate') A.dictate();
@@ -333,8 +333,8 @@
     } else if (form.id === 'addItemForm') {
       const val = A.$('addItemInput').value;
       const r = Shelf.addItem(A.shelves, active().id, { name: val });
-      if (r.error) { ui.msg = r.error === 'duplicate' ? `„${r.item.name}” już jest na tej liście.` : (ERR[r.error] || 'Nie udało się dodać.'); render('#addItemInput'); A.$('addItemInput').value = val; return; }
-      A.shelves = r.state; A.saveShelves(); ui.msg = r.restored ? `Przywrócono „${r.item.name}” na listę.` : ''; render('#addItemInput');
+      if (r.error) { ui.msgInfo = false; ui.msg = r.error === 'duplicate' ? `„${r.item.name}” już jest na tej liście.` : (ERR[r.error] || 'Nie udało się dodać.'); render('#addItemInput'); A.$('addItemInput').value = val; return; }
+      A.shelves = r.state; A.saveShelves(); ui.msgInfo = !!r.restored; ui.msg = r.restored ? `Przywrócono „${r.item.name}” na listę.` : ''; render('#addItemInput');
     }
   };
   async function shareShelf() {
