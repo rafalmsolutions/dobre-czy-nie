@@ -206,6 +206,18 @@ const Shelf = (() => {
     it.qty = cleanQty(qty); it.unit = cleanUnit(unit);
     return { state: s, item: it };
   }
+  /* 3.0.11: zmiana nazwy wpisanej rzeczy (bez kodu). Dział liczymy od nowa z nowej nazwy. */
+  function renameItem(st, shelfId, itemId, name) {
+    const nm = clean(name, MAX_NAME); if (!nm) return { state: st, error: 'empty' };
+    const s = copy(st), sh = find(s, shelfId), it = sh && sh.items.find(i => i.id === itemId);
+    if (!it) return { state: st, error: 'missing' };
+    if (it.code) return { state: st, error: 'code' };
+    if (key(it.name) === key(nm)) { if (it.name === nm) return { state: st, item: it, same: true }; it.name = nm; return { state: s, item: it }; }
+    const dup = sh.items.find(i => i.id !== it.id && !i.code && !i.checked && key(i.name) === key(nm));
+    if (dup) return { state: st, error: 'duplicate', item: dup };
+    it.name = nm; it.dept = departmentFor({ name: nm });
+    return { state: s, item: it };
+  }
   /* Przy ponownym otwarciu produktu odświeżamy dopasowanie i odpowiedź dla rodziny na wszystkich półkach. */
   function updateInfo(st, code, info) {
     let changed = false;
@@ -260,7 +272,7 @@ const Shelf = (() => {
   }
   function hasCode(st, code) { return st.shelves.some(sh => sh.items.some(i => i.code === code && !i.checked)); }
 
-  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, splitSpeech, findGeneric, replaceItem, undoReplace, fmtQty, setQty, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, shareText, breakfastGood, hasCode };
+  return { FREE_LIMIT, MAX_ITEMS, UNITS, parseQty, splitSpeech, findGeneric, replaceItem, undoReplace, fmtQty, setQty, renameItem, updateInfo, newState, load, addShelf, renameShelf, deleteShelf, setActive, addItem, toggleItem, removeItem, clearChecked, grouped, progress, isComplete, shareText, breakfastGood, hasCode };
 })();
 
 if (typeof module !== 'undefined' && typeof document === 'undefined') module.exports = Shelf;

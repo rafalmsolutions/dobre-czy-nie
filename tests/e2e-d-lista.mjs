@@ -54,7 +54,7 @@ const errs1 = page.errs; await page.context().close();
 // Udawany mikrofon
 page = await newPage(true);
 await go(page, '#/polki');
-await page.evaluate(() => { App.dictIdleMs = 900; });
+await page.evaluate(() => { App.dictIdleMs = 900; App.dictPauseMs = 100; });
 ok(await page.locator('#micBtn').count() === 1, 'z rozpoznawaniem mowy jest przycisk mikrofonu');
 const speak = sessions => page.evaluate(x => { window.__speech = x; window.__starts = 0; }, sessions);
 const msg = () => page.innerText('#itemMsg');

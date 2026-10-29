@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Dyktowanie i edycja listy (29.10.2026, wersja 3.0.11)
+
+- Dyktowanie: słowa, które telefon (zwłaszcza Samsung) oddaje osobno, czekają w polu do pauzy w mówieniu i dopiero wtedy dzielą się na rzeczy. „herbata zielona Teekanne” i „ogórki kiszone” to teraz po jednej pozycji.
+- Wpisaną rzecz można poprawić: stuknięcie w nazwę albo w ilość otwiera nazwę, ilość i jednostkę. Po zmianie nazwy dział liczy się od nowa.
+
 ## Przed publikacją w Google Play (29.10.2026, wersja 3.0.10)
 
 - Przycisk w Ustawieniach nazywa się „Usuń wszystkie moje dane”, bo kasuje też dane na serwerze odkrywców. Tak samo nazywa go polityka prywatności.

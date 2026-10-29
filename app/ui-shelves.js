@@ -17,10 +17,10 @@
   }
   function itemHtml(i) {
     const q = Shelf.fmtQty(i), sc = scoreHtml(i);
-    const nm = i.code ? `<a class="t1" href="#/p/${esc(i.code)}">${esc(i.name)}</a>` : `<span class="t1">${esc(i.name)}</span>`;
+    const nm = i.code ? `<a class="t1" href="#/p/${esc(i.code)}">${esc(i.name)}</a>` : `<button type="button" class="t1 t1-edit" data-act="item-qty" data-id="${esc(i.id)}" aria-label="Zmień: ${esc(i.name)}">${esc(i.name)}</button>`;
     const row = `<div class="sitem${i.checked ? ' checked' : ''}" data-id="${esc(i.id)}"><input type="checkbox" data-act="item-toggle" data-id="${esc(i.id)}"${i.checked ? ' checked' : ''} aria-label="${i.checked ? 'Kupione' : 'Odhacz'}: ${esc(i.name)}"><span class="grow si-txt">${nm}${sc}</span><button class="qtybtn" type="button" data-act="item-qty" data-id="${esc(i.id)}" aria-expanded="${ui.qty === i.id}" aria-label="Ilość: ${esc(q)}. Zmień ilość lub jednostkę">${esc(q)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button class="x" type="button" data-act="item-remove" data-id="${esc(i.id)}" aria-label="Usuń ${esc(i.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
     if (ui.qty !== i.id) return row;
-    return row + `<form class="inline-form qty-form" id="qtyForm" data-id="${esc(i.id)}" novalidate><button class="btn btn-white iconbtn" type="button" data-act="qty-minus" aria-label="Mniej">−</button><input class="field" id="qtyInput" inputmode="decimal" value="${esc(String(i.qty).replace('.', ','))}" aria-label="Ilość"><button class="btn btn-white iconbtn" type="button" data-act="qty-plus" aria-label="Więcej">+</button><select class="field" id="qtyUnit" aria-label="Jednostka">${Shelf.UNITS.map(u => `<option value="${u}"${u === i.unit ? ' selected' : ''}>${u === 'szt' ? 'szt.' : u}</option>`).join('')}</select><button class="btn btn-green btn-sm" type="submit">OK</button></form>`;
+    return row + `<form class="inline-form qty-form" id="qtyForm" data-id="${esc(i.id)}" novalidate>${i.code ? '' : `<label class="qf-name"><span class="small muted">Nazwa</span><input class="field" id="itemNameInput" maxlength="60" autocomplete="off" value="${esc(i.name)}"></label>`}<p class="msg qf-msg" id="itemEditMsg" role="status"></p><button class="btn btn-white iconbtn" type="button" data-act="qty-minus" aria-label="Mniej">−</button><input class="field" id="qtyInput" inputmode="decimal" value="${esc(String(i.qty).replace('.', ','))}" aria-label="Ilość"><button class="btn btn-white iconbtn" type="button" data-act="qty-plus" aria-label="Więcej">+</button><select class="field" id="qtyUnit" aria-label="Jednostka">${Shelf.UNITS.map(u => `<option value="${u}"${u === i.unit ? ' selected' : ''}>${u === 'szt' ? 'szt.' : u}</option>`).join('')}</select><button class="btn btn-green btn-sm" type="submit">OK</button></form>`;
   }
 
   const active = () => A.shelves.shelves.find(s => s.id === A.shelves.active) || A.shelves.shelves[0];
@@ -142,13 +142,19 @@
     if (fp && ft === fp) return;
     if (fp && ft.startsWith(fp + ' ')) txt = txt.slice(prev.length).trim();
     sess.lastFinal = t.trim(); sess.heard = true;
-    if (txt) addChunk(txt);
+    if (txt) { sess.buf = (sess.buf ? sess.buf + ' ' : '') + txt; flushLater(); }
   }
+  /* 3.0.11: Android (zwłaszcza Samsung) potrafi oddać „herbata” / „zielona” / „Teekanne” jako osobne końcowe wyniki.
+     Zbieramy je i dzielimy na rzeczy dopiero po pauzie w mówieniu (A.dictPauseMs) albo na końcu dyktowania. */
+  A.dictPauseMs = 1600;
+  function flushLater() { const s = sess; if (!s) return; clearTimeout(s.flushT); s.flushT = setTimeout(() => { if (sess === s && !s.interim) flushBuf(); else if (sess === s) flushLater(); }, A.dictPauseMs); }
+  function flushBuf() { const s = sess; if (!s || !s.buf) return; clearTimeout(s.flushT); const b = s.buf; s.buf = ''; addChunk(b); }
   function idle() { clearTimeout(sess.timer); sess.timer = setTimeout(() => stopDict(), A.dictIdleMs); }
   function finish() {
     const s = sess; if (!s) return;
     clearTimeout(s.timer); listening = false; rec = null;
     if (s.interim) { takeFinal(s.interim); s.interim = ''; }
+    flushBuf();
     const msg = sessMsg(true); sess = null;
     ui.msg = msg;
     const inp = A.$('addItemInput'); if (inp) inp.value = '';
@@ -170,7 +176,8 @@
         else interim += t;
       }
       s.interim = interim.trim();
-      const inp = A.$('addItemInput'); if (inp) inp.value = s.interim.slice(0, 200);
+      const inp = A.$('addItemInput'); if (inp) inp.value = ((s.buf ? s.buf + ' ' : '') + s.interim).slice(0, 200);
+      if (s.buf) flushLater();
       idle();
     };
     r.onerror = ev => {
@@ -194,7 +201,7 @@
     if (!SR) return;
     if (sess) { stopDict(); return; }
     closeSug();
-    sess = { added: [], dup: [], full: false, heard: false, lastFinal: '', interim: '', started: Date.now(), timer: null, stopping: false, fatal: '' };
+    sess = { added: [], dup: [], full: false, heard: false, lastFinal: '', interim: '', buf: '', flushT: null, started: Date.now(), timer: null, stopping: false, fatal: '' };
     listening = true; micState();
     setMsg('Słucham… Wymieniaj produkty, np. „pomidory, ziemniaki, dwa jogurty”. Stuknij mikrofon, gdy skończysz.');
     idle(); startRec();
@@ -293,7 +300,7 @@
     }
     else if (act === 'sug-add') addSug(+el.dataset.i);
     else if (act === 'dictate') A.dictate();
-    else if (act === 'item-qty') { ui.qty = ui.qty === el.dataset.id ? null : el.dataset.id; render(ui.qty ? '#qtyInput' : `[data-act=item-qty][data-id="${el.dataset.id}"]`); }
+    else if (act === 'item-qty') { const fromName = el.classList.contains('t1-edit'); ui.qty = ui.qty === el.dataset.id ? null : el.dataset.id; render(ui.qty ? (fromName ? '#itemNameInput' : '#qtyInput') : `[data-act=item-qty][data-id="${el.dataset.id}"]`); }
     else if (act === 'qty-minus' || act === 'qty-plus') {
       const inp = A.$('qtyInput'), unit = A.$('qtyUnit').value, step = unit === 'g' || unit === 'ml' ? 100 : unit === 'kg' || unit === 'l' ? 0.5 : 1;
       const v = parseFloat(String(inp.value).replace(',', '.')) || 0, n = Math.max(step, Math.round((v + (act === 'qty-plus' ? step : -step)) * 1000) / 1000);
@@ -313,8 +320,15 @@
       if (r.error) { ui.shelfMsg = ERR[r.error] || 'Nie udało się zmienić nazwy.'; render('#renameInput'); return; }
       A.shelves = r.state; A.saveShelves(); ui.renaming = false; ui.shelfMsg = ''; render('[data-act=shelf-rename]');
     } else if (form.id === 'qtyForm') {
-      const id = form.dataset.id, r = Shelf.setQty(A.shelves, active().id, id, A.$('qtyInput').value, A.$('qtyUnit').value);
-      if (!r.error) { A.shelves = r.state; A.saveShelves(); }
+      const id = form.dataset.id, ni = A.$('itemNameInput');
+      if (ni) {
+        const rn = Shelf.renameItem(A.shelves, active().id, id, ni.value);
+        if (rn.error === 'empty' || rn.error === 'duplicate') { A.$('itemEditMsg').textContent = rn.error === 'empty' ? 'Wpisz nazwę.' : `„${rn.item.name}” już jest na tej liście.`; ni.focus(); return; }
+        if (!rn.error) A.shelves = rn.state;
+      }
+      const r = Shelf.setQty(A.shelves, active().id, id, A.$('qtyInput').value, A.$('qtyUnit').value);
+      if (!r.error) A.shelves = r.state;
+      A.saveShelves();
       ui.qty = null; render(`[data-act=item-qty][data-id="${id}"]`);
     } else if (form.id === 'addItemForm') {
       const val = A.$('addItemInput').value;
