@@ -27,7 +27,7 @@ await page.fill('#srchQ', 'jogurt'); await page.waitForTimeout(1500);
 const rows = await page.$$eval('#srchRes .srch-item', l => l.map(x => ({ n: x.querySelector('.t1').textContent, p: (x.querySelector('.pct') || {}).textContent, l: x.querySelector('.srch-lbl').textContent })));
 ok(searchCalls === 1 && lastQ === 'jogurt', 'jedno zapytanie do pośrednika po chwili pisania (' + searchCalls + ')');
 ok(rows.length >= 3, 'wyniki: ' + rows.map(r => r.n + ' ' + r.p).join(' | '));
-ok(rows.length && /✕/.test(rows[rows.length - 1].p) && /Nie dla: Kuba/.test(rows[rows.length - 1].l), 'produkty z mlekiem (Kuba) na końcu z powodem');
+ok(rows.length && /✕/.test(rows[rows.length - 1].p) && /Nie dla Kuby/.test(rows[rows.length - 1].l), 'produkty z mlekiem (Kuba) na końcu z powodem');
 ok(!/✕/.test(rows[0].p), 'pierwszy wynik pasuje wszystkim');
 ok(await page.locator('#srchRes .srch-cats a[href="#/lista/en:yogurts"]').count() === 1, 'skrót do kategorii „Jogurty”');
 ok(await page.evaluate(() => location.hash) === '#/szukaj/jogurt', 'zapytanie w adresie');

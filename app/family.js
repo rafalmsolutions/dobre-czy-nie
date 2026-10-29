@@ -78,7 +78,7 @@
     const names = a => a.map(x => nm(x.r)).join(', ');
     const weakest = (bad.length ? bad : known).slice().sort((a, b) => (a.s.pm.pct ?? 0) - (b.s.pm.pct ?? 0))[0];
     const base = { personal: true, n: rows.length, who: weakest ? nm(weakest.r) : '' };
-    if (bad.length) return Object.assign(base, { pct: weakest.s.pm.pct ?? 0, status: 'fail', level: 'bad', label: 'Nie dla: ' + names(bad) });
+    if (bad.length) return Object.assign(base, { pct: weakest.s.pm.pct ?? 0, status: 'fail', level: 'bad', label: A.notFor(bad.map(x => nm(x.r))) });
     if (unk.length) return Object.assign(base, { pct: null, status: 'unknown', level: 'unknown', label: 'Nie wiemy dla: ' + names(unk) });
     if (!weakest) return Object.assign(base, { pct: null, status: 'none', level: 'unknown', label: 'Za mało danych' });
     return Object.assign(base, { pct: weakest.s.pm.pct, status: 'ok', level: weakest.s.pm.level, label: known.every(x => x.s.st === 'ok') ? (rows.length === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim') : 'Najsłabiej: ' + nm(weakest.r) });
@@ -105,7 +105,7 @@
       head = n === 1 ? 'Pasuje: ' + w.name : n === 2 ? 'Pasuje Wam obojgu' : 'Pasuje wszystkim';
       sub = n === 1 ? (noScores ? 'liczymy tylko dla tej osoby' : `${w.pm.pct}% · liczymy tylko dla tej osoby`) : noScores ? `${n} z ${n} osób` : `Najsłabiej ${w.pm.pct}% · ${w.name}`;
     } else {
-      head = { bad: 'Nie dla: ', unk: 'Nie wiemy dla: ', mid: 'Uwaga: ' }[tone] + same.map(r => r.name).join(', ');
+      head = tone === 'bad' ? A.notFor(same.map(r => r.name)) : { unk: 'Nie wiemy dla: ', mid: 'Uwaga: ' }[tone] + same.map(r => r.name).join(', ');
       sub = same.map(r => r.name + ': ' + r.why).join(' · ') + (tone === 'unk' ? ' · sprawdź etykietę' : '');
     }
     const picked = pick && rows.find(r => r.id === pick);
@@ -117,12 +117,18 @@
     ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', mid: '<path d="M12 6v8"/><path d="M12 19v.5"/>',
     bad: '<path d="M7 7l10 10M17 7L7 17"/>', unk: '<path d="M9 9a3 3 0 1 1 4.2 2.8c-.8.4-1.2 1-1.2 1.9v.3"/><path d="M12 18.5v.5"/>'
   };
-  /* Skrót odpowiedzi dla rodziny na półkę: { t: 'bad', h: 'Nie dla: Kuba' } albo null bez domowników. */
+  /* Skrót odpowiedzi dla rodziny na półkę: { t: 'bad', h: 'Nie dla Kuby' } albo null bez domowników. */
   A.familyShort = (prod, an, fv) => {
     const v = fv || (A.famOn() && prod && prod.kind !== 'cosmetic' ? A.familyView(prod, an || analyze(prod)) : null);
     return v ? { t: v.tone, h: v.head } : null;
   };
   /* Odpowiedź dla rodziny (obok zdjęcia). */
+  /* „Nie dla Kuby i Ani” w dopełniaczu; gdy któregoś imienia nie umiemy odmienić (pseudonim, obce imię), zostaje „Nie dla: Kuba, Xyz”. */
+  A.notFor = list => {
+    const gen = list.map(n => n === 'Ty' ? 'Ciebie' : A.nameGen(n));
+    if (!list.length || gen.some(g => !g)) return 'Nie dla: ' + list.join(', ');
+    return 'Nie dla ' + (gen.length === 1 ? gen[0] : gen.slice(0, -1).join(', ') + ' i ' + gen[gen.length - 1]);
+  };
   /* Dopełniacz imienia do „Dlaczego dla Kuby”: najczęstsze polskie końcówki. Imię z kilku słów, cyfr albo nietypowe zostaje bez zmian (null). */
   A.nameGen = name => {
     const n = String(name || '').trim();

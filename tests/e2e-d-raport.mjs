@@ -103,6 +103,6 @@ await page.evaluate(code => { App.family = [{ id: 'f1', name: 'Wega', p: cleanPr
   App.shelves.shelves[0].items = [{ id: 'x1', name: 'Mleko', code, dept: 'dairy', checked: false, qty: 1, unit: 'szt', pct: 100, fam: { t: 'ok', h: 'Pasuje wszystkim' }, added: Date.now() }]; App.saveShelves(); }, C.milk);
 await go('#/polki');
 const row = await page.innerText('#shelfItems').catch(() => '');
-ok(/nie dla: Wega/i.test(row) && !/pasuje wszystkim/.test(row), 'lista: wynik dla rodziny przeliczony od razu (' + row.replace(/\s+/g, ' ').slice(0, 60) + ')');
+ok(/nie dla Wegi/i.test(row) && !/pasuje wszystkim/.test(row), 'lista: wynik dla rodziny przeliczony od razu (' + row.replace(/\s+/g, ' ').slice(0, 60) + ')');
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);

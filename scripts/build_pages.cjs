@@ -209,7 +209,7 @@ ${[0, 1, 2, 3].map(l => `<tr><td><b>${L[l][0].toUpperCase() + L[l].slice(1)}</b>
 <h3>„Nie jem”: alergeny i diety</h3>
 <p>Do wyboru jest ${C.PROFILE_OPTIONS.allergens.length} alergenów z unijnej listy (${esc(allergens)}), diety (${esc(C.PROFILE_OPTIONS.diet.map(o => o.label.toLowerCase()).join(', '))}), a także własne słowa, np. nazwa składnika.</p>
 <ul>
-<li>Produkt <b>zawiera</b> coś z listy: dopasowanie 0–10% i komunikat „Nie dla: …” z powodem.</li>
+<li>Produkt <b>zawiera</b> coś z listy: dopasowanie 0–10% i komunikat „Nie dla …” (np. „Nie dla Kuby”) z powodem.</li>
 <li>„<b>Może zawierać</b>” (śladowe ilości): najwyżej 35%.</li>
 <li>W bazie <b>brak składu</b>: najwyżej ${C.LIMIT_CAP.unknown}% i prośba o sprawdzenie etykiety.</li>
 </ul>
@@ -230,7 +230,7 @@ ${[0, 1, 2, 3].map(l => `<tr><td><b>${L[l][0].toUpperCase() + L[l].slice(1)}</b>
 <p class="small muted">Progi „mało” pochodzą z unijnych oświadczeń żywieniowych (rozporządzenie 1924/2006), progi „dużo” z brytyjskiego oznaczenia kolorami na opakowaniach. Białko: źródło od 5 g, dużo od 10 g na 100 g. Błonnik: źródło od 3 g, dużo od 6 g.</p>
 
 <h2>5. Wynik rodziny: najsłabsza osoba, nie średnia</h2>
-<p>Przy kilku osobach Lupka pokazuje wynik każdej z nich i jeden wynik rodziny: dopasowanie osoby, której produkt pasuje najsłabiej. Przykład: płatki owsiane pasują Oli i Ani w 100%, ale Kuba nie je glutenu (5%). Średnia dałaby ${avg}%, czyli „Dobre”, i problem Kuby zginąłby w liczbie. Lupka pokaże 5% i „Nie dla: Kuba · gluten”.</p>
+<p>Przy kilku osobach Lupka pokazuje wynik każdej z nich i jeden wynik rodziny: dopasowanie osoby, której produkt pasuje najsłabiej. Przykład: płatki owsiane pasują Oli i Ani w 100%, ale Kuba nie je glutenu (5%). Średnia dałaby ${avg}%, czyli „Dobre”, i problem Kuby zginąłby w liczbie. Lupka pokaże 5% i „Nie dla Kuby · gluten”.</p>
 <p>Na zakupy można wyłączyć osoby, dla których dziś się nie kupuje. Wtedy wynik liczy się tylko dla włączonych.</p>
 
 <h2>6. Na tle podobnych produktów i zamienniki</h2>
@@ -490,7 +490,7 @@ ${cta('W aplikacji te same kategorie są posortowane dla Twojej rodziny.', '/app
 }
 
 /* ---------- Zapis ---------- */
-const urls = [['/', today], ['/jak-liczymy/', today], ['/aplikacje-do-sprawdzania-skladu/', '2026-10-22'], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-21']];
+const urls = [['/', today], ['/jak-liczymy/', today], ['/aplikacje-do-sprawdzania-skladu/', '2026-10-22'], ['/lupka-czy-yuka/', '2026-10-22'], ['/privacy.html', '2026-10-29']];
 write('jak-liczymy/index.html', methodPage());
 write('lupka-czy-yuka/index.html', yukaPage());
 write('aplikacje-do-sprawdzania-skladu/index.html', appsPage());

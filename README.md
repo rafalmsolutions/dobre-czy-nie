@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Przed publikacją w Google Play (29.10.2026, wersja 3.0.10)
+
+- Przycisk w Ustawieniach nazywa się „Usuń wszystkie moje dane”, bo kasuje też dane na serwerze odkrywców. Tak samo nazywa go polityka prywatności.
+- Polityka prywatności: aplikacja z Google Play otwiera się w przeglądarce telefonu (Chrome albo Samsung Internet), a nie zawsze w Chrome.
+- Odpowiedź dla rodziny w dopełniaczu: „Nie dla Kuby i Ani” zamiast „Nie dla: Kuba, Ania”. Imiona, których nie umiemy odmienić, zostają w starej formie.
+- Album nie ma strony „Piwa”, a za alkohol (piwo, wino, mocne alkohole) nie ma kart. Skład takiego produktu nadal można sprawdzić.
+
 ## Ilość na liście zakupów (29.10.2026, wersja 3.0.9)
 
 - Ilość przy pozycji listy ma postać pigułki ze strzałką, więc widać, że po stuknięciu można zmienić ilość i jednostkę.

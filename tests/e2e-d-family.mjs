@@ -29,7 +29,7 @@ ok(await page.locator('input[name=allergens][value=nuts]').isChecked() === false
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.nutella); await page.waitForTimeout(1800); await closeCel();
 if (await page.locator('#reveal').isVisible()) await page.click('#reveal [data-act=reveal-close]').catch(() => { });
 const ans = await page.innerText('#scr-product .d-hside .fam-ans').catch(() => '');
-ok(/Nie dla: Kuba/.test(ans) && /orzech/i.test(ans), 'obok zdjęcia odpowiedź dla rodziny: ' + ans.replace(/\n/g, ' | '));
+ok(/Nie dla Kuby/.test(ans) && /orzech/i.test(ans), 'obok zdjęcia odpowiedź dla rodziny: ' + ans.replace(/\n/g, ' | '));
 const circ = await page.$$eval('#scr-product .fam-circles .fam-c', l => l.map(x => x.dataset.id + ':' + x.dataset.st + ':' + x.innerText.replace(/\n/g, ' ')));
 ok(circ.length === 2 && circ[0].startsWith('f') && circ[0].includes(':bad:'), 'kółka pod zdjęciem, najpierw osoba z problemem: ' + circ.join(' | '));
 ok((await page.innerText('#scr-product .fam-c[data-st=bad] .fam-pill')).trim() === '✕', '„nie pasuje”: ✕ zamiast procentu');

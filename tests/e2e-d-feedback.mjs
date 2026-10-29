@@ -16,7 +16,7 @@ await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; ses
 await page.goto('http://localhost:8790/app/index.html#/p/' + C.nutella); await page.waitForTimeout(1600);
 ok(await page.locator('#guessBox').count() === 0, 'bez „Zgadnij” przed wynikiem');
 ok(await page.evaluate(() => App.settings.guess === false), '„Zgadnij” wyłączone także u kogoś, kto miał je zapisane');
-ok(/Nie dla: Kuba/.test(await page.innerText('#scr-product .fam-ans')), 'od razu odpowiedź dla rodziny');
+ok(/Nie dla Kuby/.test(await page.innerText('#scr-product .fam-ans')), 'od razu odpowiedź dla rodziny');
 ok(!(await page.locator('#reveal').isVisible()) && !(await page.locator('#celebrate').isVisible()), 'żadna nakładka nie zasłania wyniku');
 
 // 2. Pięć skanów: najwyżej jedna odznaka
@@ -30,7 +30,7 @@ await page.$eval('[data-act=shelf-add]', e => e.click()); await page.waitForTime
 await page.goto('http://localhost:8790/app/index.html#/polki'); await page.waitForTimeout(500);
 const row = page.locator('.sitem').first();
 ok(/1 szt\./.test(await row.innerText()), 'domyślnie 1 szt.');
-ok(await row.locator('.famchip[data-t=bad]').count() === 1 && /Kuba/.test(await row.locator('.famchip').innerText()), 'na półce odpowiedź dla rodziny: ✕ Kuba');
+ok(await row.locator('.famchip[data-t=bad]').count() === 1 && /nie dla Kuby/i.test(await row.locator('.famchip').innerText()), 'na półce odpowiedź dla rodziny: ✕ Kuba');
 await row.locator('[data-act=item-qty]').click(); await page.waitForTimeout(200);
 await page.fill('#qtyInput', '1,5'); await page.selectOption('#qtyUnit', 'kg'); await page.click('#qtyForm button[type=submit]'); await page.waitForTimeout(200);
 ok(/1,5 kg/.test(await page.locator('.sitem').first().innerText()), 'zmiana ilości: 1,5 kg');

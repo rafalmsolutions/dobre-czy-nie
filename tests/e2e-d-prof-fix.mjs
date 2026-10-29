@@ -15,4 +15,10 @@ await p.goto('http://localhost:8790/app/index.html#/profil/ustawienia'); await p
 await p.click('[data-act=wipe]'); await p.waitForTimeout(900);
 const box = await p.locator('[data-act=wipe-yes]').boundingBox();
 ok(box && box.y > 0 && box.y + box.height < 844, 'Usuń wszystko widoczne bez przewijania (y=' + (box && Math.round(box.y)) + ')');
+ok(await p.locator('[data-act=wipe-yes]').count() === 1, 'potwierdzenie usuwania');
+await p.click('[data-act=wipe-no]'); await p.waitForTimeout(300);
+ok((await p.locator('[data-act=wipe]').textContent()).trim() === 'Usuń wszystkie moje dane', 'przycisk nazywa się jak w polityce prywatności');
+ok(await p.evaluate(async () => !App.albumPages().some(x => x.key === 'en:beers') && App.isAlcoholProd({ categories: ['en:beverages', 'en:alcoholic-beverages', 'en:beers'] }) && !App.isAlcoholProd({ categories: ['en:dairies'] })
+  && (await App.albumAdd({ code: '5901234123457', name: 'Piwo jasne', categories: ['en:beverages', 'en:alcoholic-beverages', 'en:beers'] })) === null), 'bez strony i kart za alkohol');
+ok(await p.evaluate(() => App.notFor(['Kuba', 'Ania']) === 'Nie dla Kuby i Ani' && App.notFor(['Ty']) === 'Nie dla Ciebie' && App.notFor(['Ola', 'Kuba', 'Ania']) === 'Nie dla Oli, Kuby i Ani' && App.notFor(['Kuba', 'X-men']) === 'Nie dla: Kuba, X-men'), 'Nie dla w dopełniaczu');
 await b.close();

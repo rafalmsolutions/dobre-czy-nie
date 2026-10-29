@@ -105,11 +105,14 @@
   // Strony, których nie pokazujemy przy „Nie jem”: wszystko w nich zawiera wykluczony składnik.
   const DAIRY = ['en:yogurts', 'en:cheeses', 'en:milks', 'en:butters', 'en:dairy-desserts', 'en:quarks', 'en:creams'];
   const MEAT = ['en:sausages', 'en:prepared-meats', 'en:fresh-meats'], FISH = ['en:fishes', 'en:canned-fishes'];
+  // Alkohol (także piwo bezalkoholowe, żeby nie zachęcać do kolekcji piw): bez kart i bez strony w albumie.
+  const ALC_RE = /^en:(alcoholic-beverages|beers|wines|spirits|ciders|liqueurs|beer-based-beverages)$/;
+  A.isAlcoholProd = prod => (prod.categories || []).some(c => ALC_RE.test(c));
   A.pageHidden = key => {
     const p = A.profile || {}, d = p.diet || [], al = p.allergens || [], av = p.avoid || [];
     if (d.includes('vegan') && [...DAIRY, ...MEAT, ...FISH, 'en:eggs'].includes(key)) return true;
     if (d.includes('vegetarian') && [...MEAT, ...FISH].includes(key)) return true;
-    if (av.includes('alcohol') && key === 'en:beers') return true;
+    if (key === 'en:beers') return true; // 3.0.10: bez kart za alkohol (aplikacja o zdrowym jedzeniu nie nagradza zbierania piw)
     if (al.includes('milk') && DAIRY.includes(key)) return true;
     if (al.includes('eggs') && key === 'en:eggs') return true;
     if (al.includes('fish') && FISH.includes(key)) return true;
@@ -283,6 +286,7 @@
       return { card: old, isNew: false, revived };
     }
     if (opts.touch) return null;
+    if (A.isAlcoholProd(prod)) return null; // piwo, wino, mocne alkohole: można sprawdzić skład, ale bez karty
     const key = A.pageKeyOf(prod), wk = A.weekCard();
     const base = { c: prod.code, k: key, h: A.cardHolo(prod.code), s: sketch, n: String(prod.name).slice(0, 80), b: String(prod.brand || '').slice(0, 40), i: A.safeImg(prod.image) || '', sc: prod.scans, t: Date.now() };
     if (!A.isHuntPage(key)) {

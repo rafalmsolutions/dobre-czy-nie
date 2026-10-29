@@ -13,7 +13,7 @@ const Shelf = (() => {
   const cleanQty = q => { const n = typeof q === 'number' ? q : parseFloat(String(q == null ? '' : q).replace(',', '.')); return isFinite(n) && n > 0 ? Math.min(9999, Math.round(n * 1000) / 1000) : 1; };
   const cleanUnit = u => UNITS.includes(u) ? u : 'szt';
   const FAM_T = ['ok', 'mid', 'bad', 'unk'];
-  // Odpowiedź dla rodziny zapamiętana przy produkcie (np. { t: 'bad', h: 'Nie dla: Kuba' }); null, gdy bez domowników.
+  // Odpowiedź dla rodziny zapamiętana przy produkcie (np. { t: 'bad', h: 'Nie dla Kuby' }); null, gdy bez domowników.
   const cleanFam = f => isObj(f) && FAM_T.includes(f.t) ? { t: f.t, h: clean(f.h, 60) } : null;
   /* „2 kg ziemniaki”, „ziemniaki 2kg”, „mleko 2 l”, „3 jogurty” → nazwa + ilość. */
   function parseQty(text) {

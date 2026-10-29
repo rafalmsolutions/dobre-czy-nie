@@ -6,7 +6,7 @@
 
   A.route('shelves', () => { ui = { adding: false, renaming: false, confirmDelete: false, msg: '', shelfMsg: '', qty: null, sheet: false }; render(); });
   /* Ocena przy rzeczy: z domownikami odpowiedź dla całej rodziny (zapamiętana przy ostatnim sprawdzeniu produktu), bez nich mój procent. */
-  /* Ocena przy rzeczy (3.0): krótkie słowa w kolorze wyniku pod nazwą – „pasuje wszystkim”, „uwaga: Ola”, „nie dla: Kuba”. */
+  /* Ocena przy rzeczy (3.0): krótkie słowa w kolorze wyniku pod nazwą – „pasuje wszystkim”, „uwaga: Ola”, „nie dla Kuby”. */
   function scoreHtml(i) {
     if (i.code && !fresh.has(i.code)) return '';
     if (A.famOn() && i.fam) {
