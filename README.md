@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Zaproszenie do testów w Google Play (29.10.2026, wersja 3.0.13)
+
+- Na ekranie Start, pod wyszukiwarką, karta „Masz Androida? Pomóż Lupce trafić do Google Play” z linkiem do lupka.app/testuj/.
+- Widać ją tylko na Androidzie w zwykłej przeglądarce. Nie pokazuje się w aplikacji z Google Play, na iPhonie, na komputerze ani w zainstalowanej aplikacji (PWA).
+- × chowa kartę na stałe. Bez punktów, nic nie jest wysyłane. Test: `tests/e2e-d-testbanner.mjs`.
+
 ## Komunikaty listy (29.10.2026, wersja 3.0.12)
 
 - Informacje pod polem listy („Dodano 2 rzeczy…”, „Słucham…”, „Przywrócono…”) są szare, a na czerwono zostają tylko błędy (np. brak zgody na mikrofon, rzecz już na liście).

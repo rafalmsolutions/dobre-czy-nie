@@ -6,6 +6,18 @@
   /* ---------- Start: 3 kroki (wersja D: cele to skróty do listy „Pilnuję”) ---------- */
   const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
   let step = 1, draft = null, msg = '';
+
+  /* 3.0.13: zaproszenie do testów w Google Play – tylko Android w zwykłej przeglądarce. Aplikację z Play (TWA) poznajemy
+     po referrerze przy starcie i zapamiętujemy, bo przy przeładowaniu referrer znika. Bez punktów, nic nie wysyła. */
+  if (/^android-app:\/\/app\.lupka/.test(document.referrer || '')) A.store.set('d-twa', true);
+  A.testBannerOn = () => {
+    if (A.store.get('d-testbanner-off', false) || A.store.get('d-twa', false)) return false;
+    if (!/Android/i.test(navigator.userAgent || '')) return false;
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    return !standalone;
+  };
+  const testBanner = () => A.testBannerOn() ? `<div class="d-testbn"><a class="d-testbn-go" href="https://lupka.app/testuj/"><span class="d-testbn-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><span class="grow"><b>Masz Androida? Pomóż Lupce trafić do Google Play</b><span>Dołącz do testów – 2 minuty →</span></span></a><button class="d-testbn-x" type="button" data-act="testbanner-off" aria-label="Ukryj zaproszenie do testów"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button></div>` : '';
+
   A.route('start', () => {
     if (!draft) draft = { goals: A.profile.goals.slice(), watch: A.profile.watch.slice(), picks: {}, name: A.userName(), fam: A.family.length > 0, people: A.family.map(f => ({ id: f.id, name: f.name, picks: Object.fromEntries(['allergens', 'diet', 'avoid'].flatMap(g => (f.p[g] || []).map(k => [g + ':' + k, true]))) })), sheet: null };
     if (!Object.keys(draft.picks).length) ['allergens', 'diet', 'avoid'].forEach(g => A.profile[g].forEach(k => { draft.picks[g + ':' + k] = true; }));
@@ -232,6 +244,7 @@
         <button class="d-scanbtn" type="button" data-act="scan"><svg aria-hidden="true"><use href="#i-scan"/></svg><span>Skanuj</span></button>
         <div class="d-hello"><p>${name ? 'Cześć, ' + esc(name) : 'Cześć'}</p><h1><span class="w-light">Sprawdź skład</span> <span class="w-bold">w 2 sek.</span></h1></div></div>` : '<span class="d-arc d-arc-home" aria-hidden="true"></span>'}
       <a class="d-search two" href="#/szukaj" id="homeSearch"><svg aria-hidden="true"><use href="#i-search"/></svg><span>${name ? `<b>Czego szukasz, ${esc(name)}?</b><small>nazwa produktu, marka albo kod kreskowy</small>` : '<b>Szukaj produktu, marki albo kodu</b><small>nazwa produktu, marka albo kod kreskowy</small>'}</span></a>
+      ${testBanner()}
       ${who}
       ${listCard}
       ${histHtml}

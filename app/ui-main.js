@@ -83,6 +83,7 @@
       case 'shop-all': A.shopAll(); if (A.current.screen === 'product' && A.rerenderProduct) A.rerenderProduct(); else A.render(); break;
       case 'fam-focus': if (A.famPick) A.famPick(el.dataset.id); { const b = document.querySelector(`#scr-product [data-act=fam-focus][data-id="${el.dataset.id}"]`); if (b) b.focus(); } break;
       case 'clear-history': A.store.set('history', []); A.render(); A.toast('Wyczyszczono historię.'); break;
+      case 'testbanner-off': A.store.set('d-testbanner-off', true); A.render(); { const s = A.$('homeSearch'); if (s) s.focus(); } break;
       case 'list-store': A.listStore(el.dataset.cat, el.dataset.store); break;
       case 'list-store-sheet': A.listStoreSheet(el.dataset.cat, el.dataset.store, true); break;
       case 'list-sheet-close': { const sw = document.querySelector('.store-sw'); A.listStoreSheet(sw ? sw.dataset.cat : '', sw ? sw.dataset.store : 'all', false); break; }

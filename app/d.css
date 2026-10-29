@@ -1067,3 +1067,15 @@ div.ob-person{cursor:default}
 .qty-form .qf-name .field{width:100%}
 .qty-form .qf-msg{flex:1 1 100%;margin:0}.qty-form .qf-msg:empty{display:none}
 .msg.msg-info{color:#3E4046;font-weight:600} /* 3.0.12: informacja (np. „Dodano 2 rzeczy”) nie wygląda jak błąd */
+/* 3.0.13: zaproszenie do testów w Google Play na Starcie (tylko Android w przeglądarce) */
+.d-testbn{position:relative;display:flex;align-items:center;gap:8px;padding:10px 10px 10px 12px;border:2px solid #CFE9D8;border-radius:18px;background:#fff}
+.d-testbn-go{flex:1;min-width:0;display:flex;align-items:center;gap:12px;color:var(--ink);text-decoration:none}
+.d-testbn-go::after{content:"";position:absolute;inset:0;border-radius:16px} /* cała karta klikalna, × leży wyżej */
+.d-testbn-ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#E3F4E8}
+.d-testbn-ic svg{width:20px;height:20px;fill:#2E9E55}
+.d-testbn-go .grow{display:flex;flex-direction:column;gap:2px;min-width:0}
+.d-testbn-go b{font-weight:800;font-size:15px;line-height:1.25}
+.d-testbn-go .grow > span{color:#1E7A3C;font-weight:700;font-size:14px}
+.d-testbn-x{position:relative;z-index:1;flex:none;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:#F1F2F4;color:#5E6066;cursor:pointer}
+.d-testbn-x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.d-testbn-go:focus-visible::after{outline:3px solid #2E9E55;outline-offset:2px}
