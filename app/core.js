@@ -590,9 +590,17 @@ function matchProfile(prod, an, profile) {
         if (analysis.has('en:palm-oil') || hasWord(mainText, ['palmow', 'palm '])) fail('Olej palmowy', 'zawiera');
         else if (!hasIng && !analysis.has('en:palm-oil-free')) unknown('Olej palmowy');
       } else if (k === 'sweeteners') {
-        const found = SWEETENER_CODES.filter(c => codes.has(c));
-        if (found.length) fail('Słodziki', found.map(c => ADDITIVES[c] ? ADDITIVES[c][0] : c).join(', '));
-        else if (!an.additivesKnown) unknown('Słodziki');
+        // 3.0.23: numer E albo nazwa któregokolwiek słodzika w składzie.
+        const sw = PROFILE_OPTIONS.avoid.filter(o => o.key.startsWith('sw-'));
+        const found = SWEETENER_CODES.filter(c => codes.has(c)).map(c => ADDITIVES[c] ? ADDITIVES[c][0] : c)
+          .concat(sw.filter(o => hasWord(mainText, o.words) && !o.codes.some(c => codes.has(c))).map(o => o.label));
+        if (found.length) fail('Słodziki', found.join(', '));
+        else if (!an.additivesKnown && !hasIng) unknown('Słodziki');
+      } else if (k.startsWith('sw-')) {
+        // 3.0.23: konkretny słodzik.
+        const o = PROFILE_OPTIONS.avoid.find(x => x.key === k); if (!o) return;
+        if (o.codes.some(c => codes.has(c)) || hasWord(mainText, o.words)) fail(o.label, 'zawiera');
+        else if (!an.additivesKnown && !hasIng) unknown(o.label);
       } else if (k === 'sugar') {
         if (hasWord(mainText, SUGAR_WORDS)) fail('Dodany cukier', 'cukier lub syrop w składzie');
         else if (!hasIng) unknown('Dodany cukier');

@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Słodziki w wykluczeniach (30.10.2026, wersja 3.0.23)
+
+- Profil → Wykluczenia: nowa zwijana lista „Słodziki”: „Bez słodzików” (wszystkie) i 10 konkretnych: sorbitol, maltitol, ksylitol, erytrytol, aspartam, acesulfam K, sukraloza, sacharyna, cyklaminiany, stewia (z numerem E pod nazwą).
+- Produkt nie pasuje, gdy ma ten słodzik jako numer E albo z nazwy w składzie. „Bez słodzików” też rozpoznaje nazwy, nie tylko numery E.
+- Klucze `sweeteners` i `sw-*` w `PROFILE_OPTIONS.avoid` (`grp: 'sweet'`). Testy: `tests/unit-d.cjs`, `tests/e2e-d-drobne.mjs`.
+
 ## Mleko: alergen a dieta (30.10.2026, wersja 3.0.22)
 
 - Przy alergenie „Mleko” podpowiedź „alergia: także „może zawierać”” (śladowe ilości: najwyżej 35%), przy diecie „Bez mleka i przetworów”: „także ser, masło, serwatka; bez „może zawierać””. Widać to w Profilu → Wykluczenia i w pierwszym uruchomieniu.

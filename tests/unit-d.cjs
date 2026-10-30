@@ -191,6 +191,14 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   const noIngFish = P({ product_name_pl: 'Łosoś wędzony', ingredients_text_pl: '', categories_hierarchy: ['en:seafood', 'en:fishes'] });
   const noIngSausage = P({ product_name_pl: 'Kiełbasa', ingredients_text_pl: '', categories_hierarchy: ['en:meats', 'en:prepared-meats', 'en:sausages'] });
   ok(st(noIngFish, 'pescetarian') === 'unknown' && st(noIngSausage, 'pescetarian') === 'fail', 'pescetariańska bez składu: ryba „nie wiemy”, kiełbasa „nie pasuje” (kategoria)'); }
+// 3.0.23: konkretne słodziki i „Bez słodzików” (numer E albo nazwa w składzie).
+{ const I = (ing, adds) => P({ ingredients_text_pl: ing, additives_tags: adds || [] });
+  const st = (prod, k) => { const m = M(prod, { avoid: [k] }); return m.status + (m.match.fails[0] ? ':' + m.match.fails[0].why : ''); };
+  const gum = I('słodzik: sorbitol, maltitol, aromat', ['en:e420', 'en:e965']), drink = I('woda, kwasek cytrynowy, sukraloza'), ery = I('erytrytol 99%, glikozydy stewiolowe'), plain = I('woda, cukier, sok z cytryny');
+  ok(/^fail/.test(st(gum, 'sw-sorbitol')) && /^fail/.test(st(gum, 'sw-maltitol')) && !/^fail/.test(st(gum, 'sw-erythritol')), 'guma z sorbitolem i maltitolem: nie dla „sorbitol”, „maltitol”, pasuje przy „erytrytol”');
+  ok(/^fail/.test(st(drink, 'sw-sucralose')) && /^fail/.test(st(ery, 'sw-erythritol')) && /^fail/.test(st(ery, 'sw-stevia')), 'nazwa w składzie bez numeru E: sukraloza, erytrytol, stewia');
+  ok(/^fail:.*sukraloza/i.test(st(drink, 'sweeteners')) && /^fail/.test(st(gum, 'sweeteners')) && !/^fail/.test(st(plain, 'sweeteners')), '„Bez słodzików”: wszystkie (także po nazwie), cukier to nie słodzik');
+  ok(D.cleanProfile({ avoid: ['sw-sorbitol', 'sweeteners', 'xxx'] }).avoid.join('|') === 'sw-sorbitol|sweeteners', 'profil zapisuje nowe klucze słodzików'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

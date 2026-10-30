@@ -302,7 +302,18 @@ const PROFILE_OPTIONS = {
     { key: 'satfat', label: 'Dużo tłuszczów nasyconych' },
     { key: 'palm', label: 'Olej palmowy' },
     { key: 'hydrogenated', label: 'Tłuszcz utwardzony' },
-    { key: 'sweeteners', label: 'Słodziki' },
+    { key: 'sweeteners', label: 'Bez słodzików', noun: 'Słodziki', grp: 'sweet', hint: 'wszystkie poniżej i inne' },
+    // 3.0.23: konkretne słodziki (twarde wykluczenie): numer E albo nazwa w składzie. Poliole (E420, E965, E967, E968) przy dużej ilości działają przeczyszczająco.
+    { key: 'sw-sorbitol', label: 'Sorbitol', grp: 'sweet', hint: 'E420', codes: ['E420'], words: ['sorbitol'] },
+    { key: 'sw-maltitol', label: 'Maltitol', grp: 'sweet', hint: 'E965', codes: ['E965'], words: ['maltitol'] },
+    { key: 'sw-xylitol', label: 'Ksylitol', grp: 'sweet', hint: 'E967', codes: ['E967'], words: ['ksylitol', 'xylitol'] },
+    { key: 'sw-erythritol', label: 'Erytrytol', grp: 'sweet', hint: 'E968', codes: ['E968'], words: ['erytrytol', 'erytritol', 'erythritol'] },
+    { key: 'sw-aspartame', label: 'Aspartam', grp: 'sweet', hint: 'E951', codes: ['E951', 'E962'], words: ['aspartam'] },
+    { key: 'sw-acesulfame', label: 'Acesulfam K', grp: 'sweet', hint: 'E950', codes: ['E950', 'E962'], words: ['acesulfam'] },
+    { key: 'sw-sucralose', label: 'Sukraloza', grp: 'sweet', hint: 'E955', codes: ['E955'], words: ['sukraloz', 'sucralos'] },
+    { key: 'sw-saccharin', label: 'Sacharyna', grp: 'sweet', hint: 'E954', codes: ['E954'], words: ['sacharyn'] },
+    { key: 'sw-cyclamate', label: 'Cyklaminiany', grp: 'sweet', hint: 'E952', codes: ['E952'], words: ['cyklamin'] },
+    { key: 'sw-stevia', label: 'Stewia', grp: 'sweet', hint: 'E960, glikozydy stewiolowe', codes: ['E960', 'E960a', 'E960b'], words: ['stewi', 'stevi', 'glikozydy stewiolowe'] },
     { key: 'nitrites', label: 'Azotyny i azotany' },
     { key: 'controversial', label: 'Dodatki z zastrzeżeniami' },
     { key: 'ultra', label: 'Wysoko przetworzone' },
@@ -528,7 +539,7 @@ const HOME_TILES = [
 
 /* Wersja D: „Nie jem” to tylko twarde wykluczenia. Reszta dawnych „unikam” i diet jest na liście „Pilnuję”. */
 PROFILE_OPTIONS.diet = PROFILE_OPTIONS.diet.filter(o => ['vegan', 'vegetarian', 'pescetarian', 'glutenfree', 'nomilk', 'lactose'].includes(o.key));
-PROFILE_OPTIONS.avoid = PROFILE_OPTIONS.avoid.filter(o => ['pork', 'alcohol'].includes(o.key));
+PROFILE_OPTIONS.avoid = PROFILE_OPTIONS.avoid.filter(o => ['pork', 'alcohol'].includes(o.key) || o.grp === 'sweet');
 
 /* Wersja D: dodatkowe kategorie ze zdjęciami (strony albumu i listy „Najlepsze”). */
 SHOP_GROUPS.splice(3, 0, { key: 'fresh', label: 'Owoce, warzywa i świeże', icon: 'dept_produce' });

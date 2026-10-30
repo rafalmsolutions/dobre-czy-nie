@@ -85,8 +85,10 @@ await page.evaluate(() => { localStorage.setItem('dcn-onboarded', 'true'); App.p
 await go('#/profil/wykluczenia'); await page.reload(); await page.waitForTimeout(900);
 for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) break; await page.$eval('#celebrate [data-act=cel-ok]', e => e.click()); await page.waitForTimeout(150); }
 const folds = await page.$$eval('#scr-profile .pf-excl details.pf-fold', l => l.map(d => [d.open, d.querySelector('.fold-sum').textContent]));
-ok(folds.length === 2 && folds[0][0] === false && folds[0][1] === 'Orzechy' && folds[1][0] === true && folds[1][1] === 'nic nie zaznaczono', 'wykluczenia: ' + JSON.stringify(folds));
-await page.locator('#scr-profile label.ck-row', { hasText: 'Bez alkoholu' }).click(); await page.waitForTimeout(700);
+ok(folds.length === 3 && folds[0][0] === false && folds[0][1] === 'Orzechy' && folds[1][0] === true && folds[1][1] === 'nic nie zaznaczono' && folds[2][0] === false, 'wykluczenia (alergeny, dieta, słodziki): ' + JSON.stringify(folds));
+await page.locator('#scr-profile .pf-fold summary').nth(2).click(); await page.waitForTimeout(100);
+await page.locator('#scr-profile label.ck-row', { hasText: 'Erytrytol' }).click(); await page.waitForTimeout(700);
+ok(await page.evaluate(() => App.profile.avoid.includes('sw-erythritol')) && (await page.locator('#scr-profile .pf-fold .fold-sum').nth(2).innerText()) === 'Erytrytol', '3.0.23: słodzik „Erytrytol” zapisany, podsumowanie listy');await page.locator('#scr-profile label.ck-row', { hasText: 'Bez alkoholu' }).click(); await page.waitForTimeout(700);
 ok(await page.evaluate(() => App.profile.avoid.includes('alcohol')) && (await page.locator('#scr-profile .pf-fold .fold-sum').nth(1).innerText()) === 'Bez alkoholu', 'zaznaczenie zapisane, podsumowanie „Bez alkoholu”');
 
 const exclTxt = await page.textContent('#scr-profile .pf-excl'); // textContent: lista alergenów jest tu zwinięta
