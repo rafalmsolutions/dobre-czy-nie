@@ -918,6 +918,8 @@ const WATCH_FX = { limit: { low: 5, mid: -10, high: -25 }, contains: { yes: -25,
 const WATCH_CAP = { mid: 74, high: 45, unknown: 70, yes: 45 };
 const WATCH_WORD = { limit: { low: 'mało', mid: 'średnio', high: 'dużo' }, contains: { yes: 'zawiera', no: 'nie zawiera' }, more: { high: 'dużo', mid: 'źródło', low: 'mało' } };
 const KCAL_T = { food: [150, 400], drink: [20, 40] };
+/* 3.0.25: węglowodany na 100 g / 100 ml – progi Lupki (nie z etykiet): mało do 10 g, dużo powyżej 30 g; napoje: do 2,5 g i powyżej 8 g. */
+const CARBS_T = { food: [10, 30], drink: [2.5, 8] };
 const MATCH_FLOOR = 12;
 /* Każda pozycja „Pilnuję” liczona jedną zasadą. Zwraca poziom, słowo, wartość, zmianę punktów i ewentualny limit. */
 function watchInsights(prod, an, watch) {
@@ -942,6 +944,8 @@ function watchInsights(prod, an, watch) {
       if (hasWords(txt, WORDS.hydrogenated)) { level = 'high'; note = 'tłuszcz utwardzony w składzie'; }
     } else if (key === 'kcal') {
       if (nm.kcal != null) { const [lo, hi] = KCAL_T[drink ? 'drink' : 'food']; level = nm.kcal <= lo ? 'low' : nm.kcal > hi ? 'high' : 'mid'; value = `${Math.round(nm.kcal)} kcal na ${per}`; }
+    } else if (key === 'carbs') {
+      if (nm.carbs != null) { const [lo, hi] = CARBS_T[drink ? 'drink' : 'food']; level = nm.carbs <= lo ? 'low' : nm.carbs > hi ? 'high' : 'mid'; value = `${f(nm.carbs)} g na ${per}`; }
     } else if (key === 'processing') {
       const nova = Number(prod.nova), bad = adds.filter(a => a.level >= 2), some = adds.filter(a => a.level === 1);
       if (nova === 4 || bad.length) { level = 'high'; value = [nova === 4 ? 'NOVA 4' : '', bad.map(a => a.code).slice(0, 3).join(', ')].filter(Boolean).join(', '); }

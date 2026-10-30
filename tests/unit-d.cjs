@@ -212,6 +212,15 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(why('czosnek granulowany, sól', 'czosnek') === 'fail:w składzie: czosnek', 'bez synonimu: odmiana słowa nadal działa');
   const bad = vm.runInContext('CUSTOM_SUGGEST.filter(s => !cleanCustom(s) || customProblem(s, []) || !customMatcher(s))', ctx);
   ok(!bad.length, 'każda podpowiedź przechodzi walidację (' + bad.join(', ') + ')'); }
+// 3.0.25: „Pilnuję: węglowodany”.
+{ const C = (carbs, cats) => P({ nutriments: carbs == null ? {} : { carbohydrates_100g: carbs }, categories_hierarchy: cats || [] });
+  const row = prod => M(prod, { watch: ['carbs'] }).rows.find(r => /Węglowodany/.test(r.title || '')) || {};
+  const r1 = row(C(4)), r2 = row(C(20)), r3 = row(C(65)), r4 = row(C(null)), r5 = row(C(5, ['en:beverages']));
+  ok(r1.word === 'mało' && r1.delta === 5 && /4 g na 100 g/.test(r1.value), 'węglowodany 4 g: mało, +5 (' + JSON.stringify(r1) + ')');
+  ok(r2.word === 'średnio' && r3.word === 'dużo' && r3.cap === 45, 'węglowodany 20 g: średnio; 65 g: dużo, najwyżej 45%');
+  ok(r4.word === 'brak danych' && r4.cap === 70, 'bez węglowodanów w bazie: „brak danych”, najwyżej 70%');
+  ok(r5.word === 'średnio' && /100 ml/.test(r5.value), 'napój 5 g: średnio (progi dla napojów)');
+  ok(M(C(65), { watch: ['carbs'] }).pct < M(C(4), { watch: ['carbs'] }).pct, 'więcej węglowodanów → niższy wynik'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

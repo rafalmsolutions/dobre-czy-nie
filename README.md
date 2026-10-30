@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## „Pilnuję: węglowodany” (30.10.2026, wersja 3.0.25)
+
+- Nowa pozycja w Preferencje → Szczegółowe kryteria: „Węglowodany (mniej)”. Liczona jak cukier czy sól: mało +5, średnio −10 (najwyżej 74%), dużo −25 (najwyżej 45%), brak danych najwyżej 70%.
+- Progi Lupki (na etykietach ich nie ma): mało do 10 g, dużo powyżej 30 g na 100 g; napoje 2,5 g i 8 g na 100 ml. Opis: „pomoc w porównywaniu, nie ocena zgodności z dietą”. Na razie tylko na 100 g (porcji nie mamy w kopii bazy).
+- Testy: `tests/unit-d.cjs`.
+
 ## Własne składniki: podpowiedzi, synonimy, znalezione słowo (30.10.2026, wersja 3.0.24)
 
 - Pole „Własne składniki” podpowiada nazwy (lista `CUSTOM_SUGGEST`, ok. 45 składników).

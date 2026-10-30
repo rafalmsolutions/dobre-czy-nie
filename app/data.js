@@ -423,6 +423,7 @@ const WATCH = [
   { key: 'salt', label: 'Sól', kind: 'limit', icon: 'salt' },
   { key: 'satfat', label: 'Tłuszcze nasycone', kind: 'limit', icon: 'fat' },
   { key: 'kcal', label: 'Kalorie', kind: 'limit', icon: 'kcal' },
+  { key: 'carbs', label: 'Węglowodany (mniej)', kind: 'limit', icon: 'carbs' }, // 3.0.25: na 100 g; progi CARBS_T w core.js
   { key: 'processing', label: 'Przetworzenie i dodatki', kind: 'limit', icon: 'processing' },
   { key: 'palm', label: 'Olej palmowy', kind: 'contains', icon: 'palm' },
   { key: 'sweeteners', label: 'Słodziki', kind: 'contains', icon: 'sweetener' },
