@@ -964,10 +964,12 @@ function watchInsights(prod, an, watch) {
       const v = key === 'protein' ? nm.proteins : nm.fiber, [mid, high] = key === 'protein' ? [5, 10] : [3, 6];
       if (v != null) { level = v >= high ? 'high' : v >= mid ? 'mid' : 'low'; value = `${f(v)} g na ${per}`; }
     }
-    const fx = WATCH_FX[w.kind];
+    // 3.0.26: pozycja może mieć własne punkty (fx), słowa (words) i nie mieć limitu wyniku (noCap) – np. węglowodany.
+    const fx = w.fx || WATCH_FX[w.kind];
     const delta = level == null ? 0 : fx[level];
-    const cap = level == null ? (w.kind === 'more' ? null : WATCH_CAP.unknown) : (w.kind === 'limit' && WATCH_CAP[level] != null ? WATCH_CAP[level] : w.kind === 'contains' && level === 'yes' ? WATCH_CAP.yes : null);
-    const word = level == null ? 'brak danych' : WATCH_WORD[w.kind][level];
+    const cap = level == null ? (w.kind === 'more' ? null : WATCH_CAP.unknown) : w.noCap ? null : (w.kind === 'limit' && WATCH_CAP[level] != null ? WATCH_CAP[level] : w.kind === 'contains' && level === 'yes' ? WATCH_CAP.yes : null);
+    const word = level == null ? 'brak danych' : (w.words && w.words[level]) || WATCH_WORD[w.kind][level];
+    if (level != null && w.note && !note) note = w.note;
     return { key, label: w.label, kind: w.kind, icon: w.icon, level, word, value, note, delta, cap };
   }).filter(Boolean);
 }
@@ -987,7 +989,8 @@ function personalMatch(prod, an, profile) {
   const setCap = (c, why) => { if (c != null && c < cap) { cap = c; capBy = why; } };
   w.forEach(x => {
     const kind = x.delta > 0 ? 'good' : x.delta < 0 ? 'bad' : x.level == null ? 'info' : 'neutral';
-    rows.push({ kind, watch: x.key, icon: x.icon, title: x.label, word: x.word, value: x.value, text: x.note, delta: x.level == null ? null : x.delta, cap: x.cap });
+    // 3.0.26: tytuł bez „(mniej)/(więcej)” – „Węglowodany: więcej węglowodanów”, a nie „Węglowodany (mniej) więcej…”.
+    rows.push({ kind, watch: x.key, icon: x.icon, title: x.label.replace(/ \((mniej|więcej)\)$/, ''), word: x.word, value: x.value, text: x.note, delta: x.level == null ? null : x.delta, cap: x.cap });
     sum += x.delta;
     setCap(x.cap, `${x.label.replace(' (więcej)', '')}: ${x.word}`);
   });

@@ -423,7 +423,9 @@ const WATCH = [
   { key: 'salt', label: 'Sól', kind: 'limit', icon: 'salt' },
   { key: 'satfat', label: 'Tłuszcze nasycone', kind: 'limit', icon: 'fat' },
   { key: 'kcal', label: 'Kalorie', kind: 'limit', icon: 'kcal' },
-  { key: 'carbs', label: 'Węglowodany (mniej)', kind: 'limit', icon: 'carbs' }, // 3.0.25: na 100 g; progi CARBS_T w core.js
+  // 3.0.25: na 100 g; progi CARBS_T w core.js. 3.0.26: łagodny wpływ (+5 / −5 / −10), bez limitów 74% i 45% – „mniej” to preferencja, nie restrykcyjna dieta.
+  { key: 'carbs', label: 'Węglowodany (mniej)', kind: 'limit', icon: 'carbs', fx: { low: 5, mid: -5, high: -10 }, noCap: true,
+    words: { low: 'mniej węglowodanów', mid: 'pośrednia zawartość', high: 'więcej węglowodanów' }, note: 'przedziały przyjęte przez Lupkę dla preferencji ograniczania węglowodanów' },
   { key: 'processing', label: 'Przetworzenie i dodatki', kind: 'limit', icon: 'processing' },
   { key: 'palm', label: 'Olej palmowy', kind: 'contains', icon: 'palm' },
   { key: 'sweeteners', label: 'Słodziki', kind: 'contains', icon: 'sweetener' },

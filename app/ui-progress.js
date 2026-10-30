@@ -132,8 +132,8 @@
           <div class="rows">${WATCH.map(w => ckRow('watch', w.key, w.label, p.watch.includes(w.key))).join('')}</div>
           <p class="msg" id="watchMsg" role="status"></p>
           <div class="d-rules small"><b>Jak liczymy każdą pozycję</b>
-            <span>Cukier, sól, tłuszcze, kalorie, węglowodany, przetworzenie: mało <b>+5</b>, średnio <b>−10</b>, dużo <b>−25</b> i najwyżej 45%.</span>
-            <span>Węglowodany na 100 g: mało do 10 g, dużo powyżej 30 g (napoje: 2,5 g i 8 g na 100 ml). To pomoc w porównywaniu, nie ocena zgodności z dietą.</span>
+            <span>Cukier, sól, tłuszcze, kalorie, przetworzenie: mało <b>+5</b>, średnio <b>−10</b>, dużo <b>−25</b> i najwyżej 45%.</span>
+            <span>Węglowodany na 100 g: do 10 g <b>+5</b>, 10–30 g <b>−5</b>, powyżej 30 g <b>−10</b>, bez limitu wyniku (napoje: 2,5 g i 8 g na 100 ml). To przedziały przyjęte przez Lupkę dla preferencji ograniczania węglowodanów, nie oficjalne progi ani ocena zgodności z dietą.</span>
             <span>Olej palmowy, słodziki, kofeina: zawiera <b>−25</b> i najwyżej 45%.</span>
             <span>Białko, błonnik: dużo <b>+10</b>, źródło <b>+5</b>.</span>
             <span>Brak danych w bazie: najwyżej 70%.</span></div></details>

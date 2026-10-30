@@ -216,10 +216,13 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
 { const C = (carbs, cats) => P({ nutriments: carbs == null ? {} : { carbohydrates_100g: carbs }, categories_hierarchy: cats || [] });
   const row = prod => M(prod, { watch: ['carbs'] }).rows.find(r => /Węglowodany/.test(r.title || '')) || {};
   const r1 = row(C(4)), r2 = row(C(20)), r3 = row(C(65)), r4 = row(C(null)), r5 = row(C(5, ['en:beverages']));
-  ok(r1.word === 'mało' && r1.delta === 5 && /4 g na 100 g/.test(r1.value), 'węglowodany 4 g: mało, +5 (' + JSON.stringify(r1) + ')');
-  ok(r2.word === 'średnio' && r3.word === 'dużo' && r3.cap === 45, 'węglowodany 20 g: średnio; 65 g: dużo, najwyżej 45%');
-  ok(r4.word === 'brak danych' && r4.cap === 70, 'bez węglowodanów w bazie: „brak danych”, najwyżej 70%');
-  ok(r5.word === 'średnio' && /100 ml/.test(r5.value), 'napój 5 g: średnio (progi dla napojów)');
+  ok(r1.word === 'mniej węglowodanów' && r1.delta === 5 && /4 g na 100 g/.test(r1.value) && r1.title === 'Węglowodany', 'węglowodany 4 g: „mniej węglowodanów”, +5 (' + JSON.stringify(r1) + ')');
+  ok(r2.word === 'pośrednia zawartość' && r2.delta === -5 && r2.cap == null, 'węglowodany 20 g: „pośrednia zawartość”, −5, bez limitu');
+  ok(r3.word === 'więcej węglowodanów' && r3.delta === -10 && r3.cap == null && /przedziały przyjęte przez Lupkę/.test(r3.text), 'węglowodany 65 g: −10, bez limitu 45%, z dopiskiem o przedziałach Lupki');
+  ok(r4.word === 'brak danych' && r4.cap === 70, 'bez węglowodanów w bazie: „brak danych”, najwyżej 70% (jak inne pozycje)');
+  ok(r5.word === 'pośrednia zawartość' && /100 ml/.test(r5.value), 'napój 5 g: pośrednia (progi dla napojów)');
+  const sug = M(P({ nutriments: { sugars_100g: 30 } }), { watch: ['sugar'] }).rows.find(r => r.watch === 'sugar');
+  ok(sug.word === 'dużo' && sug.delta === -25 && sug.cap === 45, 'cukier bez zmian: dużo −25, najwyżej 45%');
   ok(M(C(65), { watch: ['carbs'] }).pct < M(C(4), { watch: ['carbs'] }).pct, 'więcej węglowodanów → niższy wynik'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;

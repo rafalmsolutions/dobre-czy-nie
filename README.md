@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Węglowodany: łagodniejszy wpływ, bez limitów (30.10.2026, wersja 3.0.26)
+
+- „Węglowodany (mniej)” to preferencja, nie restrykcyjna dieta: do 10 g na 100 g „mniej węglowodanów” +5 pkt, 10–30 g „pośrednia zawartość” −5 pkt, powyżej 30 g „więcej węglowodanów” −10 pkt. Bez limitów wyniku 74% i 45%.
+- Przy wartości dopisek „przedziały przyjęte przez Lupkę dla preferencji ograniczania węglowodanów” – nie przedstawiamy ich jako oficjalnych progów.
+- Pozycja „Pilnuję” może mieć własne punkty, słowa i brak limitu (`fx`, `words`, `noCap`, `note` w `WATCH`). Tytuły wierszy w rachunku bez „(mniej)/(więcej)”.
+
 ## „Pilnuję: węglowodany” (30.10.2026, wersja 3.0.25)
 
 - Nowa pozycja w Preferencje → Szczegółowe kryteria: „Węglowodany (mniej)”. Liczona jak cukier czy sól: mało +5, średnio −10 (najwyżej 74%), dużo −25 (najwyżej 45%), brak danych najwyżej 70%.
