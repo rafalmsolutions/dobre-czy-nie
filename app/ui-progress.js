@@ -151,9 +151,9 @@
             + A.foldHtml('Dieta', di, PROFILE_OPTIONS.diet.map(o => ckRow('diet', o.key, o.label, p.diet.includes(o.key), o.hint)).join('') + av.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key))).join(''), !di.length)
             + A.foldHtml('Słodziki', sl, sw.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key), o.hint)).join(''), false); })()}
         <h3 class="pf-sh">Własne składniki</h3>
-        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-dark btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
+        <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika" list="customSugg"><datalist id="customSugg">${CUSTOM_SUGGEST.filter(s => !draftCustom.some(c => fold(c) === fold(s))).map(s => `<option value="${esc(s)}"></option>`).join('')}</datalist><button class="btn btn-dark btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
         <p class="msg" id="customMsg" role="status"></p><div class="pchips" id="customChips"></div>
-        <p class="small muted">Szukamy też odmian (np. „czosnku”) i pomijamy frazy w rodzaju „bez dodatku”.</p>
+        <p class="small muted">Szukamy też odmian (np. „czosnku”) i nazw pokrewnych (np. „mleko” to też serwatka i kazeina), a przy produkcie pokazujemy, co znaleźliśmy. Pomijamy frazy w rodzaju „bez dodatku”.</p>
         ${me ? `<h3 class="pf-sh">W kosmetykach unikam</h3><div class="rows">${PROFILE_OPTIONS.cosmetic.map(o => ckRow('cosmetic', o.key, o.label, p.cosmetic.includes(o.key))).join('')}</div>` : ''}
         <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Dane pochodzą z bazy tworzonej przez społeczność, więc zawsze sprawdź etykietę.</p>
         <button class="btn btn-dark btn-block" type="submit">Gotowe</button>

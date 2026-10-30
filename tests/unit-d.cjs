@@ -199,6 +199,19 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(/^fail/.test(st(drink, 'sw-sucralose')) && /^fail/.test(st(ery, 'sw-erythritol')) && /^fail/.test(st(ery, 'sw-stevia')), 'nazwa w składzie bez numeru E: sukraloza, erytrytol, stewia');
   ok(/^fail:.*sukraloza/i.test(st(drink, 'sweeteners')) && /^fail/.test(st(gum, 'sweeteners')) && !/^fail/.test(st(plain, 'sweeteners')), '„Bez słodzików”: wszystkie (także po nazwie), cukier to nie słodzik');
   ok(D.cleanProfile({ avoid: ['sw-sorbitol', 'sweeteners', 'xxx'] }).avoid.join('|') === 'sw-sorbitol|sweeteners', 'profil zapisuje nowe klucze słodzików'); }
+// 3.0.24: własne składniki – synonimy i znalezione słowo w powodzie.
+{ const I = ing => P({ ingredients_text_pl: ing });
+  const why = (ing, c) => { const m = M(I(ing), { custom: [c] }); return m.status + (m.match.fails[0] ? ':' + m.match.fails[0].why : ''); };
+  ok(why('cukier, serwatka w proszku, kakao', 'mleko') === 'fail:w składzie: serwatka', 'mleko → „w składzie: serwatka” (' + why('cukier, serwatka w proszku, kakao', 'mleko') + ')');
+  ok(why('woda, Kazeinian sodu', 'mleko') === 'fail:w składzie: kazeinian', 'mleko → kazeinian (' + why('woda, Kazeinian sodu', 'mleko') + ')');
+  ok(why('mąka pszenna, woda, sól', 'gluten') === 'fail:w składzie: pszenna', 'gluten → pszenna');
+  ok(why('cukier, olej, pasta tahini', 'sezam') === 'fail:w składzie: tahini', 'sezam → tahini');
+  ok(why('mięso, sól, E621', 'glutaminian') === 'fail:w składzie: e621', 'glutaminian → E621');
+  ok(why('pasta z masła arachidowego, sól', 'orzeszki ziemne') === 'fail:w składzie: arachidowego', 'orzeszki ziemne → arachidowego');
+  ok(why('cukier, woda. Może zawierać: mleko', 'mleko') === 'traces', 'mleko tylko w „może zawierać”: ślady, nie „nie pasuje”');
+  ok(why('czosnek granulowany, sól', 'czosnek') === 'fail:w składzie: czosnek', 'bez synonimu: odmiana słowa nadal działa');
+  const bad = vm.runInContext('CUSTOM_SUGGEST.filter(s => !cleanCustom(s) || customProblem(s, []) || !customMatcher(s))', ctx);
+  ok(!bad.length, 'każda podpowiedź przechodzi walidację (' + bad.join(', ') + ')'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

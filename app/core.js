@@ -393,6 +393,18 @@ function customMatcher(v) {
   else if (f.length >= 5) stem = f.replace(/(ami|ach|ow|em|om|a|e|i|y|u|o)$/, '');
   return { prefix: [stem], exact: [f] };
 }
+/* 3.0.24: pierwsze słowo (albo fraza) ze składu, które pasuje do własnego składnika – w oryginalnej pisowni, małymi literami. */
+function customFoundWord(ing, spec) {
+  if (!spec) return '';
+  const words = String(ing || '').split(/[^A-Za-z0-9%ĄĆĘŁŃÓŚŹŻąćęłńóśźż]+/).filter(Boolean);
+  for (let i = 0; i < words.length; i++) {
+    const f = fold(words[i]);
+    if ((spec.exact || []).includes(f) || (spec.prefix || []).some(p => !p.includes(' ') && f.startsWith(p))) return words[i].toLowerCase();
+    const two = i + 1 < words.length ? f + ' ' + fold(words[i + 1]) : '';
+    if (two && [].concat(spec.prefix || [], spec.phrases || []).some(p => p.includes(' ') && two.startsWith(p))) return (words[i] + ' ' + words[i + 1]).toLowerCase();
+  }
+  return '';
+}
 /* Tekst do dopasowań: bez polskich znaków, bez fraz typu „bez dodatku soli”, „nie zawiera glutenu”. */
 function cleanForMatch(text) {
   return ' ' + fold(text).replace(/[^a-z0-9%]+/g, ' ')
@@ -621,7 +633,8 @@ function matchProfile(prod, an, profile) {
     });
     p.custom.forEach(c => {
       if (!hasIng) return unknown(c);
-      if (hasWords(mainText, customMatcher(c))) fail(c.charAt(0).toUpperCase() + c.slice(1), 'jest w składzie');
+      // 3.0.24: w powodzie słowo, które znaleźliśmy w składzie („w składzie: serwatka”), a nie tylko „jest w składzie”.
+      if (hasWords(mainText, customMatcher(c))) { const w = customFoundWord(tracePos >= 0 ? ing.slice(0, tracePos) : ing, customMatcher(c)); fail(c.charAt(0).toUpperCase() + c.slice(1), w ? 'w składzie: ' + w : 'jest w składzie'); }
       else if (traceText.trim() && hasWords(traceText, customMatcher(c))) res.traces.push(c);
     });
   } else {

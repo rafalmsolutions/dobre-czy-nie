@@ -344,7 +344,7 @@ const WORDS = {
 const CUSTOM_SYNONYMS = {
   sol: { exact: ['sol', 'soli', 'sola'], prefix: ['solon', 'solank'] },
   cukier: { prefix: ['cukier', 'cukr', 'syrop', 'glukoz', 'fruktoz', 'sacharoz', 'dekstroz'] },
-  mleko: { prefix: ['mlek', 'mlecz', 'laktoz'] },
+  mleko: { prefix: ['mlek', 'mlecz', 'laktoz', 'serwatk', 'kazein', 'smietan', 'maslank'] },
   jajka: { prefix: ['jaj', 'jajk'] }, jaja: { prefix: ['jaj', 'jajk'] }, jajko: { prefix: ['jaj', 'jajk'] },
   maka: { prefix: ['mak'], exact: [] },
   drozdze: { prefix: ['drozdz'] },
@@ -367,8 +367,29 @@ const CUSTOM_SYNONYMS = {
   ser: { exact: ['ser', 'sera', 'serem', 'sery', 'serow'], prefix: ['serow'] },
   zelatyna: { prefix: ['zelatyn'] },
   aromat: { prefix: ['aromat'] },
-  drob: { prefix: ['drob', 'kurczak', 'indyk'] }
+  drob: { prefix: ['drob', 'kurczak', 'indyk'] },
+  // 3.0.24: więcej synonimów (nazwy w składzie, które oznaczają ten sam składnik)
+  soja: { prefix: ['soj', 'soi'] },
+  sezam: { prefix: ['sezam', 'tahin'] },
+  gluten: { prefix: ['gluten', 'pszen', 'zyt', 'jeczmien', 'orkisz', 'owsian', 'owies', 'semolin', 'kuskus'] },
+  pszenica: { prefix: ['pszen', 'orkisz', 'semolin', 'kuskus'] },
+  orzeszki: { prefix: ['arachid', 'orzeszk'] }, 'orzeszki ziemne': { prefix: ['arachid', 'orzeszk'] },
+  gorczyca: { prefix: ['gorczyc', 'musztard'] },
+  seler: { prefix: ['seler'] },
+  jablko: { prefix: ['jablk', 'jablecz'] }, jablka: { prefix: ['jablk', 'jablecz'] },
+  truskawki: { prefix: ['truskaw'] }, banan: { prefix: ['banan'] }, kiwi: { prefix: ['kiwi'] },
+  cynamon: { prefix: ['cynamon'] }, imbir: { prefix: ['imbir'] },
+  ryby: { prefix: ['ryb', 'losos', 'tunczyk', 'dorsz', 'sledz', 'makrel', 'mintaj', 'anchois'] },
+  smalec: { prefix: ['smalec', 'smalcu'] },
+  'olej palmowy': { prefix: ['palmow', 'tluszcz palmow'] },
+  glutaminian: { prefix: ['glutaminian'], exact: ['e621'] },
+  laktoza: { prefix: ['laktoz'] },
+  fruktoza: { prefix: ['fruktoz'] }
 };
+/* 3.0.24: podpowiedzi w polu „Własne składniki” (z polskimi znakami; dopasowanie przez CUSTOM_SYNONYMS po fold). */
+const CUSTOM_SUGGEST = ['sól', 'cukier', 'mleko', 'laktoza', 'jajka', 'mąka', 'pszenica', 'gluten', 'drożdże', 'czosnek', 'cebula', 'kakao', 'czekolada', 'kawa', 'miód',
+  'ryż', 'pomidory', 'papryka', 'grzyby', 'kukurydza', 'orzechy', 'orzeszki ziemne', 'kokos', 'soja', 'sezam', 'gorczyca', 'seler', 'wieprzowina', 'wołowina', 'kurczak', 'drób',
+  'ryby', 'ser', 'żelatyna', 'smalec', 'aromat', 'olej palmowy', 'glutaminian', 'fruktoza', 'jabłka', 'truskawki', 'banan', 'kiwi', 'cynamon', 'imbir'];
 const CUSTOM_MAX = 20;
 
 /* Wersja D: cele to tylko skróty. Każdy cel zaznacza pozycje na liście „Pilnuję” (WATCH), a liczy się wyłącznie ta lista.
