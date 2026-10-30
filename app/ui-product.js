@@ -338,12 +338,15 @@
         <div class="part"><b>Przetworzenie</b><span class="small">${novaTxt ? 'NOVA ' + Number(prod.nova) : 'brak danych'}</span>${bar(pv('processing'))}<span class="sub">${novaTxt ? 'Grupa ' + Number(prod.nova) + ': ' + novaTxt : 'Brak grupy NOVA w bazie'}</span></div></div></div>`);
       const nm = prod.nutriments || {};
       if (Object.values(nm).some(v => v != null)) {
-        const row = (label, v, unit, key) => {
+        const dv = prod.nutriDerived || {};
+        const row = (label, v, unit, key, dk) => {
           if (v == null) return '';
           const lv = key ? nutrientLevel(key, v, prod.drink) : null, word = { low: 'mało', mid: 'średnio', high: 'dużo' }[lv];
-          return `<tr><td>${lv ? `<span class="dot ${lv}"></span>` : '<span class="dot na"></span>'}${label}${word ? `<span class="lvl-word">${word}</span>` : ''}</td><td>${fmtNum(v)} ${unit}</td></tr>`;
+          // 3.0.19: wartość wyliczona z innych (brak w bazie) – „najwyżej 1 g” i skąd ją wzięliśmy.
+          const d = dk && dv[dk], val = d && d.kind === 'max' ? 'najwyżej ' + fmtNum(v) + ' ' + unit : fmtNum(v) + ' ' + unit;
+          return `<tr><td>${lv ? `<span class="dot ${lv}"></span>` : '<span class="dot na"></span>'}${label}${word ? `<span class="lvl-word">${word}</span>` : ''}</td><td>${val}${d ? `<small class="nut-der">wyliczone: ${esc(d.from)}</small>` : ''}</td></tr>`;
         };
-        s.push(`<div class="card stack"><div class="sec-head"><h3>Wartości odżywcze</h3><span class="small muted">na 100 ${prod.drink ? 'ml' : 'g'}</span></div><table class="nut"><tbody>${row('Energia', nm.kcal, 'kcal')}${row('Tłuszcz', nm.fat, 'g', 'fat')}${row('w tym nasycone', nm.sat, 'g', 'saturated-fat')}${row('Cukry', nm.sugars, 'g', 'sugars')}${row('Sól', nm.salt, 'g', 'salt')}${row('Białko', nm.proteins, 'g')}${row('Błonnik', nm.fiber, 'g')}</tbody></table><p class="small muted">Kolory według progów z etykiet w Wielkiej Brytanii: zielony to mało, pomarańczowy średnio, czerwony dużo.</p></div>`);
+        s.push(`<div class="card stack"><div class="sec-head"><h3>Wartości odżywcze</h3><span class="small muted">na 100 ${prod.drink ? 'ml' : 'g'}</span></div><table class="nut"><tbody>${row('Energia', nm.kcal, 'kcal')}${row('Tłuszcz', nm.fat, 'g', 'fat')}${row('w tym nasycone', nm.sat, 'g', 'saturated-fat', 'sat')}${row('Cukry', nm.sugars, 'g', 'sugars', 'sugars')}${row('Sól', nm.salt, 'g', 'salt', 'salt')}${row('Białko', nm.proteins, 'g')}${row('Błonnik', nm.fiber, 'g')}</tbody></table><p class="small muted">Kolory według progów z etykiet w Wielkiej Brytanii: zielony to mało, pomarańczowy średnio, czerwony dużo.${prod.nutriDerived ? ' Wartości „wyliczone” nie są wpisane w bazie: wynikają z pozostałych (np. bez tłuszczu nie ma tłuszczów nasyconych, sól = sód × 2,5).' : ''}</p></div>`);
       }
       if (an.additives.length) s.push(`<div class="card stack"><div class="sec-head"><h3>Dodatki</h3><span class="small muted">dotknij, żeby rozwinąć</span></div>${addList(an.additives, 'food')}${sourcesHtml(an.additives)}</div>`);
       if (an.watch.length) s.push(`<div class="card stack"><h3>Warto wiedzieć</h3>${addList(an.watch.map(w => ({ code: '', name: w.label, level: w.level, note: w.note })), 'watch')}<p class="small muted">Te informacje nie zmieniają oceny.</p></div>`);

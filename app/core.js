@@ -229,7 +229,7 @@ function normalizeProduct(p, source) {
   const cats = Array.isArray(p.categories_hierarchy) && p.categories_hierarchy.length ? p.categories_hierarchy : (Array.isArray(p.categories_tags) ? p.categories_tags : []);
   const n = p.nutriments || {};
   const num = k => { const v = n[k]; if (v === undefined || v === null || v === '') return null; const x = Number(v); return isFinite(x) && x >= 0 ? x : null; };
-  return {
+  const out = {
     code: String(p.code || ''), kind, source, name: name.trim(),
     brand: String(p.brands || '').split(',')[0].trim(), quantity: cleanQty(p.quantity),
     image: p.image_front_small_url || p.image_front_url || p.image_url || '',
@@ -250,6 +250,25 @@ function normalizeProduct(p, source) {
       salt: num('salt_100g'), proteins: num('proteins_100g'), fiber: num('fiber_100g'), carbs: num('carbohydrates_100g'), alcohol: num('alcohol_100g'), iron: num('iron_100g')
     }
   };
+  out.nutriDerived = deriveNutrients(out.nutriments, num('sodium_100g'), out.drink);
+  return out;
+}
+
+/* 3.0.19: brakujące wartości odżywcze, które wynikają z innych (bez zgadywania). Uzupełnia nm i zwraca opis źródła:
+   { sugars: { kind: 'exact', from: 'węglowodany 0 g' }, sat: { kind: 'max', from: 'tłuszcz 1 g' }, salt: { kind: 'exact', from: 'sód 0,4 g' } }.
+   - dokładnie: węglowodany 0 → cukry 0; tłuszcz 0 → nasycone 0; sól = sód × 2,5;
+   - górna granica (cukry ≤ węglowodany, nasycone ≤ tłuszcz) tylko wtedy, gdy na pewno daje „mało” – wtedy liczymy najgorszy przypadek (= granicę). */
+function deriveNutrients(nm, sodium, drink) {
+  const d = {}, g = v => String(Math.round(v * 1000) / 1000).replace('.', ',') + ' g';
+  const pair = (key, parent, lvlKey, parentName) => {
+    if (nm[key] != null || nm[parent] == null) return;
+    if (nm[parent] === 0) { nm[key] = 0; d[key] = { kind: 'exact', from: parentName + ' 0 g' }; return; }
+    if (nutrientLevel(lvlKey, nm[parent], drink) === 'low') { nm[key] = nm[parent]; d[key] = { kind: 'max', from: parentName + ' ' + g(nm[parent]) }; }
+  };
+  pair('sugars', 'carbs', 'sugars', 'węglowodany');
+  pair('sat', 'fat', 'saturated-fat', 'tłuszcz');
+  if (nm.salt == null && sodium != null) { nm.salt = Math.round(sodium * 2.5 * 1000) / 1000; d.salt = { kind: 'exact', from: 'sód ' + g(sodium) }; }
+  return Object.keys(d).length ? d : null;
 }
 
 /* Pełna analiza produktu do wyświetlenia. */
@@ -865,6 +884,8 @@ function watchInsights(prod, an, watch) {
   if (!prod || prod.kind === 'cosmetic') return [];
   const nm = prod.nutriments || {}, drink = !!prod.drink, per = drink ? '100 ml' : '100 g';
   const f = v => String(Math.round(v * 10) / 10).replace('.', ',');
+  // 3.0.19: wartość wyliczona z innych (prod.nutriDerived) – mówimy to wprost: „najwyżej 1 g na 100 g, wyliczone: tłuszcz 1 g”.
+  const dv = prod.nutriDerived || {}, gv = (dk, v) => { const d = dv[dk]; return `${d && d.kind === 'max' ? 'najwyżej ' : ''}${f(v)} g na ${per}${d ? ', wyliczone: ' + d.from : ''}`; };
   const ing = String(prod.ingredients || ''), hasIng = ing.trim().length > 0, txt = cleanForMatch(ing), folded = fold(ing);
   const analysis = new Set(prod.analysis || []), codes = new Set(((an && an.additives) || []).map(a => a.code));
   const adds = (an && an.additives) || [];
@@ -872,12 +893,12 @@ function watchInsights(prod, an, watch) {
     const w = WATCH.find(x => x.key === key); if (!w) return null;
     let level = null, value = '', note = '';
     if (key === 'sugar') {
-      level = nutrientLevel('sugars', nm.sugars, drink); if (nm.sugars != null) value = `${f(nm.sugars)} g na ${per}`;
+      level = nutrientLevel('sugars', nm.sugars, drink); if (nm.sugars != null) value = gv('sugars', nm.sugars);
       if (level === 'low' && folded.includes('syrop')) { level = 'mid'; note = 'syrop w składzie'; }
     } else if (key === 'salt') {
-      level = nutrientLevel('salt', nm.salt, drink); if (nm.salt != null) value = `${f(nm.salt)} g na ${per}`;
+      level = nutrientLevel('salt', nm.salt, drink); if (nm.salt != null) value = gv('salt', nm.salt);
     } else if (key === 'satfat') {
-      level = nutrientLevel('saturated-fat', nm.sat, drink); if (nm.sat != null) value = `${f(nm.sat)} g na ${per}`;
+      level = nutrientLevel('saturated-fat', nm.sat, drink); if (nm.sat != null) value = gv('sat', nm.sat);
       if (hasWords(txt, WORDS.hydrogenated)) { level = 'high'; note = 'tłuszcz utwardzony w składzie'; }
     } else if (key === 'kcal') {
       if (nm.kcal != null) { const [lo, hi] = KCAL_T[drink ? 'drink' : 'food']; level = nm.kcal <= lo ? 'low' : nm.kcal > hi ? 'high' : 'mid'; value = `${Math.round(nm.kcal)} kcal na ${per}`; }

@@ -28,7 +28,7 @@ FIELDS = ('code,product_name,product_name_pl,brands,quantity,image_front_small_u
           'nova_group,ingredients_tags,ingredients_n,allergens_tags,traces_tags,ingredients_analysis_tags,labels_tags,'
           'nutriments,categories_tags,categories,stores,unique_scans_n,states_tags,lang')
 NUTRIMENTS = ['energy-kcal_100g', 'fat_100g', 'saturated-fat_100g', 'sugars_100g', 'salt_100g', 'proteins_100g',
-              'fiber_100g', 'carbohydrates_100g', 'alcohol_100g']
+              'fiber_100g', 'carbohydrates_100g', 'alcohol_100g', 'sodium_100g']  # sodium_100g tylko bez salt_100g
 CODE_RE = re.compile(r'^\d{8,14}$')
 TAG_RE = re.compile(r'^[a-z]{2}:[a-z0-9-]{2,60}$')
 
@@ -136,9 +136,15 @@ def compact(h):
     n = h.get('nutriments') if isinstance(h.get('nutriments'), dict) else {}
     nut = {}
     for k in NUTRIMENTS:
+        if k == 'sodium_100g':
+            continue
         v = n.get(k)
         if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0:
             nut[k] = round(float(v), 3)
+    # 3.0.19: sód tylko wtedy, gdy brakuje soli – aplikacja wylicza z niego sól (× 2,5).
+    sod = n.get('sodium_100g')
+    if 'salt_100g' not in nut and isinstance(sod, (int, float)) and not isinstance(sod, bool) and sod >= 0:
+        nut['sodium_100g'] = round(float(sod), 4)
     ing = tags(h.get('ingredients_tags'), 200)
     stores = h.get('stores')
     stores = stores.split(',') if isinstance(stores, str) else stores if isinstance(stores, list) else []

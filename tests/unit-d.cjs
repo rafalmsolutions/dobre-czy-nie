@@ -149,6 +149,24 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   ok(st(honey, 'vegan').s === 'fail' && st(honey, 'vegetarian').s !== 'fail', 'miód: nie dla wegan, dla wegetarian bez zmian');
   ok(st(N('Ser z etykietą', ['en:cheeses'], { labels_tags: ['en:vegan'] }), 'vegan').s !== 'fail', 'etykieta wegańska wygrywa z kategorią');
   ok(st(N('Ser', ['en:cheeses'], { ingredients_text_pl: 'mleko, sól, podpuszczka' }), 'vegan').why === 'zawiera składniki odzwierzęce', 'ze składem: powód ze składu jak dotąd'); }
+// 3.0.19: brakujące wartości odżywcze wyliczone z innych (bez zgadywania).
+{ const N = (nut, cats) => P({ nutriments: nut, categories_hierarchy: cats || [] });
+  const oil = N({ fat_100g: 100, carbohydrates_100g: 0, proteins_100g: 0, 'energy-kcal_100g': 900, 'saturated-fat_100g': 8 });
+  ok(oil.nutriments.sugars === 0 && oil.nutriDerived.sugars.kind === 'exact' && oil.nutriDerived.sugars.from === 'węglowodany 0 g', 'olej: węglowodany 0 → cukry 0 (dokładnie)');
+  ok(oil.nutriments.salt == null && !(oil.nutriDerived || {}).salt, 'olej bez soli i sodu: sól nadal „brak danych” (nie zgadujemy)');
+  const water = N({ fat_100g: 0, carbohydrates_100g: 0, proteins_100g: 0, 'energy-kcal_100g': 0, sodium_100g: 0.004 }, ['en:beverages', 'en:waters']);
+  ok(water.nutriments.sat === 0 && water.nutriments.sugars === 0 && water.nutriments.salt === 0.01, 'woda: nasycone 0, cukry 0, sól z sodu 0,004 × 2,5 = 0,01 (' + JSON.stringify(water.nutriments) + ')');
+  const lean = N({ fat_100g: 1, carbohydrates_100g: 3, salt_100g: 0.2 });
+  ok(lean.nutriments.sat === 1 && lean.nutriDerived.sat.kind === 'max' && lean.nutriments.sugars === 3 && lean.nutriDerived.sugars.kind === 'max', 'tłuszcz 1 g, węglowodany 3 g → najwyżej 1 g nasyconych i 3 g cukrów (na pewno „mało”)');
+  const fatty = N({ fat_100g: 30, carbohydrates_100g: 50 });
+  ok(fatty.nutriments.sat == null && fatty.nutriments.sugars == null, 'tłuszcz 30 g, węglowodany 50 g: bez wyliczeń (poziom niepewny)');
+  const known = N({ fat_100g: 0, 'saturated-fat_100g': 0.5, carbohydrates_100g: 0, sugars_100g: 0.2, salt_100g: 1, sodium_100g: 0.1 });
+  ok(known.nutriDerived === null && known.nutriments.sat === 0.5 && known.nutriments.salt === 1, 'wartości z bazy nigdy nie są nadpisywane');
+  const drinkLean = N({ fat_100g: 1, carbohydrates_100g: 4 }, ['en:beverages']);
+  ok(drinkLean.nutriments.sat == null && drinkLean.nutriments.sugars == null, 'napój: progi „mało” dla napojów (0,75 g / 2,5 g) – 1 g tłuszczu i 4 g węglowodanów to za mało pewności');
+  const m = M(N({ fat_100g: 0, carbohydrates_100g: 0, salt_100g: 0.01, proteins_100g: 0 }), { watch: ['sugar', 'satfat'] });
+  const rows = m.rows.filter(r => r.watch === 'sugar' || r.watch === 'satfat' || /cukr|nasyc/i.test(r.title || ''));
+  ok(m.rows.some(r => /wyliczone: węglowodany 0 g/.test(r.value || '')) && m.rows.some(r => /wyliczone: tłuszcz 0 g/.test(r.value || '')), 'rachunek: przy wartości podpis „wyliczone: …” (' + rows.map(r => r.value).join(' | ') + ')'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

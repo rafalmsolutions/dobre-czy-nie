@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Brakujące wartości odżywcze wyliczone z innych (30.10.2026, wersja 3.0.19)
+
+- Gdy w bazie brakuje wartości, która wynika z innych, Lupka ją wylicza (bez zgadywania): węglowodany 0 g → cukry 0 g, tłuszcz 0 g → nasycone 0 g, sól = sód × 2,5.
+- Górna granica (cukry ≤ węglowodany, nasycone ≤ tłuszcz) tylko, gdy na pewno daje „mało”; liczymy wtedy najgorszy przypadek („najwyżej 1 g”).
+- Przy wyliczonej wartości podpis „wyliczone: tłuszcz 0 g” w tabeli i w rachunku. Wartości z bazy nigdy nie są nadpisywane. Nic nie wysyłamy do Open Food Facts.
+- Kopia bazy (`scripts/build_data.py`) zachowuje sód, gdy brakuje soli. Testy: `tests/e2e-d-wyliczone.mjs`, nowe przypadki w `tests/unit-d.cjs`.
+
 ## Znaczek „brak danych”, kategorie zwierzęce, uczciwsze punkty (30.10.2026, wersja 3.0.18)
 
 - Znaczek w nagłówku produktu przy braku danych: zamiast „?” napis „brak danych” i dla kogo ich brakuje („dla Kuby”, „dla Ciebie i Kuby”, „dla 3 osób”).
