@@ -89,6 +89,9 @@ ok(folds.length === 2 && folds[0][0] === false && folds[0][1] === 'Orzechy' && f
 await page.locator('#scr-profile label.ck-row', { hasText: 'Bez alkoholu' }).click(); await page.waitForTimeout(700);
 ok(await page.evaluate(() => App.profile.avoid.includes('alcohol')) && (await page.locator('#scr-profile .pf-fold .fold-sum').nth(1).innerText()) === 'Bez alkoholu', 'zaznaczenie zapisane, podsumowanie „Bez alkoholu”');
 
+const exclTxt = await page.textContent('#scr-profile .pf-excl'); // textContent: lista alergenów jest tu zwinięta
+ok(/alergia: także „może zawierać”/.test(exclTxt) && /bez „może zawierać”/.test(exclTxt), '3.0.22: wyjaśnienie różnicy alergen „Mleko” / dieta „Bez mleka i przetworów”');
+
 // 3.0.17 (10): kafle kategorii na 375 px – nazwa nie nachodzi na strzałkę.
 await page.setViewportSize({ width: 375, height: 812 });
 await page.evaluate(() => localStorage.setItem('dcn-onboarded', 'true'));

@@ -267,7 +267,7 @@ const EXAMPLES = [
 const PROFILE_OPTIONS = {
   allergens: [
     { key: 'gluten', label: 'Gluten', tags: ['en:gluten'], words: ['pszen', 'zyto', 'zytni', 'jeczmien', 'owies', 'owsian', 'orkisz', 'gluten', 'kamut', 'semolin'] },
-    { key: 'milk', label: 'Mleko', tags: ['en:milk'], words: ['mleko', 'mleka', 'mleczn', 'laktoz', 'serwatk', 'kazein', 'smietan', 'jogurt', 'twarog', 'ser ', 'sery'] },
+    { key: 'milk', label: 'Mleko', hint: 'alergia: także „może zawierać”', tags: ['en:milk'], words: ['mleko', 'mleka', 'mleczn', 'laktoz', 'serwatk', 'kazein', 'smietan', 'jogurt', 'twarog', 'ser ', 'sery'] },
     { key: 'eggs', label: 'Jaja', tags: ['en:eggs'], words: ['jaja', 'jajk', 'jaj ', 'jajeczn', 'albumin'] },
     { key: 'nuts', label: 'Orzechy', tags: ['en:nuts'], words: ['orzech', 'migdal', 'pistacj', 'nerkowc', 'laskow', 'pekan', 'makadami'] },
     { key: 'peanuts', label: 'Orzeszki ziemne', tags: ['en:peanuts'], words: ['orzeszki ziemne', 'orzeszkow ziemnych', 'arachid'] },
@@ -286,7 +286,7 @@ const PROFILE_OPTIONS = {
     { key: 'vegetarian', label: 'Wegetariańska' },
     { key: 'pescetarian', label: 'Pescetariańska', hint: 'bez mięsa; ryby i owoce morza tak' }, // 3.0.21
     { key: 'glutenfree', label: 'Bezglutenowa' },
-    { key: 'nomilk', label: 'Bez mleka i przetworów', hint: 'także ser, masło, serwatka, kazeina' }, // 3.0.21
+    { key: 'nomilk', label: 'Bez mleka i przetworów', hint: 'także ser, masło, serwatka; bez „może zawierać”' }, // 3.0.21; 3.0.22: różnica wobec alergenu „Mleko”
     { key: 'lactose', label: 'Bez laktozy', hint: 'produkty bez laktozy z mleka pasują' },
     { key: 'lowsodium', label: 'Niskosodowa' },
     { key: 'lowcarb', label: 'Niskowęglowodanowa (keto)' },

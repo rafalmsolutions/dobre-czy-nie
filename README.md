@@ -16,6 +16,10 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Mleko: alergen a dieta (30.10.2026, wersja 3.0.22)
+
+- Przy alergenie „Mleko” podpowiedź „alergia: także „może zawierać”” (śladowe ilości: najwyżej 35%), przy diecie „Bez mleka i przetworów”: „także ser, masło, serwatka; bez „może zawierać””. Widać to w Profilu → Wykluczenia i w pierwszym uruchomieniu.
+
 ## Diety: „Bez mleka i przetworów”, „Pescetariańska”, poprawione „Bez laktozy” (30.10.2026, wersja 3.0.21)
 
 - Nowa dieta „Bez mleka i przetworów”: nie pasuje mleko i każdy przetwór (ser, masło, serwatka, kazeina), także produkty „bez laktozy”. Bez składu: ser i nabiał z kategorii w bazie („to ser (kategoria w bazie)”).
