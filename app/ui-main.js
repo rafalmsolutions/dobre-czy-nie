@@ -132,6 +132,7 @@
   /* ---------- Zmiany pól ---------- */
   document.addEventListener('change', e => {
     const t = e.target;
+    if (t.classList && t.classList.contains('ck-in')) A.foldSync(t); // 3.0.20: podsumowanie zwiniętej listy
     if (t.dataset.photo) { A.photoChosen(t); return; }
     if (t.dataset.frontPhoto) { A.frontPhoto(t); return; }
     if (t.id === 'ingPhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.runOcr(f); return; }

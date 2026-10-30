@@ -38,8 +38,13 @@
   /* 3.0.7: start w stylu Profilu: 1) imię i dla kogo, 2) cele (kafelki), 3) czego nie jesz (lista), 4) domownicy (gdy „dla rodziny”).
      Na każdym kroku informacja, że wszystko zmienisz w Profilu; na ostatnim krótko „Jak liczymy dopasowanie”. */
   const CK = '<span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+  /* 3.0.20: zwijana lista (alergeny, dieta) – w nagłówku, co zaznaczono; podsumowanie odświeża A.foldSync przy zmianie. */
+  A.foldSum = names => names.length ? names.join(', ') : 'nic nie zaznaczono';
+  A.foldHtml = (title, names, rows, open) => `<details class="pf-fold"${open ? ' open' : ''}><summary><span class="grow"><b>${esc(title)}</b><small class="fold-sum">${esc(A.foldSum(names))}</small></span><svg class="fold-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="rows">${rows}</div></details>`;
+  A.foldSync = el => { const d = el && el.closest && el.closest('.pf-fold'); if (!d) return; const s = d.querySelector('.fold-sum');
+    if (s) s.textContent = A.foldSum([...d.querySelectorAll('.ck-in:checked')].map(c => c.closest('.ck-row').querySelector('b').textContent)); };
   const pickRow = (key, on, label) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b></span><input class="ck-in" type="checkbox" data-pick="${key}"${on ? ' checked' : ''}>${CK}</label>`;
-  const pickSum = picks => QUICK_AVOID.filter(([g, k]) => picks[g + ':' + k]).map(([g, k]) => (g === 'diet' ? '' : '✕ ') + opt(g, k).label.toLowerCase()).join(' · ') || 'bez ustawień';
+  const pickSum = picks => QUICK_AVOID.filter(([g, k]) => picks[g + ':' + k]).map(([g, k]) => (g === 'diet' ? '' : '✕ ') + (opt(g, k).noun || opt(g, k).label).toLowerCase()).join(' · ') || 'bez ustawień';
   const total = () => draft.fam ? 4 : 3;
   const readPicks = () => A.$('scr-start').querySelectorAll('.ob-main [data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
   const howHtml = `<details class="ob-how"><summary>Jak liczymy dopasowanie?</summary><ol>
@@ -68,11 +73,13 @@
         ${A.watchLine(draft.watch)}${later}`;
       if (draft.goals.length) next = `Dalej (${draft.goals.length} ${plural(draft.goals.length, 'cel', 'cele', 'celów')})`;
     } else if (step === 3) {
-      const rowsOf = g => QUICK_AVOID.filter(q => q[0] === g || (g === 'diet' && q[0] === 'avoid')).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label)).join('');
+      const inGroup = g => QUICK_AVOID.filter(q => q[0] === g || (g === 'diet' && q[0] === 'avoid'));
+      const rowsOf = g => inGroup(g).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label)).join('');
+      const namesOf = g => inGroup(g).filter(([gg, k]) => draft.picks[gg + ':' + k]).map(([gg, k]) => opt(gg, k).label);
       body = `<h1 id="startTitle" class="ob-h" tabindex="-1">Czego nie jesz?</h1>
         <p class="small muted ob-p">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać.</p>
-        <h3 class="pf-sh">Alergeny</h3><div class="rows">${rowsOf('allergens')}</div>
-        <h3 class="pf-sh">Dieta i inne</h3><div class="rows">${rowsOf('diet')}</div>
+        ${A.foldHtml('Alergeny', namesOf('allergens'), rowsOf('allergens'), true)}
+        ${A.foldHtml('Dieta i inne', namesOf('diet'), rowsOf('diet'), true)}
         <p class="small muted">Przy alergii aplikacja jest pomocą, a nie gwarancją. Zawsze sprawdź etykietę. Pełna lista alergenów i własne składniki: Profil → Wykluczenia.</p>
         ${last ? howHtml : ''}${later}`;
       if (last) next = 'Zaczynamy';
@@ -186,7 +193,7 @@
     p.watch.forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(`<span class="chip d-chip">${A.dIcon(w.icon, 16)}${esc(w.label)}</span>`); });
     ['allergens', 'diet', 'avoid'].forEach(g => p[g].forEach(k => {
       const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (!o) return;
-      out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}${g === 'diet' ? esc(o.label) : 'Nie jem: ' + esc(o.label.toLowerCase())}</span>`);
+      out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}${g === 'diet' ? esc(o.label) : 'Nie jem: ' + esc((o.noun || o.label).toLowerCase())}</span>`);
     }));
     p.custom.forEach(c => out.push(`<span class="chip d-chip avoid">${A.dIcon('ban', 16)}Nie jem: ${esc(c)}</span>`));
     return out;
@@ -211,7 +218,7 @@
     const fam = !!(A.family && A.family.length), fresh = !hist0.length;
     const wk = A.weekCard();
     /* Krótko, czego ktoś pilnuje: „✕ gluten · białko”. Szczegóły są w Profilu. */
-    const short = pr => { const out = []; ['allergens', 'diet', 'avoid'].forEach(g => (pr[g] || []).forEach(k => { const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (o) out.push('✕ ' + o.label.toLowerCase()); }));
+    const short = pr => { const out = []; ['allergens', 'diet', 'avoid'].forEach(g => (pr[g] || []).forEach(k => { const o = PROFILE_OPTIONS[g].find(x => x.key === k); if (o) out.push('✕ ' + (o.noun || o.label).toLowerCase()); }));
       (pr.custom || []).forEach(c => out.push('✕ ' + c)); (pr.watch || []).forEach(k => { const w = WATCH.find(x => x.key === k); if (w) out.push(w.label.replace(' (więcej)', '').toLowerCase()); });
       return out.length ? out.slice(0, 2).join(' · ') + (out.length > 2 ? ' …' : '') : 'bez ustawień'; };
     /* 3.0: „Kupujesz dla” jako przełącznik: Cała rodzina / Tylko ja / Wybierz… (panel z osobami). Jedna linia mówi, dla kogo liczymy wynik. */

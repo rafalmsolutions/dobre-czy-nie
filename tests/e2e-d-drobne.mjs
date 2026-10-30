@@ -19,7 +19,18 @@ ok(await page.getByRole('radio', { name: /Tylko dla siebie/ }).count() === 1 && 
 await page.getByRole('radio', { name: /Dla siebie i domowników/ }).click(); await page.click('[data-act=start-next]'); await page.waitForTimeout(200);
 ok(await page.getByRole('button', { name: /Mniej cukru/ }).count() === 1, 'krok 2: kafel celu ma nazwę („Mniej cukru: …”)');
 // 1. „Nowa osoba”: błąd znika po wpisaniu imienia.
-await page.click('[data-act=start-next]'); await page.waitForTimeout(150); await page.click('[data-act=start-next]'); await page.waitForTimeout(150);
+await page.click('[data-act=start-next]'); await page.waitForTimeout(150);
+// 3.0.20: nazwy na liście jak diety („Bez laktozy”), a w podsumowaniu „✕ wieprzowina”.
+const s3 = await page.innerText('#scr-start');
+ok(/Bez wieprzowiny/.test(s3) && /Bez alkoholu/.test(s3) && !/\bWieprzowina\b|\bAlkohol\b/.test(s3), 'krok 3: „Bez wieprzowiny”, „Bez alkoholu”');
+// 3.0.20: listy zwijane; w nagłówku podsumowanie zaznaczonych.
+ok(await page.locator('#scr-start details.pf-fold[open]').count() === 2, 'krok 3: dwie zwijane listy, na start rozwinięte');
+await page.locator('label.ck-row', { hasText: 'Bez wieprzowiny' }).click(); await page.waitForTimeout(100);
+ok((await page.locator('#scr-start .pf-fold .fold-sum').nth(1).innerText()) === 'Bez wieprzowiny', 'podsumowanie listy po zaznaczeniu: „Bez wieprzowiny”');
+await page.locator('#scr-start .pf-fold summary').first().click(); await page.waitForTimeout(100);
+ok(await page.locator('#scr-start details.pf-fold[open]').count() === 1, 'stuknięcie w nagłówek zwija listę');
+await page.click('[data-act=start-next]'); await page.waitForTimeout(150);
+ok(/✕ wieprzowina/.test(await page.innerText('#scr-start')), 'krok 4: w podsumowaniu „✕ wieprzowina”');
 await page.click('[data-act=start-person][data-i="new"]'); await page.waitForTimeout(150);
 await page.click('[data-act=start-person-save]'); await page.waitForTimeout(100);
 ok(await page.innerText('#obPMsg') === 'Wpisz imię albo pseudonim.', 'puste imię: komunikat');
@@ -68,6 +79,15 @@ ok(/najwyżej 3 cele/.test(lim.t) && lim.inFoot && lim.vis, 'czwarty cel: komuni
 const g0 = (await page.$$eval('[data-act=goal][aria-pressed=true]', l => l.map(e => e.dataset.k)))[0];
 await page.click(`[data-act=goal][data-k="${g0}"]`); await page.waitForTimeout(120);
 ok(await page.locator('#startMsg').isHidden(), 'po odznaczeniu celu komunikat znika');
+
+// 3.0.20: Profil → Wykluczenia: lista z zaznaczeniami zwinięta (podsumowanie w nagłówku), pusta rozwinięta; zapis działa ze zwiniętej.
+await page.evaluate(() => { localStorage.setItem('dcn-onboarded', 'true'); App.profile = cleanProfile({ allergens: ['nuts'] }); App.saveProfile(); });
+await go('#/profil/wykluczenia'); await page.reload(); await page.waitForTimeout(900);
+for (let i = 0; i < 10; i++) { if (await page.locator('#celebrate').isHidden()) break; await page.$eval('#celebrate [data-act=cel-ok]', e => e.click()); await page.waitForTimeout(150); }
+const folds = await page.$$eval('#scr-profile .pf-excl details.pf-fold', l => l.map(d => [d.open, d.querySelector('.fold-sum').textContent]));
+ok(folds.length === 2 && folds[0][0] === false && folds[0][1] === 'Orzechy' && folds[1][0] === true && folds[1][1] === 'nic nie zaznaczono', 'wykluczenia: ' + JSON.stringify(folds));
+await page.locator('#scr-profile label.ck-row', { hasText: 'Bez alkoholu' }).click(); await page.waitForTimeout(700);
+ok(await page.evaluate(() => App.profile.avoid.includes('alcohol')) && (await page.locator('#scr-profile .pf-fold .fold-sum').nth(1).innerText()) === 'Bez alkoholu', 'zaznaczenie zapisane, podsumowanie „Bez alkoholu”');
 
 // 3.0.17 (10): kafle kategorii na 375 px – nazwa nie nachodzi na strzałkę.
 await page.setViewportSize({ width: 375, height: 812 });

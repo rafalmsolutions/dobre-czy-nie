@@ -304,9 +304,9 @@ const PROFILE_OPTIONS = {
     { key: 'nitrites', label: 'Azotyny i azotany' },
     { key: 'controversial', label: 'Dodatki z zastrzeżeniami' },
     { key: 'ultra', label: 'Wysoko przetworzone' },
-    { key: 'alcohol', label: 'Alkohol' },
+    { key: 'alcohol', label: 'Bez alkoholu', noun: 'Alkohol' }, // 3.0.20: na liście wyboru jak dieta („Bez laktozy”); noun do „✕ alkohol”
     { key: 'caffeine', label: 'Kofeina' },
-    { key: 'pork', label: 'Wieprzowina' }
+    { key: 'pork', label: 'Bez wieprzowiny', noun: 'Wieprzowina' }
   ],
   cosmetic: [
     { key: 'fragrance', label: 'Substancje zapachowe' },
