@@ -16,6 +16,15 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Diety: „Bez mleka i przetworów”, „Pescetariańska”, poprawione „Bez laktozy” (30.10.2026, wersja 3.0.21)
+
+- Nowa dieta „Bez mleka i przetworów”: nie pasuje mleko i każdy przetwór (ser, masło, serwatka, kazeina), także produkty „bez laktozy”. Bez składu: ser i nabiał z kategorii w bazie („to ser (kategoria w bazie)”).
+- „Bez laktozy”: produkt z mleka oznaczony jako bez laktozy (etykieta, „bez laktozy” w nazwie lub składzie, dodana laktaza) teraz pasuje. Dawniej odpadał każdy produkt z mlekiem.
+- Nowa dieta „Pescetariańska”: bez mięsa i żelatyny, ryby i owoce morza dozwolone. Bez składu: mięso i wędliny z kategorii nie pasują, ryby „nie wiemy”.
+- „Mleko kokosowe/owsiane…” i „masło kakaowe” w składzie nie są traktowane jak mleko w dietach bez mleka i bez laktozy.
+- Krótkie podpowiedzi pod nazwami diet (np. „bez mięsa; ryby i owoce morza tak”). Obie nowe diety są też w pierwszym uruchomieniu.
+- Testy: nowe przypadki w `tests/unit-d.cjs`.
+
 ## Zwijane listy alergenów i diet, nazwy „Bez…” (30.10.2026, wersja 3.0.20)
 
 - Na listach wyboru „Bez wieprzowiny” i „Bez alkoholu” (jak „Bez laktozy”) zamiast „Wieprzowina” i „Alkohol”. W podsumowaniach zostaje rzeczownik („✕ wieprzowina”, „Nie jem: alkohol”) – pole `noun` w `PROFILE_OPTIONS`.

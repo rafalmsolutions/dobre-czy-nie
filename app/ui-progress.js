@@ -146,7 +146,7 @@
           const al = PROFILE_OPTIONS.allergens.filter(o => p.allergens.includes(o.key)).map(o => o.label);
           const di = PROFILE_OPTIONS.diet.filter(o => p.diet.includes(o.key)).map(o => o.label).concat(PROFILE_OPTIONS.avoid.filter(o => p.avoid.includes(o.key)).map(o => o.label));
           return A.foldHtml('Alergeny', al, PROFILE_OPTIONS.allergens.map(o => ckRow('allergens', o.key, o.label, p.allergens.includes(o.key))).join(''), !al.length)
-            + A.foldHtml('Dieta', di, PROFILE_OPTIONS.diet.map(o => ckRow('diet', o.key, o.label, p.diet.includes(o.key))).join('') + PROFILE_OPTIONS.avoid.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key))).join(''), !di.length); })()}
+            + A.foldHtml('Dieta', di, PROFILE_OPTIONS.diet.map(o => ckRow('diet', o.key, o.label, p.diet.includes(o.key), o.hint)).join('') + PROFILE_OPTIONS.avoid.map(o => ckRow('avoid', o.key, o.label, p.avoid.includes(o.key))).join(''), !di.length); })()}
         <h3 class="pf-sh">Własne składniki</h3>
         <div class="inline-form"><input id="customInput" class="field" maxlength="40" placeholder="np. czosnek, kakao" autocomplete="off" aria-label="Nazwa składnika"><button class="btn btn-dark btn-sm" type="button" data-act="add-custom">Dodaj</button></div>
         <p class="msg" id="customMsg" role="status"></p><div class="pchips" id="customChips"></div>

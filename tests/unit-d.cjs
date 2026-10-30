@@ -167,6 +167,30 @@ ok(D.normalizeProduct({ code: '5900000000017', product_name: 'X' }, 'off').qchg 
   const m = M(N({ fat_100g: 0, carbohydrates_100g: 0, salt_100g: 0.01, proteins_100g: 0 }), { watch: ['sugar', 'satfat'] });
   const rows = m.rows.filter(r => r.watch === 'sugar' || r.watch === 'satfat' || /cukr|nasyc/i.test(r.title || ''));
   ok(m.rows.some(r => /wyliczone: węglowodany 0 g/.test(r.value || '')) && m.rows.some(r => /wyliczone: tłuszcz 0 g/.test(r.value || '')), 'rachunek: przy wartości podpis „wyliczone: …” (' + rows.map(r => r.value).join(' | ') + ')'); }
+// 3.0.21: „Bez mleka i przetworów”, poprawione „Bez laktozy”, „Pescetariańska”.
+{ const I = (name, ing, extra) => P(Object.assign({ product_name_pl: name, ingredients_text_pl: ing }, extra || {}));
+  const st = (prod, diet) => M(prod, { diet: [diet] }).status;
+  const milkLF = I('Mleko bez laktozy 2%', 'mleko, enzym laktaza', { labels_tags: ['en:lactose-free'], allergens_tags: ['en:milk'] });
+  const milkLFtext = I('Jogurt naturalny bez laktozy', 'mleko, kultury bakterii, laktaza', { allergens_tags: ['en:milk'] });
+  const cheese = I('Ser gouda', 'mleko, sól, podpuszczka', { allergens_tags: ['en:milk'] });
+  const coco = I('Deser kokosowy', 'mleko kokosowe 80%, cukier, skrobia');
+  const choc = I('Czekolada gorzka 90%', 'miazga kakaowa, masło kakaowe, cukier');
+  const whey = I('Baton proteinowy', 'izolat białek serwatkowych, kakao');
+  ok(st(milkLF, 'lactose') !== 'fail' && st(milkLFtext, 'lactose') !== 'fail', 'bez laktozy: mleko i jogurt „bez laktozy” pasują (etykieta, nazwa, laktaza)');
+  ok(st(cheese, 'lactose') === 'fail', 'bez laktozy: zwykły ser nadal nie pasuje');
+  ok(st(milkLF, 'nomilk') === 'fail' && st(milkLFtext, 'nomilk') === 'fail' && st(cheese, 'nomilk') === 'fail' && st(whey, 'nomilk') === 'fail', 'bez mleka: mleko bez laktozy, jogurt, ser, serwatka – nie pasują');
+  ok(st(coco, 'nomilk') !== 'fail' && st(choc, 'nomilk') !== 'fail' && st(coco, 'lactose') !== 'fail', 'bez mleka / bez laktozy: „mleko kokosowe” i „masło kakaowe” to nie mleko');
+  ok(M(cheese, { diet: ['nomilk'] }).match.fails[0].why === 'zawiera mleko lub jego przetwory', 'bez mleka: powód „zawiera mleko lub jego przetwory”');
+  const noIngCheese = P({ product_name_pl: 'Ser', ingredients_text_pl: '', categories_hierarchy: ['en:dairies', 'en:cheeses'] });
+  ok(M(noIngCheese, { diet: ['nomilk'] }).match.fails.some(f => f.why === 'to ser (kategoria w bazie)'), 'bez mleka: ser bez składu – „to ser (kategoria w bazie)”');
+  const tuna = I('Tuńczyk w sosie własnym', 'tuńczyk, woda, sól', { ingredients_analysis_tags: ['en:non-vegetarian'] });
+  const ham = I('Szynka', 'mięso wieprzowe 90%, sól');
+  const gummy = I('Żelki', 'cukier, syrop glukozowy, żelatyna wieprzowa');
+  ok(st(tuna, 'pescetarian') !== 'fail' && st(tuna, 'vegetarian') === 'fail', 'pescetariańska: tuńczyk pasuje (wegetariańska – nie)');
+  ok(st(ham, 'pescetarian') === 'fail' && st(gummy, 'pescetarian') === 'fail', 'pescetariańska: szynka i żelki z żelatyną nie pasują');
+  const noIngFish = P({ product_name_pl: 'Łosoś wędzony', ingredients_text_pl: '', categories_hierarchy: ['en:seafood', 'en:fishes'] });
+  const noIngSausage = P({ product_name_pl: 'Kiełbasa', ingredients_text_pl: '', categories_hierarchy: ['en:meats', 'en:prepared-meats', 'en:sausages'] });
+  ok(st(noIngFish, 'pescetarian') === 'unknown' && st(noIngSausage, 'pescetarian') === 'fail', 'pescetariańska bez składu: ryba „nie wiemy”, kiełbasa „nie pasuje” (kategoria)'); }
 // 3.0.16: znak ℮ w gramaturze.
 { const q = v => P({ quantity: v }).quantity;
   ok(q('400 g e') === '400 g' && q('400 g ℮') === '400 g' && q('℮ 750 ml') === '750 ml' && q('1 l e') === '1 l', 'gramatura bez ℮/„e” (' + [q('400 g e'), q('400 g ℮'), q('℮ 750 ml'), q('1 l e')].join(' | ') + ')');

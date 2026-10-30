@@ -421,13 +421,14 @@ const ANIMAL_CATS = [
   ['ryba lub owoce morza', ['en:fishes', 'en:seafood', 'en:fishes-and-their-products', 'en:canned-fishes']], ['jajka', ['en:eggs', 'en:chicken-eggs']],
   ['nabiał', ['en:dairies', 'en:milks', 'en:yogurts', 'en:butters', 'en:creams', 'en:quarks', 'en:fermented-milk-products', 'en:dairy-desserts']]];
 const VEGAN_ONLY_CATS = [['miód', ['en:honeys']]];
-function animalCategory(prod, vegan) {
+function animalCategory(prod, vegan, only) {
   const cats = (prod.categories || []).filter(c => typeof c === 'string');
   const labels = new Set(prod.labels || []), analysis = new Set(prod.analysis || []);
   if (cats.some(c => /plant-based|vegan|substitute|alternative/.test(c))) return '';
   if (labels.has('en:vegan') || analysis.has('en:vegan') || (!vegan && labels.has('en:vegetarian'))) return '';
   // Wegetarianie jedzą nabiał, sery i jajka – dla nich liczy się tylko mięso, wędlina i ryba.
-  const rules = vegan ? ANIMAL_CATS.concat(VEGAN_ONLY_CATS) : ANIMAL_CATS.filter(([n]) => !['ser', 'jajka', 'nabiał'].includes(n));
+  let rules = vegan ? ANIMAL_CATS.concat(VEGAN_ONLY_CATS) : ANIMAL_CATS.filter(([n]) => !['ser', 'jajka', 'nabiał'].includes(n));
+  if (only) rules = ANIMAL_CATS.filter(([n]) => only.includes(n)); // 3.0.21: wybrane grupy (bez mleka: ser, nabiał; pescetarianie: mięso, wędlina)
   const hit = rules.find(([, tags]) => tags.some(t => cats.includes(t)));
   return hit ? hit[0] : '';
 }
@@ -468,6 +469,9 @@ function matchProfile(prod, an, profile) {
     const animal = hasWord(mainText, MEAT_WORDS), fishy = hasWord(mainText, PROFILE_OPTIONS.allergens.find(x => x.key === 'fish').words);
     const milky = tags.has('en:milk') || hasWord(mainText, PROFILE_OPTIONS.allergens.find(x => x.key === 'milk').words);
     const eggy = tags.has('en:eggs') || hasWord(mainText, PROFILE_OPTIONS.allergens.find(x => x.key === 'eggs').words);
+    // 3.0.21: diety „bez mleka” i „bez laktozy”: „mleko kokosowe/owsiane…” i „masło kakaowe” to nie mleko krowie.
+    const mainNoPlant = mainText.replace(/ mle(ko|ka|czko|czka) (kokos|owsian|sojow|migdal|ryzow|roslin|orzech|z owsa|z soi|z migdal)[a-z]*/g, ' ').replace(/ masl[oa] (kakaow|shea|orzech)[a-z]*/g, ' ');
+    const milkyNoPlant = tags.has('en:milk') || hasWord(mainNoPlant, PROFILE_OPTIONS.allergens.find(x => x.key === 'milk').words);
     p.diet.forEach(k => {
       if (k === 'vegan') {
         if (analysis.has('en:non-vegan') || animal || fishy || milky || eggy || hasWord(mainText, ['miod'])) fail('Wegańska', 'zawiera składniki odzwierzęce');
@@ -479,9 +483,24 @@ function matchProfile(prod, an, profile) {
         else if (analysis.has('en:vegetarian') || analysis.has('en:vegan') || labels.has('en:vegetarian') || labels.has('en:vegan')) { }
         else if (!hasIng && animalCategory(prod, false)) fail('Wegetariańska', `to ${animalCategory(prod, false)} (kategoria w bazie)`);
         else unknown('Wegetariańska');
+      } else if (k === 'pescetarian') {
+        // 3.0.21: bez mięsa (i żelatyny), ryby i owoce morza dozwolone. Ze składem bez mięsa – pasuje; bez składu – kategoria albo „nie wiemy”.
+        if (animal) fail('Pescetariańska', 'zawiera mięso lub żelatynę');
+        else if (hasIng || analysis.has('en:vegetarian') || analysis.has('en:vegan') || labels.has('en:vegetarian') || labels.has('en:vegan')) { }
+        else if (animalCategory(prod, false, ['mięso', 'wędlina'])) fail('Pescetariańska', `to ${animalCategory(prod, false, ['mięso', 'wędlina'])} (kategoria w bazie)`);
+        else unknown('Pescetariańska');
+      } else if (k === 'nomilk') {
+        // 3.0.21: mleko i każdy przetwór (ser, masło, serwatka, kazeina, laktoza) – także produkty „bez laktozy”. Mleka roślinne to nie mleko.
+        if (analysis.has('en:vegan') || labels.has('en:vegan')) { }
+        else if (milkyNoPlant || hasWord(mainNoPlant, ['laktoz'])) fail('Bez mleka i przetworów', 'zawiera mleko lub jego przetwory');
+        else if (!hasIng && animalCategory(prod, false, ['ser', 'nabiał'])) fail('Bez mleka i przetworów', `to ${animalCategory(prod, false, ['ser', 'nabiał'])} (kategoria w bazie)`);
+        else if (!allergenDataKnown) unknown('Bez mleka i przetworów');
       } else if (k === 'lactose') {
-        if (labels.has('en:lactose-free') || labels.has('en:no-lactose')) { }
-        else if (milky || hasWord(mainText, ['laktoz'])) fail('Bez laktozy', 'zawiera mleko lub laktozę');
+        // 3.0.21: produkt z mleka, ale oznaczony „bez laktozy” (etykieta, nazwa, skład, dodana laktaza) – pasuje. Dawniej każdy produkt z mlekiem odpadał.
+        const lfText = fold((prod.name || '') + ' ' + ing);
+        const lactoseFree = labels.has('en:lactose-free') || labels.has('en:no-lactose') || /bez ?laktoz|nie zawiera laktozy|bezlaktoz|laktoza\s*[<≤]/.test(lfText) || hasWord(mainText, ['laktaz']);
+        if (lactoseFree) { }
+        else if (milkyNoPlant || hasWord(mainNoPlant, ['laktoz'])) fail('Bez laktozy', 'zawiera mleko lub laktozę');
         else if (!allergenDataKnown) unknown('Bez laktozy');
       } else dietRule(k);
     });

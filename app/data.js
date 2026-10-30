@@ -284,8 +284,10 @@ const PROFILE_OPTIONS = {
   diet: [
     { key: 'vegan', label: 'Wegańska' },
     { key: 'vegetarian', label: 'Wegetariańska' },
+    { key: 'pescetarian', label: 'Pescetariańska', hint: 'bez mięsa; ryby i owoce morza tak' }, // 3.0.21
     { key: 'glutenfree', label: 'Bezglutenowa' },
-    { key: 'lactose', label: 'Bez laktozy' },
+    { key: 'nomilk', label: 'Bez mleka i przetworów', hint: 'także ser, masło, serwatka, kazeina' }, // 3.0.21
+    { key: 'lactose', label: 'Bez laktozy', hint: 'produkty bez laktozy z mleka pasują' },
     { key: 'lowsodium', label: 'Niskosodowa' },
     { key: 'lowcarb', label: 'Niskowęglowodanowa (keto)' },
     { key: 'diabetes', label: 'Dla osób z cukrzycą', approx: true },
@@ -525,7 +527,7 @@ const HOME_TILES = [
 ];
 
 /* Wersja D: „Nie jem” to tylko twarde wykluczenia. Reszta dawnych „unikam” i diet jest na liście „Pilnuję”. */
-PROFILE_OPTIONS.diet = PROFILE_OPTIONS.diet.filter(o => ['vegan', 'vegetarian', 'glutenfree', 'lactose'].includes(o.key));
+PROFILE_OPTIONS.diet = PROFILE_OPTIONS.diet.filter(o => ['vegan', 'vegetarian', 'pescetarian', 'glutenfree', 'nomilk', 'lactose'].includes(o.key));
 PROFILE_OPTIONS.avoid = PROFILE_OPTIONS.avoid.filter(o => ['pork', 'alcohol'].includes(o.key));
 
 /* Wersja D: dodatkowe kategorie ze zdjęciami (strony albumu i listy „Najlepsze”). */

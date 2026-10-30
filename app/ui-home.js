@@ -4,7 +4,7 @@
   const A = App, esc = A.esc;
 
   /* ---------- Start: 3 kroki (wersja D: cele to skróty do listy „Pilnuję”) ---------- */
-  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'glutenfree'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
+  const QUICK_AVOID = [['allergens', 'gluten'], ['allergens', 'milk'], ['allergens', 'nuts'], ['allergens', 'peanuts'], ['allergens', 'eggs'], ['diet', 'vegan'], ['diet', 'vegetarian'], ['diet', 'pescetarian'], ['diet', 'glutenfree'], ['diet', 'nomilk'], ['diet', 'lactose'], ['avoid', 'pork'], ['avoid', 'alcohol']];
   let step = 1, draft = null, msg = '';
 
   /* 3.0.13: zaproszenie do testów w Google Play – tylko Android w zwykłej przeglądarce. Aplikację z Play (TWA) poznajemy
@@ -43,7 +43,7 @@
   A.foldHtml = (title, names, rows, open) => `<details class="pf-fold"${open ? ' open' : ''}><summary><span class="grow"><b>${esc(title)}</b><small class="fold-sum">${esc(A.foldSum(names))}</small></span><svg class="fold-arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="rows">${rows}</div></details>`;
   A.foldSync = el => { const d = el && el.closest && el.closest('.pf-fold'); if (!d) return; const s = d.querySelector('.fold-sum');
     if (s) s.textContent = A.foldSum([...d.querySelectorAll('.ck-in:checked')].map(c => c.closest('.ck-row').querySelector('b').textContent)); };
-  const pickRow = (key, on, label) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b></span><input class="ck-in" type="checkbox" data-pick="${key}"${on ? ' checked' : ''}>${CK}</label>`;
+  const pickRow = (key, on, label, hint) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b>${hint ? `<small>${esc(hint)}</small>` : ''}</span><input class="ck-in" type="checkbox" data-pick="${key}"${on ? ' checked' : ''}>${CK}</label>`;
   const pickSum = picks => QUICK_AVOID.filter(([g, k]) => picks[g + ':' + k]).map(([g, k]) => (g === 'diet' ? '' : '✕ ') + (opt(g, k).noun || opt(g, k).label).toLowerCase()).join(' · ') || 'bez ustawień';
   const total = () => draft.fam ? 4 : 3;
   const readPicks = () => A.$('scr-start').querySelectorAll('.ob-main [data-pick]').forEach(i => { draft.picks[i.dataset.pick] = i.checked; });
@@ -74,7 +74,7 @@
       if (draft.goals.length) next = `Dalej (${draft.goals.length} ${plural(draft.goals.length, 'cel', 'cele', 'celów')})`;
     } else if (step === 3) {
       const inGroup = g => QUICK_AVOID.filter(q => q[0] === g || (g === 'diet' && q[0] === 'avoid'));
-      const rowsOf = g => inGroup(g).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label)).join('');
+      const rowsOf = g => inGroup(g).map(([gg, k]) => pickRow(gg + ':' + k, draft.picks[gg + ':' + k], opt(gg, k).label, opt(gg, k).hint)).join('');
       const namesOf = g => inGroup(g).filter(([gg, k]) => draft.picks[gg + ':' + k]).map(([gg, k]) => opt(gg, k).label);
       body = `<h1 id="startTitle" class="ob-h" tabindex="-1">Czego nie jesz?</h1>
         <p class="small muted ob-p">Produkt, który to zawiera, oznaczymy „Nie pasuje”. Możesz nic nie zaznaczać.</p>
