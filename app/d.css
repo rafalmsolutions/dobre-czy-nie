@@ -1107,3 +1107,8 @@ div.ob-person{cursor:default}
 .pf-fold > summary:focus-visible{outline:3px solid var(--ink);outline-offset:2px;border-radius:16px}
 .pf-fold > .rows{padding:0 6px 6px}
 @media (prefers-reduced-motion:reduce){.pf-fold .fold-arr{transition:none}}
+/* 3.0.27: „Skąd kolory?” pod tabelą wartości odżywczych – zwinięte */
+.nut-why > summary{display:inline-flex;align-items:center;gap:6px;min-height:32px;cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.nut-why > summary::-webkit-details-marker{display:none}
+.nut-why > summary::before{content:"i";display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font-size:11px;font-weight:800;font-style:normal;text-decoration:none}
+.nut-why > p{margin:4px 0 0;color:var(--muted);line-height:1.4}

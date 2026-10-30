@@ -1,6 +1,7 @@
 // 3.0.19: brakujące wartości odżywcze wyliczone z innych – widać je w tabeli i w rachunku z podpisem „wyliczone: …”.
 import { chromium } from 'playwright';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { setup } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
@@ -27,5 +28,10 @@ await go('#/p/' + WATER);
 const nut2 = (await page.innerText('table.nut').catch(() => '')).replace(/\s+/g, ' ');
 ok(/Sól.*0,01 g wyliczone: sód 0,004 g/.test(nut2) && /nasycone.*wyliczone: tłuszcz 0 g/.test(nut2), 'woda, tabela: sól z sodu, nasycone z tłuszczu (' + nut2 + ')');
 ok(/Wartości „wyliczone” nie są wpisane w bazie/.test(await page.innerText('#scr-product')), 'objaśnienie pod tabelą');
+// 3.0.27: „Skąd kolory?” zwinięte; po stuknięciu wyjaśnienie o progach z Wielkiej Brytanii.
+ok(!/Wielkiej Brytanii/.test(await page.innerText('#scr-product')) && await page.locator('details.nut-why:not([open]) summary', { hasText: 'Skąd kolory?' }).count() === 1, '„Skąd kolory?” zwinięte, bez długiego zdania');
+await page.locator('details.nut-why summary').scrollIntoViewIfNeeded(); await page.click('details.nut-why summary'); await page.waitForTimeout(150);
+ok(/w Polsce nie ma oficjalnych progów kolorów/.test(await page.innerText('details.nut-why')), 'po stuknięciu: skąd progi i dlaczego Wielka Brytania');
+const card = page.locator('.card', { has: page.locator('table.nut') }); await card.screenshot({ path: fileURLToPath(new URL('./shots/skad-kolory.png', import.meta.url)) });
 ok(!errs.length, 'brak błędów JS ' + errs.join(' | '));
 await b.close(); process.exit(bad ? 1 : 0);
