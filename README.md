@@ -16,6 +16,13 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Prośba o aparat i mikrofon przy pierwszym uruchomieniu (05.11.2026, wersja 3.0.31)
+- Na Androidzie po ekranie powitalnym (i raz u osób, które już mają aplikację) pojawia się arkusz „Zezwól Lupce na aparat i mikrofon”.
+  „Zezwól” wywołuje prawdziwe okienka zgody (Android dla przeglądarki i strona) dla obu naraz; „Nie teraz” zamyka. Pokazywany raz (`d-perm-asked`),
+  tylko gdy zgody jeszcze nie ma.
+- Gdy telefon odmawia bez pytania (zgoda zablokowana wcześniej dla Chrome), arkusz wyjaśnia to i podaje 3 kroki w ustawieniach – strona tego nie obejdzie.
+- Test: `tests/e2e-d-camperm.mjs` (część 8).
+
 ## Aparat: „Włącz aparat” tylko migał (05.11.2026, wersja 3.0.30)
 - Na Androidzie, gdy telefon nie daje aparatu przeglądarce (Chrome), odmowa przychodzi od razu, bez pytania, a strona widzi stan „prompt”.
   Wtedy „Włącz aparat” tylko migał. Teraz odmowa szybsza niż 0,6 s albo druga odmowa po „Włącz aparat” od razu pokazuje

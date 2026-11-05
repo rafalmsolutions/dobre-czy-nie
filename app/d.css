@@ -1122,3 +1122,12 @@ div.ob-person{cursor:default}
 .scan-err-acts .cam-shot{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6)}
 .scan-err-acts .cam-shot svg{width:20px;height:20px}
 .scan-bottom .filebtn[hidden]{display:none}
+/* 3.0.31: prośba o zgody na aparat i mikrofon */
+.perm-sheet{gap:10px}
+.perm-rows{display:grid;gap:10px;margin:6px 0}
+.perm-row{display:flex;align-items:center;gap:12px}
+.perm-row b{display:block}.perm-row small{color:var(--muted)}
+.perm-ic{width:44px;height:44px;border-radius:14px;background:#F1F2F3;display:grid;place-items:center;flex:0 0 auto}
+.perm-ic svg{width:22px;height:22px}
+.perm-steps{margin:0;padding-left:22px;display:grid;gap:6px}
+.perm-sheet .linkbtn{align-self:center}

@@ -139,6 +139,7 @@
       draft = null; step = 1;
       document.body.classList.remove('sheet-open');
       A.go('#/');
+      setTimeout(() => A.permOffer && A.permOffer(), 700); // 3.0.31: zgody na aparat i mikrofon zaraz po ekranie powitalnym
     }
   }
   const focusTitle = () => { const t = A.$('startTitle'); if (t) t.focus(); };

@@ -866,6 +866,57 @@ const App = {};
     const t = A.$('toast'); if (t) t.hidden = true;
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') camRecheck(); });
+  /* 3.0.31: prośba o zgody przy pierwszym uruchomieniu na Androidzie: jedno stuknięcie „Zezwól” wywołuje prawdziwe okienka zgody
+     (Android dla przeglądarki i strona) na aparat i mikrofon naraz. Pokazywana raz (d-perm-asked), gdy zgody jeszcze nie ma.
+     Gdy telefon odmawia bez pytania (zgoda zablokowana wcześniej), zostają kroki w ustawieniach – tego strona nie obejdzie. */
+  const MIC_IC = '<svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+  async function permState(name) { try { return (await navigator.permissions.query({ name })).state; } catch (e) { return 'unknown'; } }
+  function permSheet(html) {
+    let w = A.$('permSheet');
+    if (!w) { w = document.createElement('div'); w.id = 'permSheet'; document.body.appendChild(w); }
+    w.innerHTML = `<div class="ls-dim" data-act="perm-later"></div><div class="ls-sheet perm-sheet" role="dialog" aria-modal="true" aria-labelledby="permT"><span class="ls-grab" aria-hidden="true"></span>${html}</div>`;
+    document.body.classList.add('sheet-open');
+    setTimeout(() => { const b = w.querySelector('[data-act=perm-allow],[data-act=perm-later].btn'); if (b) b.focus(); }, 40);
+  }
+  A.permClose = () => { const w = A.$('permSheet'); if (w) w.remove(); document.body.classList.remove('sheet-open'); };
+  A.permOffer = async force => {
+    if (!force) {
+      if (!isAndroid || !A.store.get('onboarded', false) || A.store.get('d-perm-asked', false) || A.$('permSheet')) return;
+      if (!A.$('scanner').hidden || (A.current && A.current.screen === 'start')) return;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+      if (await permState('camera') === 'granted' && await permState('microphone') === 'granted') return;
+    }
+    permSheet(`<h2 id="permT">Zezwól Lupce na aparat i mikrofon</h2>
+      <div class="perm-rows"><div class="perm-row"><span class="perm-ic"><svg><use href="#i-scan"/></svg></span><span><b>Aparat</b><small>skanowanie kodów i zdjęcie składu</small></span></div>
+      <div class="perm-row"><span class="perm-ic">${MIC_IC}</span><span><b>Mikrofon</b><small>dyktowanie listy zakupów</small></span></div></div>
+      <p class="small muted">Telefon zapyta o zgodę – wybierz „Zezwól” albo „Podczas używania aplikacji”. Obraz i dźwięk nie są nigdzie zapisywane ani wysyłane.</p>
+      <button class="btn btn-dark btn-block" type="button" data-act="perm-allow">Zezwól</button>
+      <button class="linkbtn" type="button" data-act="perm-later">Nie teraz</button>`);
+  };
+  A.permAllow = async () => {
+    A.store.set('d-perm-asked', true);
+    const t0 = Date.now(); let st = null, err = null;
+    try { st = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); }
+    catch (e) {
+      err = e;
+      // Bez mikrofonu w telefonie: sam aparat.
+      if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) { try { st = await navigator.mediaDevices.getUserMedia({ video: true }); err = null; } catch (e2) { err = e2; } }
+    }
+    if (st) { st.getTracks().forEach(t => t.stop()); A.permClose(); A.toast('Gotowe. Możesz skanować i dyktować.'); return; }
+    const instant = Date.now() - t0 < 600;
+    if (err && err.name === 'NotAllowedError' && (instant || /system/i.test(err.message || ''))) {
+      const br = A.browserName();
+      permSheet(`<h2 id="permT">Telefon nie pozwala zapytać o zgodę</h2>
+        <p class="small muted">Wcześniej odmówiono przeglądarce ${A.esc(br)}, w której działa Lupka, dostępu do aparatu lub mikrofonu, więc Android blokuje pytanie. Włącz to raz:</p>
+        <ol class="small perm-steps"><li>Ustawienia telefonu → Aplikacje → ${A.esc(br)}.</li><li>Uprawnienia → Aparat i Mikrofon → „Zezwalaj tylko podczas używania aplikacji”.</li><li>Wróć do Lupki.</li></ol>
+        <button class="btn btn-dark btn-block" type="button" data-act="perm-allow">Sprawdź ponownie</button>
+        <button class="linkbtn" type="button" data-act="perm-later">Nie teraz</button>`);
+      return;
+    }
+    A.permClose(); A.toast('Bez zgody na aparat możesz wpisać cyfry spod kodu. Zgodę dasz też przy skanowaniu.');
+  };
+  window.addEventListener('load', () => setTimeout(() => A.permOffer(), 1500));
+
   A.openScanner = async (retry) => {
     if (!retry) scanReturn = document.activeElement;
     A.$('scanErrSteps').hidden = true; A.$('camRetry').hidden = true; A.$('camShotBtn').hidden = true; A.$('codePhoto').parentElement.hidden = false;
