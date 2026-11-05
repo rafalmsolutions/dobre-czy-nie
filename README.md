@@ -16,6 +16,26 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Prostszy dostęp do aparatu w skanerze (05.11.2026, wersja 3.0.28)
+- Po instalacji skaner pokazywał „Nie mamy dostępu do aparatu” i odsyłał do ustawień przeglądarki. Teraz są trzy jasne przypadki:
+  - pytanie o aparat zamknięte albo odrzucone raz → „Lupka potrzebuje aparatu” i jeden przycisk **Włącz aparat** (pyta ponownie);
+  - aparat zablokowany na stałe → „Aparat jest zablokowany dla Lupki” i 3 krótkie kroki dla tego telefonu (aplikacja z Google Play:
+    przytrzymaj ikonę → „Ustawienia witryny” → Aparat; Chrome na Androidzie: ikona obok adresu; iPhone: Ustawienia → Safari → Aparat);
+    przeglądarki nie pytamy na próżno;
+  - aparat zajęty przez inną aplikację → „Aparat jest teraz niedostępny” i **Spróbuj ponownie**.
+- Gdy uprawnienie zmieni się w ustawieniach (zdarzenie Permissions API albo powrót do aplikacji), skaner włącza się sam.
+- **Zrób zdjęcie kodu** (`input capture="environment"`) otwiera aparat telefonu – działa także, gdy aparat jest zablokowany dla strony.
+  Dolny przycisk „Zdjęcie kodu” (galeria) jest wtedy schowany, żeby nie było dwóch podobnych przycisków.
+- Aplikacja z Google Play działa wewnątrz przeglądarki (zwykle Chrome) i to ona musi mieć zgodę Androida na aparat. Gdy jej nie ma
+  („Permission denied by system” albo odmowa mimo zgody strony), skaner pokazuje „Chrome nie ma dostępu do aparatu” i kroki:
+  Ustawienia telefonu → Aplikacje → Chrome → Uprawnienia → Aparat. Wtedy zamiast aparatu telefonu zostaje wybór zdjęcia z galerii.
+- „Zdjęcie składu” i inne przyciski „Zrób zdjęcie” (input capture) bez zgody Androida po cichu nic nie robiły. Teraz, gdy po 2 s
+  aparat się nie otworzy (strona nie straciła fokusu ani widoczności), pojawia się podpowiedź z tymi krokami i przycisk
+  **Wybierz z galerii** (ten sam wybór pliku bez wymuszonego aparatu).
+- Przy błędzie aparatu nie ustawiamy fokusu na polu kodu (nie wyskakuje klawiatura).
+- Aplikację z Play rozpoznajemy po `document.referrer` `android-app://app.lupka` (zapis w sessionStorage `dcn-twa`).
+- Test: `tests/e2e-d-camperm.mjs`.
+
 ## „Skąd kolory?” pod tabelą wartości (30.10.2026, wersja 3.0.27)
 
 - Zamiast stałego zdania „Kolory według progów z etykiet w Wielkiej Brytanii…” pod tabelą wartości odżywczych jest zwinięty link „ⓘ Skąd kolory?”. Po stuknięciu: co znaczą kolory i dlaczego progi są z Wielkiej Brytanii (w Polsce nie ma oficjalnych progów kolorów), z przykładem dla soli.

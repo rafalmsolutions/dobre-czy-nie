@@ -1112,3 +1112,13 @@ div.ob-person{cursor:default}
 .nut-why > summary::-webkit-details-marker{display:none}
 .nut-why > summary::before{content:"i";display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font-size:11px;font-weight:800;font-style:normal;text-decoration:none}
 .nut-why > p{margin:4px 0 0;color:var(--muted);line-height:1.4}
+/* 3.0.28: aparat zablokowany – przyciski „Włącz aparat” / „Zrób zdjęcie kodu” i kroki odblokowania */
+.scan-err{max-width:360px;background:rgba(20,20,22,.82);color:#fff}
+.scan-err strong{font-size:1.1rem}
+.scan-err p{margin:0;color:rgba(255,255,255,.88)}
+.scan-err .scan-steps{margin:0;padding-left:22px;text-align:left;display:grid;gap:6px;color:#fff}
+.scan-err-acts{display:grid;gap:10px}
+.scan-err-acts .btn{width:100%;justify-content:center;min-height:48px}
+.scan-err-acts .cam-shot{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6)}
+.scan-err-acts .cam-shot svg{width:20px;height:20px}
+.scan-bottom .filebtn[hidden]{display:none}

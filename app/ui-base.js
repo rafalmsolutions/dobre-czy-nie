@@ -785,18 +785,110 @@ const App = {};
 
   /* ---------- Skaner ---------- */
   let stream = null, scanning = false, detector = null, lastCand = null, sameCount = 0, canvas = null, zxReader = null, scanReturn = null, scanStart = 0, hinted = false;
-  A.openScanner = async () => {
-    scanReturn = document.activeElement;
+  /* 3.0.28: dostęp do aparatu. Po odmowie (albo zamknięciu pytania) jeden przycisk „Włącz aparat” pyta ponownie; gdy aparat
+     jest zablokowany, krótkie kroki dla tego telefonu. Gdy uprawnienie się zmieni (np. po powrocie z ustawień), skaner rusza sam.
+     Obejście bez uprawnienia strony: „Zrób zdjęcie kodu” otwiera aparat telefonu (input capture). */
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  try { if (/^android-app:\/\/app\.lupka/.test(document.referrer)) sessionStorage.setItem('dcn-twa', '1'); } catch (e) { }
+  const isTWA = () => { try { return sessionStorage.getItem('dcn-twa') === '1'; } catch (e) { return false; } };
+  const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  let camPerm = null;
+  async function cameraState() {
+    try { if (!camPerm && navigator.permissions && navigator.permissions.query) camPerm = await navigator.permissions.query({ name: 'camera' }); } catch (e) { camPerm = null; }
+    if (camPerm && !camPerm.__lupka) { camPerm.__lupka = true; camPerm.addEventListener('change', camRecheck); }
+    return camPerm ? camPerm.state : 'unknown';
+  }
+  // Przeglądarka, przez którą działa Lupka (w aplikacji z Play to ona ma uprawnienie Androida do aparatu).
+  A.browserName = () => /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /EdgA/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /OPR|Opera/.test(ua) ? 'Opera' : 'Chrome';
+  A.isAndroid = isAndroid;
+  // Aparat zablokowany w Androidzie dla samej przeglądarki (wtedy strona nawet nie pyta).
+  A.camSystemSteps = () => [`Otwórz Ustawienia telefonu → Aplikacje → ${A.browserName()}.`, 'Uprawnienia → Aparat → „Zezwalaj tylko podczas używania aplikacji”.', 'Wróć do Lupki i stuknij „Sprawdź ponownie”.'];
+  A.camSteps = () => {
+    if (isTWA() || (isAndroid && standalone())) return ['Przytrzymaj palcem ikonę Lupki na ekranie telefonu.', 'Wybierz „Ustawienia witryny” (Site settings).', 'Aparat → Zezwalaj. Wróć do Lupki – skaner włączy się sam.'];
+    if (isAndroid) return ['Stuknij ikonę po lewej stronie adresu strony (nad stroną).', 'Uprawnienia → Aparat → Zezwalaj.', 'Wróć tutaj – skaner włączy się sam.'];
+    if (isIOS) return ['Otwórz Ustawienia iPhone’a → Aplikacje → Safari → Aparat.', 'Wybierz „Pytaj” albo „Zezwalaj”.', 'Wróć do Lupki i stuknij „Włącz aparat”.'];
+    return ['Kliknij ikonę obok adresu strony.', 'Przy „Aparat” wybierz „Zezwalaj”.', 'Stuknij „Włącz aparat”.'];
+  };
+  function camError(kind) {
+    const steps = A.$('scanErrSteps');
+    A.$('camRetry').hidden = false; A.$('camShotBtn').hidden = false; A.$('codePhoto').parentElement.hidden = kind !== 'system'; // jeden przycisk zdjęcia, nie dwa
+    if (kind === 'denied' || kind === 'system') {
+      scanError(kind === 'system' ? `${A.browserName()} nie ma dostępu do aparatu` : 'Aparat jest zablokowany dla Lupki',
+        kind === 'system' ? `Lupka korzysta z aparatu przez ${A.browserName()}. Włącz go w 3 krokach albo wpisz cyfry spod kodu.` : 'Odblokujesz go w 3 krokach. Do tego czasu zrób zdjęcie kodu albo wpisz cyfry.', true);
+      steps.innerHTML = (kind === 'system' ? A.camSystemSteps() : A.camSteps()).map(t => `<li>${A.esc(t)}</li>`).join(''); steps.hidden = false;
+      if (kind === 'system') A.$('camShotBtn').hidden = true; // aparat telefonu też nie ruszy bez tej zgody
+      A.$('camRetry').textContent = 'Sprawdź ponownie';
+      if (kind === 'system') A.$('camRetry').textContent = 'Sprawdź ponownie';
+    } else if (kind === 'asked') {
+      scanError('Lupka potrzebuje aparatu', 'Tylko do odczytania kodu kreskowego. Obraz nie jest nigdzie zapisywany ani wysyłany. Stuknij „Włącz aparat” i wybierz „Zezwól”.', true);
+      A.$('camRetry').textContent = 'Włącz aparat';
+    } else {
+      scanError('Aparat jest teraz niedostępny', 'Może używa go inna aplikacja. Zamknij ją i stuknij „Spróbuj ponownie” albo zrób zdjęcie kodu.', true);
+      A.$('camRetry').textContent = 'Spróbuj ponownie';
+    }
+    setTimeout(() => A.$('camRetry').focus(), 40);
+  }
+  // Uprawnienie zmieniło się albo wróciliśmy do aplikacji: jeśli skaner czeka na aparat, próbujemy jeszcze raz.
+  async function camRecheck() {
+    if (A.$('scanner').hidden || A.$('scanErr').hidden || stream) return;
+    const st = await cameraState();
+    if (st === 'granted') A.openScanner(true);
+  }
+  /* Przyciski „Zrób zdjęcie” (input capture): gdy Android nie daje przeglądarce aparatu, stuknięcie po cichu nic nie robi.
+     Jeśli po 2 s strona nie straciła widoczności ani fokusu i nie ma pliku, pokazujemy, jak to włączyć, i wybór z galerii. */
+  document.addEventListener('click', e => {
+    const inp = e.target && e.target.closest && e.target.closest('input[type=file][capture]');
+    if (!inp || !isAndroid) return;
+    let moved = false;
+    const mark = () => { moved = true; };
+    window.addEventListener('blur', mark, { once: true });
+    document.addEventListener('visibilitychange', mark, { once: true });
+    inp.addEventListener('change', mark, { once: true }); inp.addEventListener('cancel', mark, { once: true });
+    setTimeout(() => {
+      window.removeEventListener('blur', mark); document.removeEventListener('visibilitychange', mark);
+      if (moved || document.hidden) return;
+      A.lastCaptureInput = inp;
+      A.toast(`Aparat się nie otworzył. Włącz go dla przeglądarki ${A.browserName()}: Ustawienia telefonu → Aplikacje → ${A.browserName()} → Uprawnienia → Aparat → Zezwalaj.`,
+        '<button class="toast-btn" type="button" data-act="photo-gallery">Wybierz z galerii</button>', 12000);
+    }, 2000);
+  }, true);
+  // Ten sam wybór pliku, ale bez wymuszonego aparatu (galeria albo pliki).
+  A.photoFromGallery = () => {
+    const src = A.lastCaptureInput; if (!src) return;
+    const g = document.createElement('input'); g.type = 'file'; g.accept = src.accept || 'image/*'; g.hidden = true;
+    g.addEventListener('change', () => {
+      if (g.files && g.files[0]) { try { const dt = new DataTransfer(); dt.items.add(g.files[0]); src.files = dt.files; src.dispatchEvent(new Event('change', { bubbles: true })); } catch (err) { } }
+      g.remove();
+    });
+    document.body.appendChild(g); g.click();
+    const t = A.$('toast'); if (t) t.hidden = true;
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') camRecheck(); });
+  A.openScanner = async (retry) => {
+    if (!retry) scanReturn = document.activeElement;
+    A.$('scanErrSteps').hidden = true; A.$('camRetry').hidden = true; A.$('camShotBtn').hidden = true; A.$('codePhoto').parentElement.hidden = false;
     document.body.classList.add('scanning'); // paski porównania i nagród nie zasłaniają skanera
     A.$('scanner').hidden = false; A.$('scanErr').hidden = true; A.$('reticle').hidden = false; A.$('torchBtn').hidden = true; A.$('torchSpacer').hidden = false;
     A.$('scanHint').textContent = 'Skieruj aparat na kod kreskowy. Odczyt nastąpi sam.'; A.$('scanMsg').textContent = '';
     document.body.style.overflow = 'hidden';
     setTimeout(() => A.$('scanner').querySelector('[data-act=close-scan]').focus(), 30);
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return scanError('Ta przeglądarka nie daje dostępu do aparatu', 'Wpisz cyfry spod kodu poniżej albo wybierz zdjęcie kodu.');
+    // Zablokowany na stałe: nie pytamy przeglądarki na próżno, od razu kroki.
+    if (await cameraState() === 'denied') return camError('denied');
     try {
-      stream = await openCamera();
+      stopStream(); stream = await openCamera();
     } catch (e) {
-      return scanError('Nie mamy dostępu do aparatu', e && e.name === 'NotAllowedError' ? 'Zezwól na dostęp do aparatu w ustawieniach przeglądarki albo wpisz cyfry spod kodu poniżej.' : 'Nie znaleźliśmy aparatu albo używa go inna aplikacja. Wpisz cyfry spod kodu poniżej.');
+      stream = null;
+      if (A.$('scanner').hidden) return;
+      if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'PermissionDeniedError')) {
+        const st = await cameraState();
+        // „Permission denied by system”: zgoda strony jest, ale Android nie daje aparatu przeglądarce.
+        if (/system/i.test(e.message || '') || (isAndroid && st === 'granted')) return camError('system');
+        return camError(st === 'denied' ? 'denied' : 'asked');
+      }
+      return camError('busy');
     }
     if (A.$('scanner').hidden) { stopStream(); return; }
     const video = A.$('video'); video.srcObject = stream;
@@ -908,10 +1000,10 @@ const App = {};
     A.closeScanner(true);
     A.openCode(code);
   }
-  function scanError(title, text) {
+  function scanError(title, text, noFocus) {
     A.$('reticle').hidden = true; A.$('scanErr').hidden = false;
     A.$('scanErrTitle').textContent = title; A.$('scanErrText').textContent = text; A.$('scanHint').textContent = '';
-    setTimeout(() => A.$('scanCode').focus(), 30);
+    if (!noFocus) setTimeout(() => A.$('scanCode').focus(), 30);
   }
   function stopStream() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
   A.closeScanner = (silent) => {

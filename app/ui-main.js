@@ -27,6 +27,8 @@
     const act = el.dataset.act, cur = A.currentProduct();
     switch (act) {
       case 'scan': A.openScanner(); break;
+      case 'cam-retry': A.openScanner(true); break;
+      case 'photo-gallery': A.photoFromGallery(); break;
       case 'undo-generic': A.undoGeneric(); break;
       case 'close-scan': A.closeScanner(); break;
       case 'back': if (depth > 0) history.back(); else A.go('#/'); break;
@@ -136,6 +138,7 @@
     if (t.dataset.photo) { A.photoChosen(t); return; }
     if (t.dataset.frontPhoto) { A.frontPhoto(t); return; }
     if (t.id === 'ingPhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.runOcr(f); return; }
+    if (t.id === 'codeShot') { const f = t.files && t.files[0]; t.value = ''; if (f) A.decodeImageFile(f); return; }
     if (t.id === 'codePhoto') { const f = t.files && t.files[0]; t.value = ''; if (f) A.decodeImageFile(f); return; }
     if (t.dataset.act === 'item-toggle') { A.shelfAction('item-toggle', t); return; }
     if (t.closest('#profileForm') && t.id !== 'customInput' && t.id !== 'storeAddInput') { A.profAutoSave(); return; }

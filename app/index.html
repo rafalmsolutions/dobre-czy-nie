@@ -80,6 +80,11 @@
   <div class="scan-err" id="scanErr" hidden>
     <strong id="scanErrTitle">Nie mamy dostępu do aparatu</strong>
     <p class="small" id="scanErrText"></p>
+    <ol class="small scan-steps" id="scanErrSteps" hidden></ol>
+    <div class="scan-err-acts">
+      <button class="btn btn-white" type="button" id="camRetry" data-act="cam-retry" hidden>Włącz aparat</button>
+      <span class="btn filebtn cam-shot" id="camShotBtn" hidden><svg><use href="#i-photo"/></svg>Zrób zdjęcie kodu<input type="file" id="codeShot" accept="image/*" capture="environment" aria-label="Zrób zdjęcie kodu kreskowego aparatem telefonu"></span>
+    </div>
   </div>
   <div class="scan-bottom">
     <p id="scanHint">Skieruj aparat na kod kreskowy. Odczyt nastąpi sam.</p>
