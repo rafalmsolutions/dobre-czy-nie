@@ -6,7 +6,7 @@ import { setup, C } from './lib.mjs';
 const SH = process.env.SHOTS;
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 await ctx.route(/proxy\.test\/(category|search|details)/, r => r.fulfill({ json: { ok: true, products: [] } }));
 // Skyr bez składu (jak Pilos): są wartości odżywcze i Nutri-Score, brak składu i NOVA
 await ctx.route(new RegExp('openfoodfacts\\.org/api/v2/product/' + C.missing2), r => r.fulfill({ json: { status: 1, product: { code: C.missing2, product_name_pl: 'Skyr 0% tłuszczu', brands: 'Pilos', nutriscore_grade: 'a',

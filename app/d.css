@@ -1143,3 +1143,14 @@ div.ob-person{cursor:default}
 .sgroup .sitem .x{width:32px;margin-left:-4px;position:relative}
 .sgroup .sitem .x::after{content:"";position:absolute;inset:0 -4px}
 .sgroup .sitem .qtybtn{min-width:52px;justify-content:center;padding:0 6px 0 10px}
+/* 3.0.34: karta „Zaproś do testów” w Profilu i odznaki testerów */
+.inv-card{background:#fff;border-radius:22px;padding:16px;display:grid;gap:10px;margin-bottom:6px}
+.inv-card .inv-tag{justify-self:start;background:#FFF3D6;color:#7A4E00;font-weight:800;font-size:11px;letter-spacing:.4px;padding:4px 8px;border-radius:8px;text-transform:uppercase}
+.inv-card h2{margin:0;font-size:1.2rem;line-height:1.2}
+.inv-card p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.4}
+.inv-prog{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+.inv-prog b{color:var(--ink)}
+.inv-prog .bar{flex:1;height:6px;background:#ECEDEF;border-radius:4px;overflow:hidden}.inv-prog .bar i{display:block;height:100%;background:#1F8A3E}
+.inv-card .btn{gap:8px}
+.inv-pion{justify-self:start;font-size:.8rem;font-weight:800;color:#7A4E00;background:#FFF3D6;border-radius:20px;padding:6px 10px}
+.t-only{display:block;color:#7A4E00;background:#FFF8E6;border-radius:12px;padding:8px 10px}

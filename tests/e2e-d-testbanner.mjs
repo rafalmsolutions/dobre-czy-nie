@@ -10,7 +10,7 @@ const shots = fileURLToPath(new URL('./shots/', import.meta.url)); fs.mkdirSync(
 
 const open = async ({ ua, referrer, standalone } = {}) => {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', ...(ua ? { userAgent: ua } : {}) }); await setup(ctx, {});
-  await ctx.route(/\/config\.js$/, r => { const body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8').replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+  await ctx.route(/\/config\.js$/, r => { const body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8').replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
   const page = await ctx.newPage(); page.errors = []; page.on('pageerror', e => { console.log('ERR', e.message); page.errors.push(e); });
   await page.addInitScript(() => { if (sessionStorage.getItem('init')) return; sessionStorage.setItem('init', '1'); localStorage.setItem('dcn-onboarded', 'true'); localStorage.setItem('dcn-name', '"Ola"'); });
   // Referrer tylko przy pierwszym otwarciu (jak w TWA); przy przeładowaniu znika.

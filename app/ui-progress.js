@@ -27,15 +27,20 @@
     // Wersja D: odznaki w 3 stopniach. Grupujemy wpisy po „base”; medal pokazuje najwyższy zdobyty stopień.
     const groups = [], byBase = {};
     prog.forEach(p => { const b = p.a.base || p.a.id; if (!byBase[b]) { byBase[b] = { base: b, a: p.a, tiers: [] }; groups.push(byBase[b]); } byBase[b].tiers.push(p); });
-    groups.forEach(x => { x.tiers.sort((m, n) => (m.a.tier || 1) - (n.a.tier || 1)); x.doneTier = x.tiers.filter(t => t.done).length; x.next = x.tiers.find(t => !t.done) || null; });
+    groups.forEach(x => { x.tiers.sort((m, n) => (m.a.tier || 1) - (n.a.tier || 1)); x.doneTier = x.tiers.filter(t => t.done).reduce((m, t) => Math.max(m, t.a.tier || 1), 0); x.next = x.tiers.find(t => !t.done) || null; });
+    // 3.0.34: odznaki testów po zakończeniu testów widać tylko, jeśli zdobyte (pamiątka); niezdobyte znikają.
+    for (let i = groups.length - 1; i >= 0; i--) if (groups[i].a.testOnly && !A.testPhase() && !groups[i].doneTier) { groups.splice(i, 1); }
     const seen = A.store.get('d-seen-ach', {}), seenNext = {};
     groups.forEach(x => { x.fresh = x.doneTier > (seen[x.base] || 0); seenNext[x.base] = x.doneTier; });
     A.store.set('d-seen-ach', seenNext);
+    const shown = new Set(groups.map(x => x.base)); for (let i = prog.length - 1; i >= 0; i--) if (!shown.has(prog[i].a.base || prog[i].a.id)) prog.splice(i, 1);
     const earned = groups.filter(x => x.doneTier > 0).length, tiersDone = prog.filter(p => p.done).length;
-    if (!sel || !byBase[sel]) sel = (groups.find(x => x.next) || groups[0] || {}).base || null;
+    // 3.0.34: szczegóły pokazują odznakę z wybranej kategorii (wcześniej zostawała odznaka z innej).
+    const inCat = groups.filter(x => cat === 'all' || x.a.category === cat);
+    if (!sel || !byBase[sel] || (cat !== 'all' && byBase[sel].a.category !== cat)) sel = (inCat.find(x => x.next) || inCat[0] || groups[0] || {}).base || null;
     const s = sel ? byBase[sel] : null;
     const TIER = ['', 'Brąz', 'Srebro', 'Złoto'];
-    const usedCats = [...new Set(achs.map(a => a.category))];
+    const usedCats = [...new Set(groups.map(x => x.a.category))];
     const dots = levels.map((l, i) => `${i ? `<span class="lvline${l.level <= lv.level ? ' done' : ''}"></span>` : ''}<span class="lvdot ${l.level < lv.level ? 'done' : l.level === lv.level ? 'cur' : 'next'}" title="${esc(l.name)}">${l.level}</span>`).join('');
     const rulesEv = (cfg.rules && cfg.rules.events) || {};
     const ch = Game.challengeProgress(g, cfg, now);
@@ -56,11 +61,12 @@
       </div>
       ${ch ? `<div class="card stack"><div class="sec-head"><h2 style="font-size:1.1rem">Wyzwanie tygodnia</h2><span class="small muted">${ch.done ? 'ukończone' : 'zostało ' + ch.daysLeft + ' ' + plural(ch.daysLeft, 'dzień', 'dni', 'dni')}</span></div><b>${esc(ch.title)}</b><span class="xp green"><i style="width:${Math.round(ch.have / ch.target * 100)}%"></i><span>${ch.have} z ${ch.target}</span></span></div>` : ''}
       ${ribbonSvg(esc(`Odznaki ${earned} z ${groups.length}`), 250)}
-      <p class="small muted center" style="margin-top:-8px">Zdobyte stopnie: ${tiersDone} z ${prog.length}. Każda odznaka ma brąz, srebro i złoto.</p>
+      <p class="small muted center" style="margin-top:-8px">Zdobyte stopnie: ${tiersDone} z ${prog.length}. Prawie każda odznaka ma brąz, srebro i złoto.</p>
       <div class="chips" style="justify-content:center" role="group" aria-label="Kategorie odznak">${[['all', 'Wszystkie']].concat(usedCats.map(c => [c, (cats[c] || {}).label || c])).map(([k, l]) => `<button class="cat-tab" type="button" data-act="ach-cat" data-cat="${esc(k)}" aria-pressed="${k === cat}">${esc(l)}</button>`).join('')}</div>
       ${s ? `<div class="panel row" id="achDetail" aria-live="polite"><span style="flex:0 0 auto">${medalSvg(s.a.icon, s.a.category, s.doneTier > 0, 92, s.doneTier, s.fresh ? 'm-pop' : '')}</span><div class="grow stack" style="gap:6px"><b style="font-family:var(--f-display);font-size:1.2rem">${esc(s.a.name)}${s.doneTier ? ' · ' + TIER[s.doneTier] : ''}</b>
         <span class="small">${s.next ? esc(s.next.a.description) : 'Masz złoto. Brawo!'}</span>
         ${s.next ? `<span class="xp"><i style="width:${Math.round(s.next.have / s.next.target * 100)}%"></i></span><span class="small" style="font-weight:800">${s.next.have} z ${s.next.target} do: ${TIER[s.next.a.tier || 1].toLowerCase()} (+${(s.next.a.reward || {}).points || 0} pkt)</span>` : ''}
+        ${s.a.testOnly ? '<span class="t-only small">Tylko w czasie testów. Po wydaniu Lupki dla wszystkich tych odznak nie da się już zdobyć.</span>' : ''}
         <div class="d-tiers">${s.tiers.map(t => `<span class="d-tier${t.done ? ' done' : ''}">${medalSvg(t.a.icon, t.a.category, t.done, 34, t.a.tier || 1)}${TIER[t.a.tier || 1]} · ${t.a.target}</span>`).join('')}</div></div></div>` : ''}
       <div class="panel medals" id="medals">${groups.filter(x => cat === 'all' || x.a.category === cat).map(x => `<button class="medal-btn${x.doneTier ? '' : ' locked'}" type="button" data-act="ach-pick" data-id="${esc(x.base)}" aria-pressed="${x.base === sel}" aria-label="${esc(x.a.name)}${x.doneTier ? ', ' + TIER[x.doneTier].toLowerCase() : ''}${x.next ? ', do następnego stopnia ' + x.next.have + ' z ' + x.next.target : ', wszystkie stopnie'}">${medalSvg(x.a.icon, x.a.category, x.doneTier > 0, 66, x.doneTier, x.fresh ? 'm-pop' : '')}<b>${esc(x.a.name)}</b><span class="small" style="font-size:12px;font-weight:800">${x.doneTier ? TIER[x.doneTier] : 'Jeszcze nie'}</span>${x.next ? `<span class="mini-xp"><i style="width:${Math.round(x.next.have / x.next.target * 100)}%"></i></span><span class="small muted" style="font-size:12px;font-weight:700">${x.next.have} z ${x.next.target}</span>` : ''}</button>`).join('')}</div>
       ${ribbonSvg('Jak zdobyć punkty', 270)}
@@ -90,6 +96,17 @@
   const nameOf = id => id === 'me' ? 'Ty' : (A.family.find(f => f.id === id) || {}).name || '';
   const ckRow = (name, key, label, on, hint) => `<label class="ck-row"><span class="grow"><b>${esc(label)}</b>${hint ? `<small>${esc(hint)}</small>` : ''}</span><input class="ck-in" type="checkbox" name="${name}" value="${esc(key)}"${on ? ' checked' : ''}><span class="ck" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>`;
   const tgRow = (id, label, hint, on) => `<label class="tg-row" for="${id}"><span class="grow"><b>${esc(label)}</b><small>${esc(hint)}</small></span><input class="tg" type="checkbox" role="switch" id="${id}"${on ? ' checked' : ''}></label>`;
+  /* 3.0.34: karta „Zaproś do testów” (tylko w fazie testów) i znaczek Pioniera. */
+  const SHARE_IC = '<svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
+  function inviteCard() {
+    const n = A.store.get('d-invite-days', []).length, next = [1, 3, 5].find(t => t > n), un = (A.game && A.game.unlocked) || {};
+    const pion = un['pionier-3'], since = pion ? new Date(pion) : null;
+    const prog = A.quiet() ? '' : next ? `<div class="inv-prog"><span>Twoje zaproszenia</span><span class="bar"><i style="width:${Math.round(n / next * 100)}%"></i></span><b>${n} z ${next}</b></div>` : '<div class="inv-prog"><b>Złoty Ambasador testów. Dziękujemy!</b></div>';
+    return `<div class="inv-card"><span class="inv-tag">Lupka w testach</span><h2>Zaproś znajomych do testów</h2>
+      <p>Żeby Lupka trafiła do wszystkich w Google Play, potrzebujemy więcej testerów. Dołączenie zajmuje 2 minuty.</p>${prog}
+      <button class="btn btn-dark btn-block" type="button" data-act="invite-tests">${SHARE_IC}Zaproś do testów</button>
+      ${since && !A.quiet() ? `<span class="inv-pion">★ Pionier Lupki · tester od ${String(since.getMonth() + 1).padStart(2, '0')}.${since.getFullYear()}</span>` : ''}</div>`;
+  }
   const navRow = (href, title, sum) => `<a class="nav-row" href="${href}"><span class="grow"><b>${esc(title)}</b><small>${esc(sum)}</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>`;
   const lab = (g, k) => (PROFILE_OPTIONS[g].find(o => o.key === k) || {}).label || k;
   function renderProfile() {
@@ -106,11 +123,12 @@
       ${head}
       <p class="save-state small" id="saveState" role="status" aria-live="polite"></p>
       <div class="pf-index"${sec('')}>
+        ${me && A.testPhase() ? inviteCard() : ''}
         <div class="pf-sec"><div class="sec-head"><h2>Domownicy</h2><a href="#/profil/osoby">Zarządzaj</a></div>
           <div class="fam-tabs" role="tablist" aria-label="Czyje preferencje">${tabs.map(t => `<button type="button" role="tab" class="fam-tab${t.id === editing ? ' on' : ''}" aria-selected="${t.id === editing}" data-act="fam-pick" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}${A.family.length ? '' : '<button type="button" class="fam-tab add" data-act="fam-add">+ Dodaj osobę</button>'}</div></div>
         <div class="pf-sec"><h2>Dopasowanie produktów${fp ? ': ' + esc(fp.name) : ''}</h2><div class="rows">
           ${navRow('#/profil/preferencje', 'Preferencje', goalsSum)}${navRow('#/profil/wykluczenia', 'Wykluczenia', exclSum)}${me ? navRow('#/profil/sklepy', 'Ulubione sklepy', storeSum) : ''}</div></div>
-        <div class="pf-sec"><h2>Aplikacja</h2><div class="rows">${navRow('#/profil/ustawienia', 'Ustawienia', 'Nagrody, dźwięki i sposób oceniania')}${navRow('#/profil/informacje', 'Informacje i pomoc', 'Jak oceniamy, źródła danych, kontakt')}</div></div>
+        <div class="pf-sec"><h2>Aplikacja</h2><div class="rows">${navRow('#/profil/ustawienia', 'Ustawienia', 'Nagrody, dźwięki i sposób oceniania')}${navRow('#/profil/informacje', 'Informacje i pomoc', 'Jak oceniamy, źródła danych, kontakt')}${A.testPhase() && A.CFG.contactEmail ? `<a class="nav-row feedback-link" href="${A.feedbackHref()}"><span class="grow"><b>Wyślij uwagi o aplikacji</b><small>Co działa, co przeszkadza – czytamy każdą</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>` : ''}</div></div>
         <p class="pf-note">Dane zostają na tym urządzeniu.<br>Profil działa bez zakładania konta.</p>
       </div>
       <div class="pf-osoby"${sec('osoby')}>

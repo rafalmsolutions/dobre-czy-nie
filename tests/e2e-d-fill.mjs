@@ -6,7 +6,7 @@ import { setup, C } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
 const S = { edit: [], ocr: [] };
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 await ctx.route(/\/data\/uzupelnij\.json/, r => r.fulfill({ json: { built: '2026-10-22', count: 2, items: [{ c: C.missing2, n: 'Olej testowy', b: 'Marka', i: '', s: 50, k: 'sw' }, { c: C.milk, n: 'Mleko testowe', b: '', i: '', s: 20, k: 'w' }],
   names: [{ c: '5901713014153', n: 'Mousseline de pomme', b: 'Dawtona', i: '', f: 'https://images.openfoodfacts.org/images/products/590/171/301/4153/front_fr.4.400.jpg', s: 9 }, { c: '5906874064009', n: 'Farine typ 450', b: 'Lubelskie Młyny', i: '', f: 'https://images.openfoodfacts.org/images/products/590/687/406/4009/front_fr.3.400.jpg', s: 2 }] } }));
 await ctx.route(/proxy\.test\/ocr/, async r => {

@@ -16,6 +16,20 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Zaproś do testów i odznaki testerów (05.11.2026, wersja 3.0.34)
+- W czasie testów (do `CONFIG.testPhaseUntil` w `app/config.js`, teraz 31.03.2027) na górze Profilu jest karta **Zaproś znajomych do testów**.
+  Przycisk otwiera okno udostępniania telefonu z tekstem i linkiem `lupka.app/testuj/` (na komputerze: kopiuje zaproszenie).
+- Nowa kategoria odznak **Testy** (tylko w czasie testów):
+  - **Pionier Lupki** (złoto, +50 pkt) – każdy, kto korzysta z Lupki w czasie testów (po ekranie powitalnym). W Profilu znaczek
+    „★ Pionier Lupki · tester od MM.RRRR”.
+  - **Ambasador testów** (brąz/srebro/złoto za zaproszenia w 1/3/5 różnych dni, +10/+20/+30 pkt). Liczy się 1 zaproszenie dziennie,
+    anulowane udostępnienie się nie liczy. Aplikacja nie wie, czy znajomy dołączył.
+  - **Głos testera** (brąz/srebro/złoto za „Wyślij uwagi o aplikacji” w 1/3/5 różnych dni). W czasie testów ten link jest też na liście w Profilu.
+- Po zakończeniu testów karta znika, a niezdobytych odznak testów nie widać; zdobyte zostają jako pamiątka.
+- W trybie „Ukryj punkty i nagrody” karta zostaje, ale bez postępu i znaczka Pioniera.
+- Odznaka z jednym stopniem pokazuje swój stopień (Pionier = złoto), a nie liczbę zdobytych stopni.
+- Test: `tests/e2e-d-testy.mjs`.
+
 ## Długie nazwy na liście zakupów znów w jednej linii (05.11.2026, wersja 3.0.33)
 - Po dodaniu serca nazwy takie jak „Płatki owsiane górskie” łamały się na dwie linie. Odzyskane miejsce: węższe serce i krzyżyk
   (pole dotyku bez zmian, przez ::after), mniejsze wcięcie wiersza, a przy sztukach przycisk ilości pokazuje samą liczbę („1 ⌄”;

@@ -19,5 +19,9 @@ const CONFIG = {
   // Anonimowe statystyki bez ciasteczek: które ekrany i funkcje są używane, ile osób wraca w kolejnych tygodniach.
   // Puste pole = statystyki wyłączone.
   goatcounter: 'dobreczynie',
-  appVersion: '3.0.33'
+  // Faza testów w Google Play (3.0.34): do tej daty (włącznie) w Profilu jest karta „Zaproś do testów” i można zdobyć
+  // odznakę „Pionier Lupki”. Po wydaniu publicznym ustaw datę wydania – karta i odznaki testów znikną same (zdobyte zostają).
+  testPhaseUntil: '2027-03-31',
+  testInviteUrl: 'https://lupka.app/testuj/',
+  appVersion: '3.0.34'
 };

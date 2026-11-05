@@ -5,7 +5,7 @@ import fs from 'fs';
 import { setup, C } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 // 1. Lista misji
 const A1 = '5900531000980', A2 = '5900000000999', A3 = '5900000000998';
 await ctx.route(/uzupelnij\.json/, r => r.fulfill({ json: { built: '2026-10-23', count: 3, items: [{ c: A1, n: 'Serek wiejski', b: 'X', i: '', s: 9, k: 's' }, { c: A2, n: 'Jogurt', b: 'Y', i: '', s: 8, k: 'sw' }, { c: A3, n: 'Kefir', b: 'Z', i: '', s: 7, k: 'w' }], names: [] } }));

@@ -6,7 +6,7 @@ import fs from 'fs';
 import { setup, C } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 const S = { edit: [] };
 await ctx.route(/proxy\.test\/edit/, r => { const bd = r.request().postData() || ''; S.edit.push(bd); return r.fulfill({ json: { ok: true, saved: /name="product_name"/.test(bd) ? ['name', 'category'] : ['ingredients', 'nutrition'] } }); });
 S.img = []; await ctx.route(/proxy\.test\/image/, r => { S.img.push(r.request().postData() || ''); return r.fulfill({ json: { ok: true } }); });

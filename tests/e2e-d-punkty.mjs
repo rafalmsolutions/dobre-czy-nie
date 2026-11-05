@@ -5,7 +5,7 @@ import fs from 'fs';
 import { setup, C } from './lib.mjs';
 const b = await chromium.launch(); let bad = 0; const ok = (c, n) => { console.log((c ? '✓ ' : '✗ ') + n); if (!c) bad++; };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 await ctx.route(/proxy\.test\//, r => r.fulfill({ json: { ok: true, products: [] } }));
 const CHEESE = '5900000600007';
 await ctx.route(new RegExp('openfoodfacts\\.org/api/v2/product/' + CHEESE), r => r.fulfill({ json: { status: 1, product: { code: CHEESE, product_name_pl: 'Pecorino biologico', brands: 'T', nutriscore_grade: 'd', nutriments: { fat_100g: 39, 'saturated-fat_100g': 29, salt_100g: 1.9, sugars_100g: 0.1, proteins_100g: 18 }, categories_hierarchy: ['en:dairies', 'en:fermented-foods', 'en:fermented-milk-products', 'en:cheeses', 'en:sheep-cheeses'] } } }));

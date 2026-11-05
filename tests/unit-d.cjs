@@ -61,7 +61,7 @@ ok(D.cleanProfile({ diet: ['diabetes', 'cardio', 'vegan'] }).diet.join() === 've
 const ach = JSON.parse(fs.readFileSync(path.join(dir, 'achievements.json'), 'utf8')).achievements;
 const bases = [...new Set(ach.map(a => a.base))];
 ok(bases.length >= 15, `odznak: ${bases.length}`);
-ok(bases.every(b => { const t = ach.filter(a => a.base === b).sort((x, y) => x.tier - y.tier); return t.length === 3 && t[0].target < t[1].target && t[1].target < t[2].target; }), 'każda odznaka: 3 stopnie z rosnącymi progami');
+ok(bases.every(b => { const t = ach.filter(a => a.base === b).sort((x, y) => x.tier - y.tier); if (t.length === 1 && t[0].testOnly) return true; /* 3.0.34: Pionier Lupki – jeden stopień (złoto) */ return t.length === 3 && t[0].target < t[1].target && t[1].target < t[2].target; }), 'każda odznaka: 3 stopnie z rosnącymi progami (poza jednostopniowym Pionierem testów)');
 ok(ach.every(a => a.description && a.icon && a.metric && a.reward && a.reward.points > 0) && new Set(ach.map(a => a.id)).size === ach.length, 'odznaki: opisy, ikony, unikalne id');
 
 // 11. Historia gramatur z kopii bazy.

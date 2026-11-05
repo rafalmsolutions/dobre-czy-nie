@@ -9,7 +9,7 @@ const shots = fileURLToPath(new URL('./shots/', import.meta.url));
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const S = { miss: [], submit: [], votes: [], product: { found: true, status: 'pending', name: 'Jogurt odkryty', nick: 'Ola', mine: false, voted: false, canVote: true }, mine: { ok: true, trusted: false, confirmed: 0, rejected: 0, items: [] } };
 const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' }); await setup(ctx, {});
-await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
+await ctx.route(/\/config\.js$/, r => { let body = fs.readFileSync(new URL('../app/config.js', import.meta.url), 'utf8'); body = body.replace(/offProxyUrl: '[^']*'/, "offProxyUrl: 'https://proxy.test/'").replace(/goatcounter: '[^']*'/, "goatcounter: ''").replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ body, contentType: 'text/javascript' }); });
 const form = r => (r.request().postDataBuffer() || Buffer.alloc(0)).toString('utf8');
 await ctx.route(/proxy\.test\/category/, r => r.fulfill({ json: { products: [] } }));
 await ctx.route(/proxy\.test\/product/, r => r.fulfill({ json: { ok: true } }));

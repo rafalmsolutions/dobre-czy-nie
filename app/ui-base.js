@@ -74,6 +74,31 @@ const App = {};
       A.cfg = c; A.store.set('cfg', c);
     } catch (e) { /* bez sieci: zostaje ostatnia zapisana konfiguracja */ }
   };
+  /* 3.0.34: faza testów w Google Play. Do CONFIG.testPhaseUntil (włącznie) karta „Zaproś do testów” w Profilu i odznaka Pionier. */
+  A.testPhase = () => { const u = A.CFG.testPhaseUntil; if (!u) return false; const d = new Date(u + 'T23:59:59'); return !isNaN(d) && Date.now() <= d.getTime(); };
+  const dayStamp = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  // Zapisuje dzień (najwyżej 1 na dzień) i zwraca true, gdy to nowy dzień.
+  const markDay = key => { const a = A.store.get(key, []), t = dayStamp(); if (a.includes(t)) return false; a.push(t); A.store.set(key, a.slice(-60)); return true; };
+  A.inviteText = () => `Testuję Lupkę – aplikację, która w sklepie sprawdza skład produktów dla całej rodziny. Jest w testach w Google Play i szukamy testerów. Dołącz w 2 minuty: ${A.CFG.testInviteUrl || 'https://lupka.app/testuj/'}`;
+  A.inviteToTests = async () => {
+    const url = A.CFG.testInviteUrl || 'https://lupka.app/testuj/', text = A.inviteText();
+    let sent = false;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Lupka – zostań testerem', text }); sent = true; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    if (!sent) {
+      try { await navigator.clipboard.writeText(text); sent = true; A.toast('Skopiowano zaproszenie. Wklej je znajomym w wiadomości.'); }
+      catch (e) { A.toast('Wyślij znajomym ten link: ' + url, null, 9000); sent = true; }
+    }
+    if (sent) { A.track('zapros-testy'); if (markDay('d-invite-days')) A.award('tester_invite', {}); if (A.current && A.current.screen === 'profile') A.render(); }
+  };
+  // Uwagi o aplikacji (link mailto): liczymy dzień do odznaki „Głos testera”.
+  document.addEventListener('click', e => {
+    const a = e.target && e.target.closest && e.target.closest('#feedbackBtn, .feedback-link');
+    if (!a) return;
+    if (markDay('d-feedback-days')) setTimeout(() => A.award('tester_feedback', {}), 400);
+  }, true);
   // Wersja D: dodatkowe liczniki odznak. Kategorie i „perełki” zbieramy w osobnych zbiorach, bo historia trzyma tylko 30 produktów.
   A.extraMetrics = () => {
     const hist = A.store.get('history', []).filter(h => h && h.code);
@@ -91,6 +116,8 @@ const App = {};
       disc_best: (A.disc && A.disc.best) || 0,
       breakfast_on_shelf: Shelf.breakfastGood(A.shelves), categories_explored: cats.size, great_finds: great.size,
       data_completed: (c.ingredients_added || 0) + (c.nutrition_added || 0) + (c.name_added || 0),
+      // 3.0.34: odznaki testerów (Pionier w fazie testów, zaproszenia i uwagi liczone w różnych dniach)
+      test_pioneer: A.testPhase() && A.store.get('onboarded', false) ? 1 : 0, test_invite_days: A.store.get('d-invite-days', []).length, test_feedback_days: A.store.get('d-feedback-days', []).length,
       profile_items: (p.watch || []).length + ['allergens', 'diet', 'avoid', 'custom'].reduce((n, g) => n + ((p[g] || []).length), 0),
       ...(A.albumMetrics ? A.albumMetrics() : {})
     };
@@ -882,7 +909,7 @@ const App = {};
   A.permOffer = async force => {
     if (!force) {
       if (!isAndroid || !A.store.get('onboarded', false) || A.store.get('d-perm-asked', false) || A.$('permSheet')) return;
-      if (!A.$('scanner').hidden || (A.current && A.current.screen === 'start')) return;
+      if (!A.$('scanner').hidden || (A.current && A.current.screen === 'start') || !A.$('celebrate').hidden) return;
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
       if (await permState('camera') === 'granted' && await permState('microphone') === 'granted') return;
     }

@@ -51,6 +51,9 @@ export const SHOPS = {
 };
 export async function setup(ctx, opts = {}) {
   await ctx.route(/fonts\.(googleapis|gstatic)|jsdelivr|unpkg|play\.google/, r => r.abort());
+  // 3.0.34: we wspólnych testach faza testów wyłączona (odznaka Pionier pokazywałaby gratulacje przy starcie).
+  // Testy, które jej potrzebują (e2e-d-testy.mjs), podmieniają config.js własną trasą (ma pierwszeństwo).
+  if (!opts.testPhase) await ctx.route(/\/app\/config\.js(\?.*)?$/, async r => { const res = await r.fetch(); const body = (await res.text()).replace(/testPhaseUntil: '[^']*'/, "testPhaseUntil: ''"); r.fulfill({ response: res, body }); });
   const IMG = (await import('fs')).readFileSync(new URL('../icon-192.png', import.meta.url));
   await ctx.route(/images\.openfoodfacts/, r => r.fulfill({ body: IMG, contentType: 'image/png' }));
   opts.searchCalls = 0;

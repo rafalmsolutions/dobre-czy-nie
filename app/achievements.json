@@ -21,6 +21,10 @@
     "profil": {
       "label": "Ty",
       "color": "#E4DAF0"
+    },
+    "testy": {
+      "label": "Testy",
+      "color": "#FCE8B2"
     }
   },
   "achievements": [
@@ -968,6 +972,118 @@
         "points": 50
       },
       "inVersion": "1.0"
+    },
+    {
+      "id": "pionier-3",
+      "base": "pionier",
+      "tier": 3,
+      "name": "Pionier Lupki",
+      "category": "testy",
+      "icon": "star",
+      "description": "Korzystasz z Lupki w czasie testów, zanim trafiła do wszystkich. Tylko w czasie testów – po wydaniu tej odznaki nie da się już zdobyć.",
+      "metric": "test_pioneer",
+      "target": 1,
+      "reward": {
+        "points": 50
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "ambasador-1",
+      "base": "ambasador",
+      "tier": 1,
+      "name": "Ambasador testów",
+      "category": "testy",
+      "icon": "invite",
+      "description": "Zaproś znajomych do testów (Profil → Zaproś do testów).",
+      "metric": "test_invite_days",
+      "target": 1,
+      "reward": {
+        "points": 10
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "ambasador-2",
+      "base": "ambasador",
+      "tier": 2,
+      "name": "Ambasador testów",
+      "category": "testy",
+      "icon": "invite",
+      "description": "Zaproś znajomych do testów w 3 różne dni (liczy się 1 zaproszenie dziennie).",
+      "metric": "test_invite_days",
+      "target": 3,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "ambasador-3",
+      "base": "ambasador",
+      "tier": 3,
+      "name": "Ambasador testów",
+      "category": "testy",
+      "icon": "invite",
+      "description": "Zaproś znajomych do testów w 5 różnych dni (liczy się 1 zaproszenie dziennie).",
+      "metric": "test_invite_days",
+      "target": 5,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "glos-testera-1",
+      "base": "glos-testera",
+      "tier": 1,
+      "name": "Głos testera",
+      "category": "testy",
+      "icon": "chat",
+      "description": "Wyślij uwagi o aplikacji (Profil → Wyślij uwagi o aplikacji).",
+      "metric": "test_feedback_days",
+      "target": 1,
+      "reward": {
+        "points": 10
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "glos-testera-2",
+      "base": "glos-testera",
+      "tier": 2,
+      "name": "Głos testera",
+      "category": "testy",
+      "icon": "chat",
+      "description": "Wyślij uwagi o aplikacji w 3 różne dni.",
+      "metric": "test_feedback_days",
+      "target": 3,
+      "reward": {
+        "points": 20
+      },
+      "inVersion": "1.0",
+      "testOnly": true
+    },
+    {
+      "id": "glos-testera-3",
+      "base": "glos-testera",
+      "tier": 3,
+      "name": "Głos testera",
+      "category": "testy",
+      "icon": "chat",
+      "description": "Wyślij uwagi o aplikacji w 5 różnych dni.",
+      "metric": "test_feedback_days",
+      "target": 5,
+      "reward": {
+        "points": 30
+      },
+      "inVersion": "1.0",
+      "testOnly": true
     }
   ]
 }

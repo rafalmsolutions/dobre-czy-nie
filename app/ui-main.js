@@ -29,6 +29,7 @@
       case 'scan': A.openScanner(); break;
       case 'cam-retry': A.openScanner(true); break;
       case 'photo-gallery': A.photoFromGallery(); break;
+      case 'invite-tests': A.inviteToTests(); break;
       case 'perm-allow': A.permAllow(); break;
       case 'perm-later': A.store.set('d-perm-asked', true); A.permClose(); break;
       case 'undo-generic': A.undoGeneric(); break;
