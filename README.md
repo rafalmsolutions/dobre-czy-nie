@@ -16,6 +16,11 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Aparat: „Włącz aparat” tylko migał (05.11.2026, wersja 3.0.30)
+- Na Androidzie, gdy telefon nie daje aparatu przeglądarce (Chrome), odmowa przychodzi od razu, bez pytania, a strona widzi stan „prompt”.
+  Wtedy „Włącz aparat” tylko migał. Teraz odmowa szybsza niż 0,6 s albo druga odmowa po „Włącz aparat” od razu pokazuje
+  „Chrome nie ma dostępu do aparatu” i kroki w ustawieniach telefonu (plus „Ustawienia witryny” jako czwarty krok).
+
 ## Mikrofon: dokładne kroki na Androidzie (05.11.2026, wersja 3.0.29)
 - Dyktowanie bez zgody na mikrofon w telefonie z Androidem (także w aplikacji z Google Play, która działa w Chrome) mówi teraz dokładnie,
   co włączyć: Ustawienia telefonu → Aplikacje → Chrome → Uprawnienia → Mikrofon → Zezwalaj, a gdy to nie pomoże – przytrzymaj ikonę Lupki

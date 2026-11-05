@@ -91,6 +91,20 @@ ok(!(await vis(page, '#camShotBtn')) && await page.locator('#codePhoto').locator
 ok(!page.errs.length, 'brak błędów JS ' + page.errs.join(' | '));
 await page.context().close();
 
+// 5b. Android: odmowa bez pytania (natychmiast), mimo stanu „prompt” → kroki w ustawieniach telefonu, nie migający przycisk
+page = await newPage({ perm: 'prompt', fail: 'NotAllowedError', twa: true, ua: ANDROID });
+await page.click('.tab-scan'); await page.waitForTimeout(500);
+ok(/Chrome nie ma dostępu do aparatu/.test(await txt(page, '#scanErrTitle')) && /Ustawienia witryny/.test(await txt(page, '#scanErrSteps')), 'Android, natychmiastowa odmowa bez pytania: kroki dla Chrome (+ „Ustawienia witryny”)');
+await page.context().close();
+// 5c. Android: odmowa po czasie (użytkownik zamknął pytanie) → „Włącz aparat”; druga odmowa → kroki
+page = await newPage({ perm: 'prompt', fail: '', ua: ANDROID });
+await page.evaluate(() => { const md = navigator.mediaDevices, g = md.getUserMedia; md.getUserMedia = async c => { await new Promise(r => setTimeout(r, 900)); throw new DOMException('Permission denied', 'NotAllowedError'); }; });
+await page.click('.tab-scan'); await page.waitForTimeout(1400);
+ok(/Lupka potrzebuje aparatu/.test(await txt(page, '#scanErrTitle')), 'Android, zamknięte pytanie: „Włącz aparat”');
+await page.click('#camRetry'); await page.waitForTimeout(1400);
+ok(/Chrome nie ma dostępu do aparatu/.test(await txt(page, '#scanErrTitle')), 'Android, druga odmowa po „Włącz aparat”: kroki w ustawieniach telefonu');
+await page.context().close();
+
 // 6. „Zdjęcie składu”, gdy aparat się nie otwiera (nic się nie dzieje): po 2 s podpowiedź i „Wybierz z galerii”
 page = await newPage({ perm: 'granted', fail: '', ua: ANDROID });
 await page.evaluate(() => { window.__ocr = 0; App.runOcr = async () => { window.__ocr++; }; });

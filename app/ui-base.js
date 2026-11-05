@@ -804,7 +804,7 @@ const App = {};
   A.browserName = () => /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /EdgA/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /OPR|Opera/.test(ua) ? 'Opera' : 'Chrome';
   A.isAndroid = isAndroid;
   // Aparat zablokowany w Androidzie dla samej przeglądarki (wtedy strona nawet nie pyta).
-  A.camSystemSteps = () => [`Otwórz Ustawienia telefonu → Aplikacje → ${A.browserName()}.`, 'Uprawnienia → Aparat → „Zezwalaj tylko podczas używania aplikacji”.', 'Wróć do Lupki i stuknij „Sprawdź ponownie”.'];
+  A.camSystemSteps = () => [`Otwórz Ustawienia telefonu → Aplikacje → ${A.browserName()}.`, 'Uprawnienia → Aparat → „Zezwalaj tylko podczas używania aplikacji”.', 'Wróć do Lupki i stuknij „Sprawdź ponownie”.', 'Nadal nic? Przytrzymaj ikonę Lupki → „Ustawienia witryny” → Aparat → Zezwalaj.'];
   A.camSteps = () => {
     if (isTWA() || (isAndroid && standalone())) return ['Przytrzymaj palcem ikonę Lupki na ekranie telefonu.', 'Wybierz „Ustawienia witryny” (Site settings).', 'Aparat → Zezwalaj. Wróć do Lupki – skaner włączy się sam.'];
     if (isAndroid) return ['Stuknij ikonę po lewej stronie adresu strony (nad stroną).', 'Uprawnienia → Aparat → Zezwalaj.', 'Wróć tutaj – skaner włączy się sam.'];
@@ -816,7 +816,7 @@ const App = {};
     A.$('camRetry').hidden = false; A.$('camShotBtn').hidden = false; A.$('codePhoto').parentElement.hidden = kind !== 'system'; // jeden przycisk zdjęcia, nie dwa
     if (kind === 'denied' || kind === 'system') {
       scanError(kind === 'system' ? `${A.browserName()} nie ma dostępu do aparatu` : 'Aparat jest zablokowany dla Lupki',
-        kind === 'system' ? `Lupka korzysta z aparatu przez ${A.browserName()}. Włącz go w 3 krokach albo wpisz cyfry spod kodu.` : 'Odblokujesz go w 3 krokach. Do tego czasu zrób zdjęcie kodu albo wpisz cyfry.', true);
+        kind === 'system' ? `Telefon nie pozwala przeglądarce ${A.browserName()}, w której działa Lupka, używać aparatu. Włącz to w ustawieniach telefonu albo wpisz cyfry spod kodu.` : 'Odblokujesz go w 3 krokach. Do tego czasu zrób zdjęcie kodu albo wpisz cyfry.', true);
       steps.innerHTML = (kind === 'system' ? A.camSystemSteps() : A.camSteps()).map(t => `<li>${A.esc(t)}</li>`).join(''); steps.hidden = false;
       if (kind === 'system') A.$('camShotBtn').hidden = true; // aparat telefonu też nie ruszy bez tej zgody
       A.$('camRetry').textContent = 'Sprawdź ponownie';
@@ -877,6 +877,7 @@ const App = {};
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return scanError('Ta przeglądarka nie daje dostępu do aparatu', 'Wpisz cyfry spod kodu poniżej albo wybierz zdjęcie kodu.');
     // Zablokowany na stałe: nie pytamy przeglądarki na próżno, od razu kroki.
     if (await cameraState() === 'denied') return camError('denied');
+    const askedAt = Date.now();
     try {
       stopStream(); stream = await openCamera();
     } catch (e) {
@@ -885,7 +886,9 @@ const App = {};
       if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'PermissionDeniedError')) {
         const st = await cameraState();
         // „Permission denied by system”: zgoda strony jest, ale Android nie daje aparatu przeglądarce.
-        if (/system/i.test(e.message || '') || (isAndroid && st === 'granted')) return camError('system');
+        // 3.0.30: odmowa bez pytania (w ułamku sekundy) albo druga odmowa z rzędu po „Włącz aparat” = blokada w Androidzie.
+        const instant = Date.now() - askedAt < 600;
+        if (/system/i.test(e.message || '') || (isAndroid && (st === 'granted' || instant || retry))) return camError('system');
         return camError(st === 'denied' ? 'denied' : 'asked');
       }
       return camError('busy');
