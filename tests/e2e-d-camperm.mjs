@@ -109,4 +109,13 @@ await page.click('#ingPhoto'); await page.evaluate(() => window.dispatchEvent(ne
 ok(await page.locator('#toast').isHidden(), 'aparat się otworzył: bez podpowiedzi');
 ok(!page.errs.length, 'brak błędów JS ' + page.errs.join(' | '));
 await page.context().close();
+// 7. Mikrofon (dyktowanie) bez zgody na Androidzie: dokładne kroki dla Chrome
+page = await newPage({ perm: 'granted', fail: '', ua: ANDROID });
+await page.addInitScript(() => { delete window.SpeechRecognition; delete window.webkitSpeechRecognition; window.SpeechRecognition = undefined; window.webkitSpeechRecognition = class { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 30); } stop() { } abort() { } }; });
+await page.goto('http://localhost:8790/app/index.html?mic=1#/polki'); await page.waitForTimeout(1300);
+await page.click('#micBtn'); await page.waitForTimeout(300);
+const mic = await txt(page, '#itemMsg');
+ok(/Aplikacje → Chrome → Uprawnienia → Mikrofon → Zezwalaj/.test(mic) && /Ustawienia witryny/.test(mic) && await page.isEnabled('#addItemInput'), 'mikrofon bez zgody na Androidzie: kroki dla Chrome i „Ustawienia witryny” (' + mic + ')');
+ok(!page.errs.length, 'brak błędów JS ' + page.errs.join(' | '));
+await page.context().close();
 await b.close(); process.exit(bad ? 1 : 0);

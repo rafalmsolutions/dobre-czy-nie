@@ -113,6 +113,14 @@
   A.dictIdleMs = 8000;
   const DICT_MAX = 120000;
   const SR_ERR = { 'not-allowed': 'Nie mamy zgody na mikrofon. Zezwól na niego w ustawieniach przeglądarki albo wpisz rzecz.', 'service-not-allowed': 'Ta przeglądarka nie pozwala tu dyktować. Wpisz rzecz ręcznie.', network: 'Dyktowanie wymaga internetu. Wpisz rzecz ręcznie.', 'audio-capture': 'Nie znaleźliśmy mikrofonu.' };
+  /* 3.0.29: na Androidzie (także w aplikacji z Play, która działa w Chrome) brak zgody na mikrofon to zwykle brak zgody Androida
+     dla przeglądarki albo zablokowany mikrofon strony – mówimy dokładnie, gdzie to włączyć. */
+  function micError(code) {
+    if (!A.isAndroid || (code !== 'not-allowed' && code !== 'service-not-allowed')) return '';
+    const br = A.browserName ? A.browserName() : 'Chrome';
+    if (code === 'service-not-allowed') return `Dyktowanie jest wyłączone w telefonie. Sprawdź Ustawienia telefonu → Aplikacje → ${br} → Uprawnienia → Mikrofon → Zezwalaj. Do tego czasu wpisz rzecz.`;
+    return `Brak zgody na mikrofon. Włącz: Ustawienia telefonu → Aplikacje → ${br} → Uprawnienia → Mikrofon → Zezwalaj. Jeśli nadal nie działa: przytrzymaj ikonę Lupki → „Ustawienia witryny” → Mikrofon → Zezwalaj.`;
+  }
   const setMsg = (m, info) => { ui.msgInfo = !!info; ui.msg = m; const el = A.$('itemMsg'); if (el) { el.textContent = m; el.classList.toggle('msg-info', !!info); } };
   const micState = () => { const b = A.$('micBtn'); if (b) { b.setAttribute('aria-pressed', listening ? 'true' : 'false'); b.setAttribute('aria-label', listening ? 'Zakończ dyktowanie' : 'Dyktuj listę'); b.classList.toggle('on', listening); } };
   const shelvesOpen = () => A.current && A.current.screen === 'shelves';
@@ -183,7 +191,7 @@
     r.onerror = ev => {
       if (sess !== s) return;
       if (ev.error === 'no-speech' || ev.error === 'aborted') return; // cisza: decyduje licznik ciszy
-      s.fatal = SR_ERR[ev.error] || 'Nie udało się rozpoznać mowy. Wpisz rzecz ręcznie.';
+      s.fatal = micError(ev.error) || SR_ERR[ev.error] || 'Nie udało się rozpoznać mowy. Wpisz rzecz ręcznie.';
       s.stopping = true;
     };
     r.onend = () => {
