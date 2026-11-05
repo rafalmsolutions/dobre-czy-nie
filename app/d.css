@@ -1136,4 +1136,10 @@ div.ob-person{cursor:default}
 .si-fav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .si-fav.on{color:#E5533D}.si-fav.on svg{fill:currentColor}
 .sitem.checked .si-fav:not(.on){opacity:.6}
-.sgroup .sitem .qtybtn{min-width:68px;justify-content:center}
+/* 3.0.33: więcej miejsca na nazwę w wierszu listy (serce zabrało miejsce): węższe serce i krzyżyk z dużym polem dotyku, sztuki bez „szt.” */
+.sgroup .sitem{padding-left:12px}
+.si-fav{width:28px;margin:0 -4px;position:relative}
+.si-fav::after{content:"";position:absolute;inset:0 -8px}
+.sgroup .sitem .x{width:32px;margin-left:-4px;position:relative}
+.sgroup .sitem .x::after{content:"";position:absolute;inset:0 -4px}
+.sgroup .sitem .qtybtn{min-width:52px;justify-content:center;padding:0 6px 0 10px}

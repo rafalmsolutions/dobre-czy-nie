@@ -30,7 +30,7 @@ await page.goto('http://localhost:8790/app/index.html#/p/' + C.nutella); await p
 await page.$eval('[data-act=shelf-add]', e => e.click()); await page.waitForTimeout(300);
 await page.goto('http://localhost:8790/app/index.html#/polki'); await page.waitForTimeout(500);
 const row = page.locator('.sitem').first();
-ok(/1 szt\./.test(await row.innerText()), 'domyślnie 1 szt.');
+ok(/Ilość: 1 szt\./.test(await row.locator('.qtybtn').getAttribute('aria-label')) && (await row.locator('.qtybtn').innerText()).trim() === '1', 'domyślnie 1 szt. (na przycisku sama liczba, „szt.” w opisie dla czytnika – 3.0.33)');
 ok(await row.locator('.famchip[data-t=bad]').count() === 1 && /nie dla Kuby/i.test(await row.locator('.famchip').innerText()), 'na półce odpowiedź dla rodziny: ✕ Kuba');
 await row.locator('[data-act=item-qty]').click(); await page.waitForTimeout(200);
 await page.fill('#qtyInput', '1,5'); await page.selectOption('#qtyUnit', 'kg'); await page.click('#qtyForm button[type=submit]'); await page.waitForTimeout(200);

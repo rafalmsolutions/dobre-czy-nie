@@ -16,6 +16,12 @@ album z polowaniem i plakatami, odkrywcy z potwierdzaniem produktów, profile ro
 - Testy: `tests/unit-d.cjs`, `tests/e2e-d-*.mjs` (nowa aplikacja), `tests/unit-core.cjs`, `tests/unit-v1.cjs`, `tests/e2e.mjs` (archiwum), `tests/sw-test.mjs` (przeprowadzka i service workery),
   `tests/worker-*.mjs` (pośrednik), `scripts/test_build_data.py` (kopia bazy). Testy przeglądarkowe wymagają serwera: `python3 -m http.server 8790` w katalogu repozytorium (aplikacja: `http://localhost:8790/app/`).
 
+## Długie nazwy na liście zakupów znów w jednej linii (05.11.2026, wersja 3.0.33)
+- Po dodaniu serca nazwy takie jak „Płatki owsiane górskie” łamały się na dwie linie. Odzyskane miejsce: węższe serce i krzyżyk
+  (pole dotyku bez zmian, przez ::after), mniejsze wcięcie wiersza, a przy sztukach przycisk ilości pokazuje samą liczbę („1 ⌄”;
+  „szt.” zostaje w opisie dla czytnika ekranu). Kilogramy, litry itd. bez zmian („0,5 kg”, „2 l”).
+- Na nazwę jest teraz tyle miejsca co przed sercem (178 px przy ekranie 390 px).
+
 ## Ulubione na liście zakupów (05.11.2026, wersja 3.0.32)
 - Przy każdej rzeczy na liście jest serce: czerwone = ulubione, puste = stuknij, by dodać. Działa także dla rzeczy wpisanych
   i podyktowanych (np. „banany”, „chleb”), nie tylko zeskanowanych. Takie ulubione mają klucz po nazwie (jak „często kupujesz”, `d-bought`).
