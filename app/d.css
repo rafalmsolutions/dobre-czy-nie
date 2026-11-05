@@ -1131,3 +1131,9 @@ div.ob-person{cursor:default}
 .perm-ic svg{width:22px;height:22px}
 .perm-steps{margin:0;padding-left:22px;display:grid;gap:6px}
 .perm-sheet .linkbtn{align-self:center}
+/* 3.0.32: serce przy rzeczy na liście zakupów (ulubione także dla wpisanych i podyktowanych) */
+.si-fav{flex:0 0 auto;width:40px;height:44px;display:grid;place-items:center;background:none;border:0;padding:0;cursor:pointer;color:#B9BCC2}
+.si-fav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.si-fav.on{color:#E5533D}.si-fav.on svg{fill:currentColor}
+.sitem.checked .si-fav:not(.on){opacity:.6}
+.sgroup .sitem .qtybtn{min-width:68px;justify-content:center}

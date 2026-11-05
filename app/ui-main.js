@@ -14,7 +14,7 @@
   }, true);
 
   /* ---------- Kliknięcia ---------- */
-  const SHELF_ACTS = ['shelf-pick', 'shelf-sheet', 'shelf-sheet-close', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate'];
+  const SHELF_ACTS = ['shelf-pick', 'shelf-sheet', 'shelf-sheet-close', 'shelf-new', 'shelf-cancel', 'shelf-rename', 'shelf-delete', 'shelf-delete-no', 'shelf-delete-yes', 'item-remove', 'shelf-clear', 'shelf-share', 'item-qty', 'qty-minus', 'qty-plus', 'qadd', 'sug-add', 'dictate', 'item-fav'];
   const PROF_ACTS = ['fam-pick', 'fam-add', 'fam-del', 'fam-del-no', 'fam-del-yes', 'prof-goal', 'add-custom', 'rm-custom', 'store-add', 'wipe', 'wipe-yes', 'wipe-no'];
   document.addEventListener('click', e => {
     const kindBtn = e.target.closest('#ingCard [data-kind]');

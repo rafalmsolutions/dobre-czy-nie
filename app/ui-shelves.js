@@ -18,7 +18,7 @@
   function itemHtml(i) {
     const q = Shelf.fmtQty(i), sc = scoreHtml(i);
     const nm = i.code ? `<a class="t1" href="#/p/${esc(i.code)}">${esc(i.name)}</a>` : `<button type="button" class="t1 t1-edit" data-act="item-qty" data-id="${esc(i.id)}" aria-label="Zmień: ${esc(i.name)}">${esc(i.name)}</button>`;
-    const row = `<div class="sitem${i.checked ? ' checked' : ''}" data-id="${esc(i.id)}"><input type="checkbox" data-act="item-toggle" data-id="${esc(i.id)}"${i.checked ? ' checked' : ''} aria-label="${i.checked ? 'Kupione' : 'Odhacz'}: ${esc(i.name)}"><span class="grow si-txt">${nm}${sc}</span><button class="qtybtn" type="button" data-act="item-qty" data-id="${esc(i.id)}" aria-expanded="${ui.qty === i.id}" aria-label="Ilość: ${esc(q)}. Zmień ilość lub jednostkę">${esc(q)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button class="x" type="button" data-act="item-remove" data-id="${esc(i.id)}" aria-label="Usuń ${esc(i.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
+    const row = `<div class="sitem${i.checked ? ' checked' : ''}" data-id="${esc(i.id)}"><input type="checkbox" data-act="item-toggle" data-id="${esc(i.id)}"${i.checked ? ' checked' : ''} aria-label="${i.checked ? 'Kupione' : 'Odhacz'}: ${esc(i.name)}"><span class="grow si-txt">${nm}${sc}</span>${favHeart(i)}<button class="qtybtn" type="button" data-act="item-qty" data-id="${esc(i.id)}" aria-expanded="${ui.qty === i.id}" aria-label="Ilość: ${esc(q)}. Zmień ilość lub jednostkę">${esc(q)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button class="x" type="button" data-act="item-remove" data-id="${esc(i.id)}" aria-label="Usuń ${esc(i.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
     if (ui.qty !== i.id) return row;
     return row + `<form class="inline-form qty-form" id="qtyForm" data-id="${esc(i.id)}" novalidate>${i.code ? '' : `<label class="qf-name"><span class="small muted">Nazwa</span><input class="field" id="itemNameInput" maxlength="60" autocomplete="off" value="${esc(i.name)}"></label>`}<p class="msg qf-msg" id="itemEditMsg" role="status"></p><button class="btn btn-white iconbtn" type="button" data-act="qty-minus" aria-label="Mniej">−</button><input class="field" id="qtyInput" inputmode="decimal" value="${esc(String(i.qty).replace('.', ','))}" aria-label="Ilość"><button class="btn btn-white iconbtn" type="button" data-act="qty-plus" aria-label="Więcej">+</button><select class="field" id="qtyUnit" aria-label="Jednostka">${Shelf.UNITS.map(u => `<option value="${u}"${u === i.unit ? ' selected' : ''}>${u === 'szt' ? 'szt.' : u}</option>`).join('')}</select><button class="btn btn-green btn-sm" type="submit">OK</button></form>`;
   }
@@ -28,6 +28,16 @@
   const favs = () => (v => Array.isArray(v) ? v.filter(x => x && x.name) : [])(A.store.get('d-fav', []));
   const bkey = i => i.code ? i.code : 'n:' + fold(i.name);
   A.isFav = code => favs().some(f => f.code === code);
+  /* 3.0.32: ulubione także dla rzeczy wpisanych i podyktowanych (bez kodu, klucz po nazwie jak w d-bought). Serce przy każdej
+     rzeczy na liście: czerwone = ulubione, puste = stuknij, by dodać. */
+  const isFavItem = i => { const k = bkey(i); return favs().some(f => bkey(f) === k); };
+  const HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
+  const favHeart = i => { const on = isFavItem(i); return `<button class="si-fav${on ? ' on' : ''}" type="button" data-act="item-fav" data-id="${esc(i.id)}" aria-pressed="${on}" aria-label="${on ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}: ${esc(i.name)}">${HEART}</button>`; };
+  function toggleFavItem(i) {
+    const list = favs(), k = bkey(i), on = list.some(f => bkey(f) === k);
+    A.store.set('d-fav', on ? list.filter(f => bkey(f) !== k) : [{ code: i.code || null, name: i.name, categories: [], pct: i.pct != null ? i.pct : null, at: Date.now() }].concat(list).slice(0, 60));
+    return !on;
+  }
   A.toggleFav = (prod, pm) => {
     const list = favs(), on = list.some(f => f.code === prod.code);
     A.store.set('d-fav', on ? list.filter(f => f.code !== prod.code) : [{ code: prod.code, name: prod.name || 'Produkt ' + prod.code, categories: (prod.categories || []).slice(0, 8), pct: pm && pm.pct != null ? pm.pct : null, at: Date.now() }].concat(list).slice(0, 60));
@@ -306,6 +316,12 @@
       const r = Shelf.addItem(A.shelves, active().id, { name: x.name, code: x.code || undefined, pct: x.pct, categories: x.categories, qty: 1, unit: 'szt' });
       if (r.error) { ui.msgInfo = false; ui.msg = r.error === 'full' ? ERR.full : 'Nie udało się dodać.'; render(); return; }
       A.shelves = r.state; A.saveShelves(); ui.msgInfo = false; ui.msg = ''; render('#addItemInput'); A.announce(`Dodano: ${x.name}.`);
+    }
+    else if (act === 'item-fav') {
+      const it = active().items.find(x => x.id === el.dataset.id); if (!it) return;
+      const on = toggleFavItem(it);
+      render(`[data-act=item-fav][data-id="${el.dataset.id}"]`);
+      A.toast(on ? `Dodano do ulubionych: ${it.name}. Następnym razem dodasz jednym stuknięciem.` : `Usunięto z ulubionych: ${it.name}.`);
     }
     else if (act === 'sug-add') addSug(+el.dataset.i);
     else if (act === 'dictate') A.dictate();
